@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bootstrap Custom Slider</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom CSS Link -->
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* Slider Background & Height Configuration */
+.hero-slider {
+    /* আপনার ইমেজের ডার্ক টেক্সচার ব্যাকগ্রাউন্ড এখানে বসাতে পারেন */
+    background: linear-gradient(rgba(30, 41, 59, 0.85), rgba(30, 41, 59, 0.85)), 
+                url('https://via.placeholder.com/1920x800/232b38/fff?text=Dark+Texture+BG') no-repeat center center;
+    background-size: cover;
+    height: 100vh;
+    min-height: 550px;
+    display: flex;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Image styling */
+.slider-img {
+    max-height: 480px;
+    object-fit: contain;
+}
+
+/* Red Circular Offer Badge */
+.offer-badge {
+    position: absolute;
+    top: 10%;
+    left: 60%;
+    background-color: #e62e2e;
+    color: #fff;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 10;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+.offer-badge span {
+    line-height: 1.1;
+}
+
+/* Title Font Styling */
+.slider-title {
+    max-width: 600px;
+    line-height: 1.3;
+}
+
+/* Custom Buttons */
+.btn-orange {
+    background-color: #c9722a;
+    color: #fff;
+    border: none;
+    border-radius: 2px;
+    transition: background 0.3s;
+}
+
+.btn-orange:hover {
+    background-color: #ad5f1f;
+    color: #fff;
+}
+
+.btn-outline-light {
+    border-radius: 2px;
+    border-width: 2px;
+}
+
+/* Custom Arrows (Left/Right) */
+.custom-control {
+    width: 5%;
+    opacity: 0.5;
+    transition: opacity 0.3s;
+}
+
+.custom-control:hover {
+    opacity: 1;
+}
+
+.carousel-control-prev-icon,
+.carousel-control-next-icon {
+    width: 2rem;
+    height: 2rem;
+}
+
+/* Custom Bottom Indicators */
+.custom-indicators [data-bs-target] {
+    width: 30px;
+    height: 3px;
+    background-color: #fff;
+    opacity: 0.4;
+    border: none;
+}
+
+.custom-indicators .active {
+    opacity: 1;
+}
+
+/* Responsive adjustment for Mobile */
+@media (max-width: 768px) {
+    .hero-slider {
+        height: auto;
+        padding: 60px 0;
+    }
+    .offer-badge {
+        left: 50%;
+        transform: translateX(50%);
+    }
+}
+    </style>
+</head>
+<body>
+
+<div id="customCarousel" class="carousel slide hero-slider" data-bs-ride="carousel">
+    <!-- Indicators (নিচের ছোট দাগগুলো) -->
+    <div class="carousel-indicators custom-indicators">
+        <button type="button" data-bs-target="#customCarousel" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Slide 1"></button>
+        <button type="button" data-bs-target="#customCarousel" data-bs-slide-to="1" aria-label="Slide 2"></button>
+        <button type="button" data-bs-target="#customCarousel" data-bs-slide-to="2" aria-label="Slide 3"></button>
+    </div>
+
+    <div class="carousel-inner">
+        <!-- Slide 1 (Active) -->
+        <div class="carousel-item active">
+            <div class="container-fluid h-100">
+                <div class="row align-items-center h-100 px-md-5">
+                    <!-- Left Side: Product Image & Offer Tag -->
+                    <div class="col-md-5 position-relative text-center text-md-start">
+                        <div class="offer-badge">
+                            <span class="d-block fw-bold fs-5">57%</span>
+                            <span class="d-block text-uppercase small">Offer</span>
+                        </div>
+                        <!-- এখানে আপনার চেয়ারের ইমেজটি বসাবেন -->
+                        <img src="assets/uploads/model1rbg.png" class="img-fluid slider-img" alt="Chair">
+                    </div>
+                    <!-- Right Side: Content -->
+                    <div class="col-md-7 text-white mt-4 mt-md-0">
+                        <h1 class="display-5 fw-bold mb-4 slider-title">Join now & earn 5% rewards on every order.</h1>
+                        <p class="fs-4 mb-4">
+                            <span class="fw-bold me-2">$340.00</span>
+                            <span class="text-muted text-decoration-line-through fs-5">$460.00</span>
+                        </p>
+                        <div class="d-flex gap-3">
+                            <a href="#" class="btn btn-orange px-4 py-2.5 fw-semibold text-uppercase">
+                                <i class="fa-solid fa-basket-shopping me-2"></i> Buy Now
+                            </a>
+                            <a href="#" class="btn btn-outline-light px-4 py-2.5 fw-semibold text-uppercase">
+                                View Collections
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="carousel-item active">
+            <div class="container-fluid h-100">
+                <div class="row align-items-center h-100 px-md-5">
+                    <!-- Left Side: Product Image & Offer Tag -->
+                    <div class="col-md-5 position-relative text-center text-md-start">
+                        <div class="offer-badge">
+                            <span class="d-block fw-bold fs-5">57%</span>
+                            <span class="d-block text-uppercase small">Offer</span>
+                        </div>
+                        <!-- এখানে আপনার চেয়ারের ইমেজটি বসাবেন -->
+                        <img src="assets/uploads/model3rbg.png" class="img-fluid slider-img" alt="Chair">
+                    </div>
+                    <!-- Right Side: Content -->
+                    <div class="col-md-7 text-white mt-4 mt-md-0">
+                        <h1 class="display-5 fw-bold mb-4 slider-title">Join now & earn 5% rewards on every order.</h1>
+                        <p class="fs-4 mb-4">
+                            <span class="fw-bold me-2">$340.00</span>
+                            <span class="text-muted text-decoration-line-through fs-5">$460.00</span>
+                        </p>
+                        <div class="d-flex gap-3">
+                            <a href="#" class="btn btn-orange px-4 py-2.5 fw-semibold text-uppercase">
+                                <i class="fa-solid fa-basket-shopping me-2"></i> Buy Now
+                            </a>
+                            <a href="#" class="btn btn-outline-light px-4 py-2.5 fw-semibold text-uppercase">
+                                View Collections
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <div class="carousel-item active">
+            <div class="container-fluid h-100">
+                <div class="row align-items-center h-100 px-md-5">
+                    <!-- Left Side: Product Image & Offer Tag -->
+                    <div class="col-md-5 position-relative text-center text-md-start">
+                        <div class="offer-badge">
+                            <span class="d-block fw-bold fs-5">57%</span>
+                            <span class="d-block text-uppercase small">Offer</span>
+                        </div>
+                        <!-- এখানে আপনার চেয়ারের ইমেজটি বসাবেন -->
+                        <img src="assets/uploads/model2.png" class="img-fluid slider-img" alt="Chair">
+                    </div>
+                    <!-- Right Side: Content -->
+                    <div class="col-md-7 text-white mt-4 mt-md-0">
+                        <h1 class="display-5 fw-bold mb-4 slider-title">Join now & earn 5% rewards on every order.</h1>
+                        <p class="fs-4 mb-4">
+                            <span class="fw-bold me-2">$340.00</span>
+                            <span class="text-muted text-decoration-line-through fs-5">$460.00</span>
+                        </p>
+                        <div class="d-flex gap-3">
+                            <a href="#" class="btn btn-orange px-4 py-2.5 fw-semibold text-uppercase">
+                                <i class="fa-solid fa-basket-shopping me-2"></i> Buy Now
+                            </a>
+                            <a href="#" class="btn btn-outline-light px-4 py-2.5 fw-semibold text-uppercase">
+                                View Collections
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- অন্য স্লাইডগুলো যোগ করতে চাইলে নিচে একই নিয়মে carousel-item যোগ করবেন -->
+    </div>
+
+    <!-- Controls (Next & Previous Arrow Buttons) -->
+    <button class="carousel-control-prev custom-control" type="button" data-bs-target="#customCarousel" data-bs-slide="prev">
+        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+        <span class="visually-hidden">Previous</span>
+    </button>
+    <button class="carousel-control-next custom-control" type="button" data-bs-target="#customCarousel" data-bs-slide="next">
+        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+        <span class="visually-hidden">Next</span>
+    </button>
+</div>
+
+<!-- Bootstrap 5 Bundle JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
