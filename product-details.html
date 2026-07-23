@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Men's Premium Casual Shirt - AmarShop</title>
+
+    <!-- Bootstrap 5 CSS CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+
+    <style>
+        :root {
+            --brand: #198754;
+            --brand-dark: #157347;
+            --text: #1f2937;
+            --muted: #6c757d;
+            --border: #dee2e6;
+            --bg: #f8f9fa;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+        }
+
+        /* Breadcrumb */
+        .breadcrumb-item a {
+            color: var(--muted);
+            text-decoration: none;
+        }
+
+        .breadcrumb-item.active {
+            color: var(--brand);
+            font-weight: 600;
+        }
+
+        /* Main Image & Thumbnails */
+        .main-img-box {
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 20px;
+            text-align:center;
+        }
+
+        .main-img-box img {
+            max-height: 420px;
+            object-fit: contain;
+            width: 100%;
+        }
+
+        .thumb-img {
+            width: 70px;
+            height: 70px;
+            object-fit: cover;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.3s;
+            background: #fff;
+        }
+
+        .thumb-img:hover, .thumb-img.active {
+            border-color: var(--brand);
+            transform: scale(1.05);
+        }
+
+        /* Product Details */
+        .product-details {
+            background: #fff;
+            padding: 30px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+        }
+
+        .product-title {
+            font-size: 1.6rem;
+            font-weight: 700;
+        }
+
+        .price-area .current-price {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--brand);
+        }
+
+        .price-area .old-price {
+            font-size: 1.2rem;
+            color: var(--muted);
+            text-decoration: line-through;
+            margin-left: 10px;
+        }
+
+        /* Color & Size Selector */
+        .btn-check:checked + .btn-outline-success {
+            background-color: var(--brand);
+            color: white;
+        }
+
+        /* Quantity Box */
+        .qty-input {
+            width: 50px;
+            text-align: center;
+            border: 1px solid var(--border);
+        }
+
+        /* Tab Navigation */
+        .nav-tabs .nav-link {
+            color: var(--text);
+            font-weight: 600;
+        }
+
+        .nav-tabs .nav-link.active {
+            color: var(--brand);
+            border-bottom: 3px solid var(--brand);
+        }
+
+        /* Related Product Card */
+        .product-card {
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: #fff;
+            overflow: hidden;
+            transition: 0.3s;
+        }
+
+        .product-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Breadcrumb -->
+    <div class="container my-3">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="#">Home</a></li>
+                <li class="breadcrumb-item"><a href="#">Men's Fashion</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Casual Shirt</li>
+            </ol>
+        </nav>
+    </div>
+
+    <!-- Product Single View Section -->
+    <section class="container my-4">
+        <div class="row g-4">
+            <!-- Left Side: Images -->
+            <div class="col-lg-6">
+                <div class="main-img-box mb-3 text-center">
+                    <img id="featuredImg" src="https://via.placeholder.com/500x500/f8f9fa/374151?text=Shirt+Main" class="img-fluid" alt="Product Image">
+                </div>
+                <!-- Thumbnails -->
+                <div class="d-flex justify-content-center gap-2">
+                    <img src="https://via.placeholder.com/500x500/f8f9fa/374151?text=Shirt+Main" class="thumb-img active" onclick="changeImage(this.src)">
+                    <img src="https://via.placeholder.com/500x500/e9ecef/157347?text=Shirt+Back" class="thumb-img" onclick="changeImage(this.src)">
+                    <img src="https://via.placeholder.com/500x500/dee2e6/000000?text=Shirt+Detail" class="thumb-img" onclick="changeImage(this.src)">
+                </div>
+            </div>
+
+            <!-- Right Side: Details -->
+            <div class="col-lg-6">
+                <div class="product-details shadow-sm">
+                    <span class="badge bg-success mb-2">In Stock</span>
+                    <h1 class="product-title mb-2">Men's Premium Casual Shirt - Dark Green</h1>
+                    
+                    <!-- Rating -->
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="text-warning me-2">
+                            <i class="bi bi-star-fill"></i>
+                            <i class="bi bi-star-fill"></i>
+                            <i class="bi bi-star-fill"></i>
+                            <i class="bi bi-star-fill"></i>
+                            <i class="bi bi-star-half"></i>
+                        </div>
+                        <small class="text-muted">(4.5 Stars / 120 Reviews)</small>
+                    </div>
+
+                    <!-- Price -->
+                    <div class="price-area mb-3">
+                        <span class="current-price">$35.00</span>
+                        <span class="old-price">$45.00</span>
+                        <span class="badge bg-danger ms-2">22% OFF</span>
+                    </div>
+
+                    <p class="text-secondary mb-4">
+                        High-quality 100% breathable cotton shirt. Perfect for casual outings and formal office wear. Soft-touch fabric for long-lasting comfort.
+                    </p>
+
+                    <hr>
+
+                    <!-- Size Selection -->
+                    <div class="mb-3">
+                        <label class="fw-bold mb-2 d-block">Select Size:</label>
+                        <div class="btn-group" role="group">
+                            <input type="radio" class="btn-check" name="size" id="sizeS" autocomplete="off">
+                            <label class="btn btn-outline-success px-3" for="sizeS">S</label>
+
+                            <input type="radio" class="btn-check" name="size" id="sizeM" autocomplete="off" checked>
+                            <label class="btn btn-outline-success px-3" for="sizeM">M</label>
+
+                            <input type="radio" class="btn-check" name="size" id="sizeL" autocomplete="off">
+                            <label class="btn btn-outline-success px-3" for="sizeL">L</label>
+
+                            <input type="radio" class="btn-check" name="size" id="sizeXL" autocomplete="off">
+                            <label class="btn btn-outline-success px-3" for="sizeXL">XL</label>
+                        </div>
+                    </div>
+
+                    <!-- Quantity -->
+                    <div class="mb-4">
+                        <label class="fw-bold mb-2 d-block">Quantity:</label>
+                        <div class="d-flex align-items-center gap-2">
+                            <button class="btn btn-outline-secondary" onclick="updateQty(-1)">-</button>
+                            <input type="text" id="qtyInput" value="1" class="form-control qty-input" readonly>
+                            <button class="btn btn-outline-secondary" onclick="updateQty(1)">+</button>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="d-flex flex-wrap gap-2 mb-4">
+                        <button class="btn btn-success btn-lg flex-grow-1" style="background-color: var(--brand);">
+                            <i class="bi bi-cart-plus me-2"></i>Add to Cart
+                        </button>
+                        <button class="btn btn-dark btn-lg flex-grow-1">
+                            <i class="bi bi-lightning-fill me-1"></i>Buy Now
+                        </button>
+                    </div>
+
+                    <!-- Meta Information -->
+                    <div class="border-top pt-3 fs-7 text-muted">
+                        <p class="mb-1"><strong>SKU:</strong> SHIRT-1029</p>
+                        <p class="mb-0"><strong>Category:</strong> Men's Fashion, Shirts</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Product Description & Review Tabs -->
+    <section class="container my-5">
+        <div class="bg-white p-4 rounded border shadow-sm">
+            <ul class="nav nav-tabs mb-4" id="productTab" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="desc-tab" data-bs-toggle="tab" data-bs-target="#desc-pane" type="button" role="tab">Description</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="reviews-tab" data-bs-toggle="tab" data-bs-target="#reviews-pane" type="button" role="tab">Reviews (120)</button>
+                </li>
+            </ul>
+
+            <div class="tab-content" id="productTabContent">
+                <!-- Description -->
+                <div class="tab-pane fade show active" id="desc-pane" role="tabpanel">
+                    <h5>Product Information</h5>
+                    <p>Upgrade your style with this classic Dark Green Casual Shirt. Crafted with soft cotton fabric, this shirt provides optimum comfort throughout the day. Features a slim-fit design, button-down collar, and full sleeves.</p>
+                    <ul>
+                        <li>Fabric: 100% Cotton</li>
+                        <li>Fit: Slim Fit</li>
+                        <li>Sleeve: Full Sleeve</li>
+                        <li>Care Instructions: Machine wash cold with like colors.</li>
+                    </ul>
+                </div>
+
+                <!-- Reviews -->
+                <div class="tab-pane fade" id="reviews-pane" role="tabpanel">
+                    <div class="d-flex align-items-center mb-3">
+                        <i class="bi bi-person-circle fs-3 text-secondary me-2"></i>
+                        <div>
+                            <h6 class="mb-0">John Doe</h6>
+                            <small class="text-warning"><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i></small>
+                            <p class="text-muted mb-0">Great fitting and comfortable fabric!</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Related Products -->
+    <section class="container my-5">
+        <h3 class="fw-bold mb-4">Related Products</h3>
+        <div class="row row-cols-2 row-cols-md-4 g-3">
+            <div class="col">
+                <div class="product-card p-2 text-center">
+                    <img src="https://via.placeholder.com/200x200/f8f9fa/374151?text=Product+2" class="img-fluid rounded mb-2" alt="Shirt">
+                    <h6>Casual Blue Shirt</h6>
+                    <p class="text-success fw-bold mb-1">$30.00</p>
+                    <button class="btn btn-sm btn-outline-success w-100">View Product</button>
+                </div>
+            </div>
+            <div class="col">
+                <div class="product-card p-2 text-center">
+                    <img src="https://via.placeholder.com/200x200/f8f9fa/374151?text=Product+3" class="img-fluid rounded mb-2" alt="Shirt">
+                    <h6>White Formal Shirt</h6>
+                    <p class="text-success fw-bold mb-1">$40.00</p>
+                    <button class="btn btn-sm btn-outline-success w-100">View Product</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Bootstrap 5 JS & Custom Interactivity JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Image Gallery Switcher
+        function changeImage(src) {
+            document.getElementById('featuredImg').src = src;
+            document.querySelectorAll('.thumb-img').forEach(img => img.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+
+        // Quantity Selector
+        function updateQty(change) {
+            let qtyInput = document.getElementById('qtyInput');
+            let currentQty = parseInt(qtyInput.value);
+            if (currentQty + change >= 1) {
+                qtyInput.value = currentQty + change;
+            }
+        }
+    </script>
+</body>
+
+</html>

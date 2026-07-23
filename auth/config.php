@@ -6,7 +6,7 @@ session_start();
 date_default_timezone_set('Asia/Dhaka');
 
 $host = "localhost";
-$db   = "amarsite_school_notes";
+$db   = "amarshop";
 $user = "root";
 $pass = ""; 
 

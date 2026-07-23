@@ -5,13 +5,12 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Amarshop - Website</title>
-    <!-- Bootstrap 5 CSS CDN  -->
+    
+    <!-- Bootstrap 5 CSS CDN -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!--for Bootstrap Icons  -->
+    <!-- Bootstrap Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
-</head>
 
-<body>
     <style>
         :root {
             --brand: #198754;
@@ -32,6 +31,7 @@
             color: var(--text);
         }
 
+        /* Topbar & Marquee */
         .topbar {
             background: #0d6efd;
             color: #fff;
@@ -59,15 +59,11 @@
         }
 
         @keyframes marquee {
-            from {
-                transform: translateX(0);
-            }
-
-            to {
-                transform: translateX(-100%);
-            }
+            from { transform: translateX(0); }
+            to { transform: translateX(-100%); }
         }
 
+        /* Header */
         .header {
             background: #fff;
             padding: 10px 0;
@@ -189,87 +185,361 @@
             padding: 3px 5px;
         }
 
-        @media (max-width: 768px) {
-            .logo-area img{
-                width: 50px;
-            }
-            .custom-header-row {
-                padding: 0 5px;
-                gap: 3px;
-            }
-
-            .search-area {
-                margin: 0 4px;
-            }
-
-            .input-group-custom {
-            gap: 3px;
+        /* Hero Slider */
+        .sliderCls {
+            max-width: 1000px !important;
+            min-height: 480px;
+            margin: 0 auto;
         }
-            .input-group-custom .form-select-custom {
-                width: 60px;
-                font-size: 8px;
-            }
 
-            
+        /* Category Card */
+        .category-card {
+            border: 1px solid #e9ecef;
+            border-radius: 12px;
+            transition: all 0.3s ease-in-out;
+            background: #fff;
+        }
 
-            .input-group-custom .btn-custom {
-                padding: 0 10px;
-            }
+        .category-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--brand);
+            box-shadow: 0 10px 20px rgba(25, 135, 84, 0.1);
+        }
 
-            .icon-btn {
-                width: 36px;
-                height: 36px;
-            }
+        .category-img-container {
+            position: relative;
+            height: 140px;
+            overflow: hidden;
+            border-radius: 12px 12px 0 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 15px;
+        }
 
+        .category-img-container img {
+            max-height: 100%;
+            max-width: 100%;
+            object-fit: contain;
+        }
+
+        .category-text {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #333;
+            text-decoration: none;
+            transition: 0.3s;
+        }
+
+        .category-card:hover .category-text {
+            color: var(--brand);
+        }
+
+        /* Universal Product Cards */
+        .product-card, .top-deals-card, .high-discount-card, .top-sales-card, .top-review-card {
+            border: 1px solid #e9ecef;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+            background: #fff;
+            overflow: hidden;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .product-card:hover, .top-deals-card:hover, .high-discount-card:hover, .top-sales-card:hover, .top-review-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
+            border-color: #dee2e6;
+        }
+
+        .product-img-container, .top-deals-img-container, .high-discount-img-container, .top-sales-img-container, .top-review-img-container {
+            position: relative;
+            height: 200px;
+            overflow: hidden;
+            background-color: #f8f9fa;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+        }
+
+        .product-img-container img, .top-deals-img-container img, .high-discount-img-container img, .top-sales-img-container img, .top-review-img-container img {
+            max-height: 100%;
+            max-width: 100%;
+            object-fit: contain;
+            transition: transform 0.5s ease;
+        }
+
+        .product-card:hover img, .top-deals-card:hover img, .high-discount-card:hover img, .top-sales-card:hover img, .top-review-card:hover img {
+            transform: scale(1.05);
+        }
+
+        /* Badges */
+        .product-badge {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background-color: var(--brand);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 4px 8px;
+            border-radius: 4px;
+            z-index: 1;
+        }
+
+        .top-deals-badge {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background-color: #dc3545;
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 4px 8px;
+            border-radius: 4px;
+            z-index: 1;
+        }
+
+        .high-discount-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: #f57c00;
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 4px;
+            z-index: 1;
+        }
+
+        .top-sales-badge {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background-color: #28a745;
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 4px 8px;
+            border-radius: 4px;
+            z-index: 1;
+        }
+
+        .top-review-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: #f5c71a;
+            color: #333;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 4px 8px;
+            border-radius: 4px;
+            z-index: 1;
+        }
+
+        /* Card Content Body */
+        .product-card-body, .top-deals-card-body, .high-discount-card-body, .top-sales-card-body, .top-review-card-body {
+            padding: 15px;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .product-category, .top-deals-category, .high-discount-category, .top-sales-category, .top-review-category {
+            font-size: 0.8rem;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 5px;
+        }
+
+        .product-title, .top-deals-title, .high-discount-title, .top-sales-title, .top-review-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #333;
+            text-decoration: none;
+            margin-bottom: 10px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            transition: color 0.3s;
+        }
+
+        .product-title:hover, .top-deals-title:hover, .high-discount-title:hover, .top-sales-title:hover, .top-review-title:hover {
+            color: var(--brand);
+        }
+
+        /* Pricing & Buttons */
+        .price-wrapper, .top-deals-price-wrapper, .high-discount-price-wrapper, .top-sales-price-wrapper, .top-review-price-wrapper {
+            margin-bottom: 15px;
+        }
+
+        .current-price, .top-deals-current-price, .high-discount-current-price, .top-sales-current-price, .top-review-current-price {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--brand);
+            margin-right: 5px;
+        }
+
+        .old-price, .top-deals-old-price, .high-discount-old-price, .top-sales-old-price {
+            font-size: 0.9rem;
+            color: #adb5bd;
+            text-decoration: line-through;
+        }
+
+        .btn-add-cart, .btn-top-deals-add-cart, .btn-high-discount-add-cart, .btn-top-sales-add-cart, .btn-top-review-add-cart {
+            width: 100%;
+            background-color: transparent;
+            color: var(--brand);
+            border: 1px solid var(--brand);
+            font-size: 0.85rem;
+            font-weight: 600;
+            padding: 8px;
+            border-radius: 5px;
+            transition: all 0.3s;
+        }
+
+        .btn-add-cart:hover, .btn-top-deals-add-cart:hover, .btn-high-discount-add-cart:hover, .btn-top-sales-add-cart:hover, .btn-top-review-add-cart:hover {
+            background-color: var(--brand);
+            color: #fff;
+        }
+
+        /* Ratings */
+        .rating-wrapper {
+            margin-bottom: 10px;
+            color: #f5c71a;
+            font-size: 0.9rem;
+        }
+
+        .review-count {
+            color: var(--muted);
+            font-size: 0.8rem;
+            margin-left: 5px;
+        }
+
+        /* Footer */
+        .footer {
+            background-color: #212529;
+            color: #ced4da;
+            font-size: 0.9rem;
+            padding-top: 50px;
+        }
+
+        .footer a {
+            color: #ced4da;
+            text-decoration: none;
+            transition: 0.3s;
+        }
+
+        .footer a:hover {
+            color: #fff;
+            padding-left: 5px;
+        }
+
+        .footer-title {
+            color: #fff;
+            font-weight: 600;
+            font-size: 1.1rem;
+            margin-bottom: 20px;
+            position: relative;
+            padding-bottom: 10px;
+        }
+
+        .footer-title::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            bottom: 0;
+            width: 50px;
+            height: 2px;
+            background-color: var(--brand);
+        }
+
+        .footer-logo img {
+            width: 130px;
+            height: auto;
+            margin-bottom: 15px;
+        }
+
+        .footer-social-icons a {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            margin-right: 8px;
+            color: #fff;
+            transition: 0.3s;
+        }
+
+        .footer-social-icons a:hover {
+            background-color: var(--brand);
+            transform: translateY(-3px);
+            padding-left: 0;
+        }
+
+        .payment-icons img {
+            height: 25px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+            filter: grayscale(100%);
+            transition: 0.3s;
+        }
+
+        .payment-icons img:hover {
+            filter: grayscale(0%);
+        }
+
+        .footer-bottom {
+            background-color: #1a1e21;
+            padding: 15px 0;
+            font-size: 0.85rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* Responsive Breakpoints */
+        @media (max-width: 768px) {
+            .logo-area img { width: 50px; }
+            .custom-header-row { padding: 0 5px; gap: 3px; }
+            .search-area { margin: 0 4px; }
+            .input-group-custom { gap: 3px; }
+            .input-group-custom .form-select-custom { width: 60px; font-size: 8px; }
+            .input-group-custom .btn-custom { padding: 0 10px; }
+            .icon-btn { width: 36px; height: 36px; }
+            .footer-col { margin-bottom: 30px; }
         }
 
         @media (min-width: 768px) {
-            .logo-area img {
-                width: 130px;
-                height: 45px;
-            }
-
-            .input-group-custom .form-select-custom {
-                width: 140px;
-                font-size: 0.82rem;
-            }
-
-            .input-group-custom .form-control-custom {
-                font-size: 0.82rem;
-            }
-
-            .input-group-custom .btn-custom {
-                font-size: 0.85rem;
-                padding: 0 18px;
-            }
-
-            .icon-btn {
-                width: 42px;
-                height: 42px;
-                font-size: 18px;
-            }
-
-            .header {
-                padding: 12px 0;
-            }
+            .logo-area img { width: 130px; height: 45px; }
+            .input-group-custom .form-select-custom { width: 140px; font-size: 0.82rem; }
+            .input-group-custom .form-control-custom { font-size: 0.82rem; }
+            .input-group-custom .btn-custom { font-size: 0.85rem; padding: 0 18px; }
+            .icon-btn { width: 42px; height: 42px; font-size: 18px; }
+            .header { padding: 12px 0; }
         }
 
-        .sliderCls {
-            max-width: 1300px !important;
-            min-height: 480px;
-            margin: auto;
-            margin-left: 250px;
-        }
-
-        @media(max-width:768px) {
-            .sliderCls {
-                margin-left: 0px;
-            }
+        @media (max-width: 575.98px) {
+            .category-img-container { height: 100px; }
+            .category-text { font-size: 0.85rem; }
+            .product-img-container, .top-deals-img-container, .high-discount-img-container, .top-sales-img-container, .top-review-img-container { height: 160px; }
+            .product-title, .top-deals-title, .high-discount-title, .top-sales-title, .top-review-title { font-size: 0.85rem; }
+            .current-price, .top-deals-current-price, .high-discount-current-price, .top-sales-current-price, .top-review-current-price { font-size: 1rem; }
         }
     </style>
+</head>
 
+<body>
+
+    <!-- Topbar & Announcement -->
     <div>
-        <!-- Topbar -->
         <div class="topbar py-1">
             <div class="container d-flex justify-content-between align-items-center">
                 <small>Welcome to Amarshop</small>
@@ -277,7 +547,6 @@
             </div>
         </div>
 
-        <!-- Marquee -->
         <div class="marquee-wrap py-1">
             <div class="marquee">
                 <span>✨ New Arrivals Every Week</span>
@@ -288,27 +557,21 @@
         </div>
     </div>
 
-    <!-- Header (Mobile & Desktop Same Same Row Layout) -->
+    <!-- Header Section -->
     <header class="header bg-white shadow-sm">
         <div class="container-fluid px-2 px-md-3">
             <div class="custom-header-row justify-content-between">
-
-                <!-- 1. Logo + Name -->
+                <!-- Logo -->
                 <div class="logo-area">
                     <a href="#" class="d-flex align-items-center text-decoration-none">
                         <img src="assets/img/logo1.png" class="me-1 me-md-2 rounded" alt="Logo">
-                        <!-- <div class="logo-text">
-                            <h4 class="fw-bold text-success">AmarShop</h4>
-                            <small class="text-muted d-none d-sm-block">Online Shopping</small>
-                        </div> -->
                     </a>
                 </div>
 
-                <!-- 2. Category Dropdown + Search Box + 🔍 Button -->
+                <!-- Search -->
                 <div class="search-area">
                     <form>
                         <div class="input-group-custom">
-                            <!-- Category Select -->
                             <select class="form-select-custom">
                                 <option selected>Category</option>
                                 <option>Electronics</option>
@@ -316,9 +579,7 @@
                                 <option>Mobile</option>
                                 <option>Books</option>
                             </select>
-                            <!-- Search Input -->
                             <input type="text" class="form-control-custom" placeholder="Search...">
-                            <!-- Search Button (icon only on mobile, text on desktop) -->
                             <button class="btn btn-success btn-custom" type="submit">
                                 <i class="bi bi-search d-inline d-md-none"></i>
                                 <span class="d-none d-md-inline">Search</span>
@@ -327,35 +588,28 @@
                     </form>
                 </div>
 
-                <!-- 3. Icons (Cart & User) -->
+                <!-- Action Icons -->
                 <div class="icons-area">
-                    <!-- Cart Icon -->
                     <a href="#" class="icon-btn" title="Cart">
                         <i class="bi bi-cart3"></i>
                         <span class="badge bg-danger rounded-pill">3</span>
                     </a>
-                    <!-- Profile Icon -->
                     <a href="#" class="icon-btn" title="Profile">
                         <i class="bi bi-person"></i>
                     </a>
                 </div>
-
             </div>
         </div>
     </header>
 
-
-    <!-- ================= Navbar / Menu Section Start ================= -->
+    <!-- Navigation Menu -->
     <nav class="navbar navbar-expand-lg bg-white border-bottom py-2">
         <div class="container-fluid px-2 px-md-3">
             <div class="custom-header-row justify-content-between align-items-center w-100">
-
-                <!-- মোবাইল স্ক্রিনের জন্য হ্যামবার্গার বাটন (বাম পাশে) -->
                 <button class="navbar-toggler border-0 p-0 d-lg-none icon-btn" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileMenu" aria-controls="mobileMenu">
                     <i class="bi bi-list fs-4"></i>
                 </button>
 
-                <!-- ডেক্সটপ মেনু (বড় স্ক্রিনে দেখাবে, মোবাইলে হাইড থাকবে) -->
                 <div class="collapse navbar-collapse d-none d-lg-block">
                     <ul class="navbar-nav gap-3 font-weight-medium">
                         <li class="nav-item dropdown">
@@ -398,17 +652,15 @@
                     </ul>
                 </div>
 
-                <!-- ডান পাশের স্পেশাল অফার টেক্সট (মোবাইলেও সুন্দর দেখানোর জন্য টেক্সট ছোট করা হয়েছে) -->
                 <div class="d-flex align-items-center text-danger fw-semibold sm-text-end" style="font-size: 0.88rem; gap: 6px;">
                     <i class="bi bi-lightbulb fs-5 text-pink" style="color: #e91e63;"></i>
                     <span>Special up to 60% Off all item</span>
                 </div>
-
             </div>
         </div>
     </nav>
 
-    <!-- মোবাইল অফক্যানভাস ড্রয়ার (মোবাইলে ক্লিক করলে বাম দিক থেকে আসবে) -->
+    <!-- Offcanvas Mobile Drawer -->
     <div class="offcanvas offcanvas-start" tabindex="-1" id="mobileMenu" aria-labelledby="mobileMenuLabel" style="width: 280px;">
         <div class="offcanvas-header border-bottom">
             <h5 class="offcanvas-title fw-bold text-success" id="mobileMenuLabel">AmarShop Menu</h5>
@@ -464,27 +716,20 @@
             </ul>
         </div>
     </div>
-    <!-- ================= Navbar / Menu Section End ================= -->
 
-
-    <!-- ================= Slider Section Start ================= -->
+    <!-- Hero Slider -->
     <div id="heroCarousel" class="carousel slide carousel-fade shadow-sm my-3" data-bs-ride="carousel">
-
-        <!-- স্লাইডারের ইন্ডিকেটর ফোটাগুলো (ঐচ্ছিক) -->
         <div class="carousel-indicators">
             <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Slide 1"></button>
             <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="1" aria-label="Slide 2"></button>
         </div>
 
         <div class="carousel-inner" style="background-color: #d1d5db;">
-
-            <!-- স্লাইড ১ -->
+            <!-- Slide 1 -->
             <div class="carousel-item active" data-bs-interval="5000">
                 <div class="container-fluid px-2 px-md-5">
-                    <div class="row align-items-center min-vh-50 py-5 py-md-0 sliderCls" style="min-height: 480px;">
-                        <!-- বাম পাশের টেক্সট কন্টেন্ট -->
-                        <div
-                            iv class="col-md-6 order-2 order-md-1 px-4 text-center text-md-start">
+                    <div class="row align-items-center min-vh-50 py-5 py-md-0 sliderCls">
+                        <div class="col-md-6 order-2 order-md-1 px-4 text-center text-md-start">
                             <div class="d-flex align-items-center justify-content-center justify-content-md-start mb-2">
                                 <span class="bg-success text-white px-2 py-1 rounded fs-7 fw-semibold me-2">New</span>
                                 <span class="text-muted fw-bold tracking-wide text-uppercase" style="font-size: 0.85rem;">New Collection</span>
@@ -495,7 +740,6 @@
                                 Show Collection <i class="bi bi-arrow-right"></i>
                             </a>
                         </div>
-                        <!-- ডান পাশের ইমেজ (প্লেসহোল্ডার দিয়ে রাখা হলো, আপনি আপনার ইমেজ বসিয়ে নিবেন) -->
                         <div class="col-md-6 order-1 order-md-2 text-center mb-4 mb-md-0">
                             <img src="assets/uploads/model3rbg.png" class="img-fluid" alt="Fashion Collection" style="max-height: 420px; object-fit: contain;">
                         </div>
@@ -503,17 +747,13 @@
                 </div>
             </div>
 
-            <!-- স্লাইড ২ -->
+            <!-- Slide 2 -->
             <div class="carousel-item" data-bs-interval="5000">
                 <div class="container-fluid px-2 px-md-5">
-                    <div class="row align-items-center min-vh-50 py-5 py-md-0 " style="min-height: 480px;">
-
-                        <!-- পরিবর্তন: order-md-1 এবং order-1 ছবিকে প্রথম ক্রমে রাখবে -->
+                    <div class="row align-items-center min-vh-50 py-5 py-md-0 sliderCls">
                         <div class="col-md-6 order-1 order-md-1 text-center mb-4 mb-md-0">
                             <img src="assets/uploads/model1rbg.png" class="img-fluid" alt="Trending Gadgets" style="max-height: 420px; object-fit: contain;">
                         </div>
-
-                        <!-- পরিবর্তন: order-md-2 এবং order-2 টেক্সটকে দ্বিতীয় ক্রমে রাখবে -->
                         <div class="col-md-6 order-2 order-md-2 px-4 text-center text-md-start">
                             <div class="d-flex align-items-center justify-content-center justify-content-md-start mb-2">
                                 <span class="bg-success text-white px-2 py-1 rounded fs-7 fw-semibold me-2">Hot</span>
@@ -525,14 +765,11 @@
                                 Shop Collection <i class="bi bi-arrow-right"></i>
                             </a>
                         </div>
-
                     </div>
                 </div>
             </div>
-
         </div>
 
-        <!-- স্লাইডার কন্ট্রোল নেভিগেশন বাটন (বাম ও ডান) -->
         <button class="carousel-control-prev d-none d-md-flex" type="button" data-bs-target="#heroCarousel" data-bs-slide="prev">
             <span class="btn btn-success rounded-circle d-flex align-items-center justify-content-center shadow" style="width: 45px; height: 45px; background-color: var(--brand); border: none;">
                 <i class="bi bi-chevron-left fs-5"></i>
@@ -543,103 +780,21 @@
                 <i class="bi bi-chevron-right fs-5"></i>
             </span>
         </button>
-
     </div>
-    <!-- ================= Slider Section End ================= -->
 
-
-
-    <!-- ================= Product Category Grid Start ================= -->
-    <style>
-        /* এই সেকশনের জন্য বিশেষ কিছু স্টাইল */
-        .category-card {
-            border: 1px solid #e9ecef;
-            /* হালকা বর্ডার */
-            border-radius: 12px;
-            /* একটু গোলকার কোণা */
-            transition: all 0.3s ease-in-out;
-            /* অ্যানিমেশন এফেক্ট */
-            background: #fff;
-            /* সাদা ব্যাকগ্রাউন্ড */
-        }
-
-        /* কার্ডের ওপর মাউস নিলে যা হবে */
-        .category-card:hover {
-            transform: translateY(-5px);
-            /* একটু ওপরের দিকে উঠবে */
-            border-color: var(--brand);
-            /* বর্ডার কালার গ্রিন হবে */
-            box-shadow: 0 10px 20px rgba(25, 135, 84, 0.1);
-            /* হালকা শ্যাডো আসবে */
-        }
-
-        .category-img-container {
-            position: relative;
-            height: 140px;
-            /* ইমেজের ফিক্সড হাইট */
-            overflow: hidden;
-            border-radius: 12px 12px 0 0;
-            /* ওপরের কোণাগুলো গোল */
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 15px;
-            /* ইমেজের চারপাশে একটু গ্যাপ */
-        }
-
-        .category-img-container img {
-            max-height: 100%;
-            max-width: 100%;
-            object-fit: contain;
-            /* ইমেজ পুরো এরিয়া জুড়ে থাকবে */
-        }
-
-        .category-text {
-            font-size: 1rem;
-            font-weight: 600;
-            /* একটু মোটা ফন্ট */
-            color: #333;
-            text-decoration: none;
-            transition: 0.3s;
-        }
-
-        .category-card:hover .category-text {
-            color: var(--brand);
-            /* হোভার করলে লেখার কালার গ্রিন হবে */
-        }
-
-        /* মোবাইল স্ক্রিনের জন্য কিছু পরিবর্তন */
-        @media (max-width: 575.98px) {
-            .category-img-container {
-                height: 100px;
-                /* মোবাইলে ইমেজের হাইট কম */
-            }
-
-            .category-text {
-                font-size: 0.85rem;
-                /* মোবাইলে লেখা একটু ছোট */
-            }
-        }
-    </style>
-
+    <!-- Product Category Grid -->
     <div class="container-fluid px-2 px-md-5 my-5">
-        <!-- সেকশন টাইটেল (সেন্টার এলাইন) -->
         <div class="text-center mb-5">
             <h2 class="fw-bold text-dark">Top Categories</h2>
             <p class="text-muted">Explore our wide range of products across different categories</p>
             <div class="d-inline-block bg-success" style="width: 70px; height: 3px;"></div>
         </div>
 
-        <!-- ক্যাটাগরি গ্রিড (৬টি কলামের গ্রিড) -->
-        <!-- 'row-cols-2' মোবাইলে ২টি, 'row-cols-sm-3' ছোট স্ক্রিনে ৩টি, 'row-cols-lg-6' বড় স্ক্রিনে ৬টি কার্ড দেখাবে -->
         <div class="row row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-lg-6 g-3 g-md-4">
-
-            <!-- ক্যাটাগরি ১: Men's Fashion -->
             <div class="col">
                 <a href="#" class="text-decoration-none">
                     <div class="category-card text-center h-100 p-2">
                         <div class="category-img-container">
-                            <!-- ছবির জন্য প্লেসহোল্ডার, আপনি আপনার ইমেজ বসিয়ে নিবেন -->
                             <img src="https://via.placeholder.com/150x150/f8f9fa/374151?text=Men" class="img-fluid" alt="Men's Fashion">
                         </div>
                         <div class="card-body p-2 p-md-3">
@@ -650,7 +805,6 @@
                 </a>
             </div>
 
-            <!-- ক্যাটাগরি ২: Women's Fashion -->
             <div class="col">
                 <a href="#" class="text-decoration-none">
                     <div class="category-card text-center h-100 p-2">
@@ -665,7 +819,6 @@
                 </a>
             </div>
 
-            <!-- ক্যাটাগরি ৩: Electronics -->
             <div class="col">
                 <a href="#" class="text-decoration-none">
                     <div class="category-card text-center h-100 p-2">
@@ -680,7 +833,6 @@
                 </a>
             </div>
 
-            <!-- ক্যাটাগরি ৪: Mobile & Accessories -->
             <div class="col">
                 <a href="#" class="text-decoration-none">
                     <div class="category-card text-center h-100 p-2">
@@ -695,7 +847,6 @@
                 </a>
             </div>
 
-            <!-- ক্যাটাগরি ৫: Home & Life -->
             <div class="col">
                 <a href="#" class="text-decoration-none">
                     <div class="category-card text-center h-100 p-2">
@@ -710,7 +861,6 @@
                 </a>
             </div>
 
-            <!-- ক্যাটাগরি ৬: Beauty & Care -->
             <div class="col">
                 <a href="#" class="text-decoration-none">
                     <div class="category-card text-center h-100 p-2">
@@ -724,177 +874,11 @@
                     </div>
                 </a>
             </div>
-
         </div>
     </div>
-    <!-- ================= Product Category Grid End ================= -->
 
-
-
-    <!-- ================= New Arrivals Section Start ================= -->
-    <style>
-        /* New Arrivals সেকশনের জন্য বিশেষ কিছু স্টাইল */
-        .product-card {
-            border: 1px solid #e9ecef;
-            /* हल्का बर्डर */
-            border-radius: 10px;
-            /* गोलाकार कोने */
-            transition: all 0.3s ease;
-            /* एनीमेशन */
-            background: #fff;
-            overflow: hidden;
-            /* कार्ड के बाहर कुछ न जाए */
-            height: 100%;
-            /* सभी कार्ड एक ही ऊंचाई के हों */
-            display: flex;
-            flex-direction: column;
-            /* कन्टेंट को ऊपर से नीचे सजाएं */
-        }
-
-        /* কার্ডের ওপর মাউস নিলে যা হবে */
-        .product-card:hover {
-            transform: translateY(-5px);
-            /* थोड़ा ऊपर उठेगा */
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
-            /* हल्का शैडो */
-            border-color: #dee2e6;
-        }
-
-        /* প্রোডাক্টের ইমেজের এরিয়া */
-        .product-img-container {
-            position: relative;
-            height: 200px;
-            /* इमेज के लिए फिक्सड ऊंचाई */
-            overflow: hidden;
-            background-color: #f8f9fa;
-            /* इमेज के पीछे हल्का ग्रे बैकग्राउंड */
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 10px;
-        }
-
-        .product-img-container img {
-            max-height: 100%;
-            max-width: 100%;
-            object-fit: contain;
-            /* इमेज सुंदर दिखे, कटे नहीं */
-            transition: transform 0.5s ease;
-        }
-
-        .product-card:hover .product-img-container img {
-            transform: scale(1.05);
-            /* होवर करने पर इमेज थोड़ी बड़ी होगी */
-        }
-
-        /* "New" বা অন্য কোনো ব্যাজ (Badge) */
-        .product-badge {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            background-color: var(--brand);
-            /* ग्रीन कलर */
-            color: #fff;
-            font-size: 0.75rem;
-            font-weight: 600;
-            padding: 4px 8px;
-            border-radius: 4px;
-            z-index: 1;
-        }
-
-        /* কার্ডের নিচের তথ্যের অংশ */
-        .product-card-body {
-            padding: 15px;
-            flex-grow: 1;
-            /* कन्टेंट खाली जगह ले ले */
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            /* ऊपर के टेक्स्ट और नीचे के बटन/प्राइस को अलग करें */
-        }
-
-        .product-category {
-            font-size: 0.8rem;
-            color: var(--muted);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 5px;
-        }
-
-        .product-title {
-            font-size: 0.95rem;
-            font-weight: 600;
-            color: #333;
-            text-decoration: none;
-            margin-bottom: 10px;
-            display: -webkit-box;
-            /* दो लाइन के बाद टेक्स्ट को '...' करें */
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-            transition: color 0.3s;
-        }
-
-        .product-title:hover {
-            color: var(--brand);
-        }
-
-        /* দামের অংশ */
-        .price-wrapper {
-            margin-bottom: 15px;
-        }
-
-        .current-price {
-            font-size: 1.1rem;
-            font-weight: 700;
-            color: var(--brand);
-            margin-right: 5px;
-        }
-
-        .old-price {
-            font-size: 0.9rem;
-            color: #adb5bd;
-            text-decoration: line-through;
-            /* कटे हुए दाम */
-        }
-
-        /* কালেকশন বাটন */
-        .btn-add-cart {
-            width: 100%;
-            background-color: transparent;
-            color: var(--brand);
-            border: 1px solid var(--brand);
-            font-size: 0.85rem;
-            font-weight: 600;
-            padding: 8px;
-            border-radius: 5px;
-            transition: all 0.3s;
-        }
-
-        .btn-add-cart:hover {
-            background-color: var(--brand);
-            color: #fff;
-        }
-
-        /* মোবাইল স্ক্রিনের জন্য অ্যাডজাস্টমেন্ট */
-        @media (max-width: 575.98px) {
-            .product-img-container {
-                height: 160px;
-                /* मोबाइल में इमेज की ऊंचाई कम */
-            }
-
-            .product-title {
-                font-size: 0.85rem;
-            }
-
-            .current-price {
-                font-size: 1rem;
-            }
-        }
-    </style>
-
+    <!-- New Arrivals Section -->
     <div class="container-fluid px-2 px-md-5 my-5">
-        <!-- সেকশন টাইটেল এবং "View All" বাটন -->
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2 class="fw-bold text-dark mb-0">New Arrivals</h2>
             <a href="#" class="text-success text-decoration-none fw-semibold">
@@ -902,20 +886,13 @@
             </a>
         </div>
 
-        <!-- প্রোডাক্ট গ্রিড (৪টি কলাম) -->
-        <!-- 'row-cols-2' মোবাইলে ২টি, 'row-cols-sm-2' ছোট স্ক্রিনে ২টি, 'row-cols-md-3' ট্যাবলেটে ৩টি, 'row-cols-lg-4' বড় স্ক্রিনে ৪টি -->
         <div class="row row-cols-2 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-3 g-md-4">
-
-            <!-- প্রোডাক্ট ১ -->
             <div class="col">
                 <div class="product-card">
-                    <!-- ইমেজ এরিয়া -->
                     <div class="product-img-container">
                         <span class="product-badge">New</span>
-                        <!-- ছবির জন্য প্লেসহোল্ডার, আপনি আপনার ইমেজ বসিয়ে নিবেন -->
                         <img src="https://via.placeholder.com/200x200/f8f9fa/374151?text=Product+1" class="img-fluid" alt="Men's Casual Shirt">
                     </div>
-                    <!-- তথ্যের অংশ -->
                     <div class="product-card-body">
                         <div>
                             <p class="product-category mb-1">Men's Fashion</p>
@@ -934,7 +911,6 @@
                 </div>
             </div>
 
-            <!-- প্রোডাক্ট ২ -->
             <div class="col">
                 <div class="product-card">
                     <div class="product-img-container">
@@ -958,7 +934,6 @@
                 </div>
             </div>
 
-            <!-- প্রোডাক্ট ৩ -->
             <div class="col">
                 <div class="product-card">
                     <div class="product-img-container">
@@ -983,7 +958,6 @@
                 </div>
             </div>
 
-            <!-- প্রোডাক্ট ৪ -->
             <div class="col">
                 <div class="product-card">
                     <div class="product-img-container">
@@ -1006,175 +980,11 @@
                     </div>
                 </div>
             </div>
-
         </div>
     </div>
-    <!-- ================= New Arrivals Section End ================= -->
 
-
-    <!-- ================= Top Deals Section Start ================= -->
-    <style>
-        /* Top Deals সেকশনের জন্য বিশেষ কিছু স্টাইল */
-        .top-deals-card {
-            border: 1px solid #e9ecef;
-            /* हल्का बर्डर */
-            border-radius: 10px;
-            /* गोलाकार कोने */
-            transition: all 0.3s ease;
-            /* एनीमेशन */
-            background: #fff;
-            overflow: hidden;
-            /* कार्ड के बाहर कुछ न जाए */
-            height: 100%;
-            /* सभी कार्ड एक ही ऊंचाई के हों */
-            display: flex;
-            flex-direction: column;
-            /* कन्टेंट को ऊपर से नीचे सजाएं */
-        }
-
-        /* কার্ডের ওপর মাউস নিলে যা হবে */
-        .top-deals-card:hover {
-            transform: translateY(-5px);
-            /* थोड़ा ऊपर उठेगा */
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
-            /* हल्का शैडो */
-            border-color: #dee2e6;
-        }
-
-        /* প্রোডাক্টের ইমেজের এরিয়া */
-        .top-deals-img-container {
-            position: relative;
-            height: 200px;
-            /* इमेज के लिए फिक्सड ऊंचाई */
-            overflow: hidden;
-            background-color: #f8f9fa;
-            /* इमेज के पीछे हल्का ग्रे बैकग्राउंड */
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 10px;
-        }
-
-        .top-deals-img-container img {
-            max-height: 100%;
-            max-width: 100%;
-            object-fit: contain;
-            /* इमेज सुंदर दिखे, कटे नहीं */
-            transition: transform 0.5s ease;
-        }
-
-        .top-deals-card:hover .top-deals-img-container img {
-            transform: scale(1.05);
-            /* होवर करने पर इमेज थोड़ी बड़ी होगी */
-        }
-
-        /* "Hot Deal" বা অন্য কোনো ব্যাজ (Badge) */
-        .top-deals-badge {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            background-color: #dc3545;
-            /* লাল কালার - হট ডিল */
-            color: #fff;
-            font-size: 0.75rem;
-            font-weight: 600;
-            padding: 4px 8px;
-            border-radius: 4px;
-            z-index: 1;
-        }
-
-        /* কার্ডের নিচের তথ্যের অংশ */
-        .top-deals-card-body {
-            padding: 15px;
-            flex-grow: 1;
-            /* कन्टেন্ট खाली जगह ले ले */
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            /* ऊपर के टेक्स्ट और नीचे के बटन/प्राइस को अलग करें */
-        }
-
-        .top-deals-category {
-            font-size: 0.8rem;
-            color: var(--muted);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 5px;
-        }
-
-        .top-deals-title {
-            font-size: 0.95rem;
-            font-weight: 600;
-            color: #333;
-            text-decoration: none;
-            margin-bottom: 10px;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-            transition: color 0.3s;
-        }
-
-        .top-deals-title:hover {
-            color: var(--brand);
-        }
-
-        /* দামের অংশ */
-        .top-deals-price-wrapper {
-            margin-bottom: 15px;
-        }
-
-        .top-deals-current-price {
-            font-size: 1.1rem;
-            font-weight: 700;
-            color: var(--brand);
-            margin-right: 5px;
-        }
-
-        .top-deals-old-price {
-            font-size: 0.9rem;
-            color: #adb5bd;
-            text-decoration: line-through;
-            /* कटे हुए दाम */
-        }
-
-        /* কালেকশন বাটন */
-        .btn-top-deals-add-cart {
-            width: 100%;
-            background-color: transparent;
-            color: var(--brand);
-            border: 1px solid var(--brand);
-            font-size: 0.85rem;
-            font-weight: 600;
-            padding: 8px;
-            border-radius: 5px;
-            transition: all 0.3s;
-        }
-
-        .btn-top-deals-add-cart:hover {
-            background-color: var(--brand);
-            color: #fff;
-        }
-
-        /* মোবাইল স্ক্রিনের জন্য অ্যাডজাস্টমেন্ট */
-        @media (max-width: 575.98px) {
-            .top-deals-img-container {
-                height: 160px;
-                /* मोबाइल में इमेज की ऊंचाई कम */
-            }
-
-            .top-deals-title {
-                font-size: 0.85rem;
-            }
-
-            .top-deals-current-price {
-                font-size: 1rem;
-            }
-        }
-    </style>
-
+    <!-- Top Deals Section -->
     <div class="container-fluid px-2 px-md-5 my-5">
-        <!-- সেকশন টাইটেল এবং "View All" বাটন -->
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2 class="fw-bold text-dark mb-0">Top Deals</h2>
             <a href="#" class="text-success text-decoration-none fw-semibold">
@@ -1182,10 +992,7 @@
             </a>
         </div>
 
-        <!-- প্রোডাক্ট গ্রিড (৪টি কলাম) -->
         <div class="row row-cols-2 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-3 g-md-4">
-
-            <!-- প্রোডাক্ট ১ -->
             <div class="col">
                 <div class="top-deals-card">
                     <div class="top-deals-img-container">
@@ -1210,7 +1017,6 @@
                 </div>
             </div>
 
-            <!-- প্রোডাক্ট ২ -->
             <div class="col">
                 <div class="top-deals-card">
                     <div class="top-deals-img-container">
@@ -1235,7 +1041,6 @@
                 </div>
             </div>
 
-            <!-- প্রোডাক্ট ৩ -->
             <div class="col">
                 <div class="top-deals-card">
                     <div class="top-deals-img-container">
@@ -1260,7 +1065,6 @@
                 </div>
             </div>
 
-            <!-- প্রোডাক্ট ৪ -->
             <div class="col">
                 <div class="top-deals-card">
                     <div class="top-deals-img-container">
@@ -1284,176 +1088,11 @@
                     </div>
                 </div>
             </div>
-
         </div>
     </div>
-    <!-- ================= Top Deals Section End ================= -->
 
-    <!-- ================= High Discount Section Start ================= -->
-    <style>
-        /* High Discount সেকশনের জন্য বিশেষ কিছু স্টাইল */
-        .high-discount-card {
-            border: 1px solid #e9ecef;
-            /* हल्का बर्डर */
-            border-radius: 10px;
-            /* गोलाकार कोने */
-            transition: all 0.3s ease;
-            /* एनीमेशन */
-            background: #fff;
-            overflow: hidden;
-            /* कार्ड के बाहर कुछ न जाए */
-            height: 100%;
-            /* सभी कार्ड एक ही ऊंचाई के हों */
-            display: flex;
-            flex-direction: column;
-            /* कन्टेंट को ऊपर से नीचे सजाएं */
-        }
-
-        /* কার্ডের ওপর মাউস নিলে যা হবে */
-        .high-discount-card:hover {
-            transform: translateY(-5px);
-            /* थोड़ा ऊपर उठेगा */
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
-            /* हल्का शैडो */
-            border-color: #dee2e6;
-        }
-
-        /* প্রোডাক্টের ইমেজের এরিয়া */
-        .high-discount-img-container {
-            position: relative;
-            height: 200px;
-            /* इमेज के लिए फिक्सड ऊंचाई */
-            overflow: hidden;
-            background-color: #f8f9fa;
-            /* इमेज के पीछे हल्का ग्रे बैकग्राउंड */
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 10px;
-        }
-
-        .high-discount-img-container img {
-            max-height: 100%;
-            max-width: 100%;
-            object-fit: contain;
-            /* इमेज सुंदर दिखे, कटे नहीं */
-            transition: transform 0.5s ease;
-        }
-
-        .high-discount-card:hover .high-discount-img-container img {
-            transform: scale(1.05);
-            /* होवर करने पर इमेज थोड़ी बड़ी होगी */
-        }
-
-        /* "Discount" ব্যাজ (Badge) - যেমন: 50% OFF */
-        .high-discount-badge {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            /* ডান পাশে */
-            background-color: #f57c00;
-            /* কমলা কালার - বিশেষ ছাড় */
-            color: #fff;
-            font-size: 0.75rem;
-            font-weight: 700;
-            padding: 4px 10px;
-            border-radius: 4px;
-            z-index: 1;
-        }
-
-        /* কার্ডের নিচের তথ্যের অংশ */
-        .high-discount-card-body {
-            padding: 15px;
-            flex-grow: 1;
-            /* कन्टेंट खाली जगह ले ले */
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            /* ऊपर के टेक्स्ट और नीचे के बटन/प्राइस को अलग करें */
-        }
-
-        .high-discount-category {
-            font-size: 0.8rem;
-            color: var(--muted);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 5px;
-        }
-
-        .high-discount-title {
-            font-size: 0.95rem;
-            font-weight: 600;
-            color: #333;
-            text-decoration: none;
-            margin-bottom: 10px;
-            display: -webkit-box;
-            /* दो लाइन के बाद टेक्स्ट को '...' करें */
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-            transition: color 0.3s;
-        }
-
-        .high-discount-title:hover {
-            color: var(--brand);
-        }
-
-        /* দামের অংশ */
-        .high-discount-price-wrapper {
-            margin-bottom: 15px;
-        }
-
-        .high-discount-current-price {
-            font-size: 1.1rem;
-            font-weight: 700;
-            color: var(--brand);
-            margin-right: 5px;
-        }
-
-        .high-discount-old-price {
-            font-size: 0.9rem;
-            color: #adb5bd;
-            text-decoration: line-through;
-            /* कटे हुए दाम */
-        }
-
-        /* কালেকশন বাটন */
-        .btn-high-discount-add-cart {
-            width: 100%;
-            background-color: transparent;
-            color: var(--brand);
-            border: 1px solid var(--brand);
-            font-size: 0.85rem;
-            font-weight: 600;
-            padding: 8px;
-            border-radius: 5px;
-            transition: all 0.3s;
-        }
-
-        .btn-high-discount-add-cart:hover {
-            background-color: var(--brand);
-            color: #fff;
-        }
-
-        /* মোবাইল স্ক্রিনের জন্য অ্যাডजাস্টমেন্ট */
-        @media (max-width: 575.98px) {
-            .high-discount-img-container {
-                height: 160px;
-                /* मोबाइल में इमेज की ऊंचाई कम */
-            }
-
-            .high-discount-title {
-                font-size: 0.85rem;
-            }
-
-            .high-discount-current-price {
-                font-size: 1rem;
-            }
-        }
-    </style>
-
+    <!-- High Discount Section -->
     <div class="container-fluid px-2 px-md-5 my-5">
-        <!-- সেকশন টাইটেল এবং "View All" বাটন -->
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2 class="fw-bold text-dark mb-0">High Discount Products</h2>
             <a href="#" class="text-success text-decoration-none fw-semibold">
@@ -1461,10 +1100,7 @@
             </a>
         </div>
 
-        <!-- প্রোডাক্ট গ্রিড (৪টি কলাম) -->
         <div class="row row-cols-2 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-3 g-md-4">
-
-            <!-- প্রোডাক্ট ১ -->
             <div class="col">
                 <div class="high-discount-card">
                     <div class="high-discount-img-container">
@@ -1489,7 +1125,6 @@
                 </div>
             </div>
 
-            <!-- প্রোডাক্ট ২ -->
             <div class="col">
                 <div class="high-discount-card">
                     <div class="high-discount-img-container">
@@ -1514,7 +1149,6 @@
                 </div>
             </div>
 
-            <!-- প্রোডাক্ট ৩ -->
             <div class="col">
                 <div class="high-discount-card">
                     <div class="high-discount-img-container">
@@ -1539,7 +1173,6 @@
                 </div>
             </div>
 
-            <!-- প্রোডাক্ট ৪ -->
             <div class="col">
                 <div class="high-discount-card">
                     <div class="high-discount-img-container">
@@ -1563,176 +1196,11 @@
                     </div>
                 </div>
             </div>
-
         </div>
     </div>
-    <!-- ================= High Discount Section End ================= -->
 
-
-    <!-- ================= Top Sales Section Start ================= -->
-    <style>
-        /* Top Sales সেকশনের জন্য বিশেষ কিছু স্টাইল */
-        .top-sales-card {
-            border: 1px solid #e9ecef;
-            /* হালকা বর্ডার */
-            border-radius: 10px;
-            /* গোলাকার কোণা */
-            transition: all 0.3s ease;
-            /* অ্যানিমেশন এফেক্ট */
-            background: #fff;
-            overflow: hidden;
-            /* কার্ডের বাইরে কিছু না যায় */
-            height: 100%;
-            /* সব কার্ড একই উচ্চতার হবে */
-            display: flex;
-            flex-direction: column;
-            /* কন্টেন্ট ওপর থেকে নিচে সাজানো */
-        }
-
-        /* কার্ডের ওপর মাউস নিলে যা হবে */
-        .top-sales-card:hover {
-            transform: translateY(-5px);
-            /* একটু ওপরের দিকে উঠবে */
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
-            /* হালকা শ্যাডো */
-            border-color: #dee2e6;
-        }
-
-        /* প্রোডাক্টের ইমেজের এরিয়া */
-        .top-sales-img-container {
-            position: relative;
-            height: 200px;
-            /* ইমেজের জন্য ফিক্সড উচ্চতা */
-            overflow: hidden;
-            background-color: #f8f9fa;
-            /* ইমেজের পেছনে হালকা ধূসর ব্যাকগ্রাউন্ড */
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 10px;
-        }
-
-        .top-sales-img-container img {
-            max-height: 100%;
-            max-width: 100%;
-            object-fit: contain;
-            /* ইমেজ সুন্দর দেখাবে, কাটবে না */
-            transition: transform 0.5s ease;
-        }
-
-        .top-sales-card:hover .top-sales-img-container img {
-            transform: scale(1.05);
-            /* হোভার করলে ইমেজ একটু বড় হবে */
-        }
-
-        /* "Best Seller" বা অন্য কোনো ব্যাজ (Badge) */
-        .top-sales-badge {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            background-color: #28a745;
-            /* সবুজ কালার - বেস্ট সেলার */
-            color: #fff;
-            font-size: 0.75rem;
-            font-weight: 600;
-            padding: 4px 8px;
-            border-radius: 4px;
-            z-index: 1;
-        }
-
-        /* কার্ডের নিচের তথ্যের অংশ */
-        .top-sales-card-body {
-            padding: 15px;
-            flex-grow: 1;
-            /* কন্টেন্ট খালি জায়গা নিয়ে নেবে */
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            /* ওপরের টেক্সট এবং নিচের বাটন/প্রাইসকে আলাদা করবে */
-        }
-
-        .top-sales-category {
-            font-size: 0.8rem;
-            color: var(--muted);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 5px;
-        }
-
-        .top-sales-title {
-            font-size: 0.95rem;
-            font-weight: 600;
-            color: #333;
-            text-decoration: none;
-            margin-bottom: 10px;
-            display: -webkit-box;
-            /* দুই লাইনের পর টেক্সটকে '...' করবে */
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-            transition: color 0.3s;
-        }
-
-        .top-sales-title:hover {
-            color: var(--brand);
-        }
-
-        /* দামের অংশ */
-        .top-sales-price-wrapper {
-            margin-bottom: 15px;
-        }
-
-        .top-sales-current-price {
-            font-size: 1.1rem;
-            font-weight: 700;
-            color: var(--brand);
-            margin-right: 5px;
-        }
-
-        .top-sales-old-price {
-            font-size: 0.9rem;
-            color: #adb5bd;
-            text-decoration: line-through;
-            /* কাটা দাম */
-        }
-
-        /* কালেকশন বাটন */
-        .btn-top-sales-add-cart {
-            width: 100%;
-            background-color: transparent;
-            color: var(--brand);
-            border: 1px solid var(--brand);
-            font-size: 0.85rem;
-            font-weight: 600;
-            padding: 8px;
-            border-radius: 5px;
-            transition: all 0.3s;
-        }
-
-        .btn-top-sales-add-cart:hover {
-            background-color: var(--brand);
-            color: #fff;
-        }
-
-        /* মোবাইল স্ক্রিনের জন্য অ্যাডজাস্টমেন্ট */
-        @media (max-width: 575.98px) {
-            .top-sales-img-container {
-                height: 160px;
-                /* মোবাইলে ইমেজের উচ্চতা কম */
-            }
-
-            .top-sales-title {
-                font-size: 0.85rem;
-            }
-
-            .top-sales-current-price {
-                font-size: 1rem;
-            }
-        }
-    </style>
-
+    <!-- Top Sales Section -->
     <div class="container-fluid px-2 px-md-5 my-5">
-        <!-- সেকশন টাইটেল এবং "View All" বাটন -->
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2 class="fw-bold text-dark mb-0">Top Sales</h2>
             <a href="#" class="text-success text-decoration-none fw-semibold">
@@ -1740,10 +1208,7 @@
             </a>
         </div>
 
-        <!-- প্রোডাক্ট গ্রিড (৪টি কলাম) -->
         <div class="row row-cols-2 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-3 g-md-4">
-
-            <!-- প্রোডাক্ট ১ -->
             <div class="col">
                 <div class="top-sales-card">
                     <div class="top-sales-img-container">
@@ -1768,7 +1233,6 @@
                 </div>
             </div>
 
-            <!-- প্রোডাক্ট ২ -->
             <div class="col">
                 <div class="top-sales-card">
                     <div class="top-sales-img-container">
@@ -1792,7 +1256,6 @@
                 </div>
             </div>
 
-            <!-- প্রোডাক্ট ৩ -->
             <div class="col">
                 <div class="top-sales-card">
                     <div class="top-sales-img-container">
@@ -1817,7 +1280,6 @@
                 </div>
             </div>
 
-            <!-- প্রোডাক্ট ৪ -->
             <div class="col">
                 <div class="top-sales-card">
                     <div class="top-sales-img-container">
@@ -1840,184 +1302,11 @@
                     </div>
                 </div>
             </div>
-
         </div>
     </div>
-    <!-- ================= Top Sales Section End ================= -->
 
-
-    <!-- ================= Top Review Products Section Start ================= -->
-    <style>
-        /* Top Review Products সেকশনের জন্য বিশেষ কিছু স্টাইল */
-        .top-review-card {
-            border: 1px solid #e9ecef;
-            /* হালকা বর্ডার */
-            border-radius: 10px;
-            /* গোলাকার কোণা */
-            transition: all 0.3s ease;
-            /* অ্যানিমেশন এফেক্ট */
-            background: #fff;
-            overflow: hidden;
-            /* কার্ডের বাইরে কিছু না যায় */
-            height: 100%;
-            /* সব কার্ড একই উচ্চতার হবে */
-            display: flex;
-            flex-direction: column;
-            /* কন্টেন্ট ওপর থেকে নিচে সাজানো */
-        }
-
-        /* কার্ডের ওপর মাউস নিলে যা হবে */
-        .top-review-card:hover {
-            transform: translateY(-5px);
-            /* একটু ওপরের দিকে উঠবে */
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
-            /* হালকা শ্যাডো */
-            border-color: #dee2e6;
-        }
-
-        /* প্রোডাক্টের ইমেজের এরিয়া */
-        .top-review-img-container {
-            position: relative;
-            height: 200px;
-            /* ইমেজের জন্য ফিক্সড উচ্চতা */
-            overflow: hidden;
-            background-color: #f8f9fa;
-            /* ইমেজের পেছনে হালকা ধূসর ব্যাকগ্রাউন্ড */
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 10px;
-        }
-
-        .top-review-img-container img {
-            max-height: 100%;
-            max-width: 100%;
-            object-fit: contain;
-            /* ইমেজ সুন্দর দেখাবে, কাটবে না */
-            transition: transform 0.5s ease;
-        }
-
-        .top-review-card:hover .top-review-img-container img {
-            transform: scale(1.05);
-            /* হোভার করলে ইমেজ একটু বড় হবে */
-        }
-
-        /* "Top Rated" বা অন্য কোনো ব্যাজ (Badge) */
-        .top-review-badge {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            /* ডান পাশে */
-            background-color: #f5c71a;
-            /* সোনালী কালার - টপ রেটেড */
-            color: #333;
-            font-size: 0.75rem;
-            font-weight: 600;
-            padding: 4px 8px;
-            border-radius: 4px;
-            z-index: 1;
-        }
-
-        /* কার্ডের নিচের তথ্যের অংশ */
-        .top-review-card-body {
-            padding: 15px;
-            flex-grow: 1;
-            /* কন্টেন্ট খালি জায়গা নিয়ে নেবে */
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            /* ওপরের টেক্সট এবং নিচের বাটন/প্রাইসকে আলাদা করবে */
-        }
-
-        .top-review-category {
-            font-size: 0.8rem;
-            color: var(--muted);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 5px;
-        }
-
-        .top-review-title {
-            font-size: 0.95rem;
-            font-weight: 600;
-            color: #333;
-            text-decoration: none;
-            margin-bottom: 5px;
-            display: -webkit-box;
-            /* দুই লাইনের পর টেক্সটকে '...' করবে */
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-            transition: color 0.3s;
-        }
-
-        .top-review-title:hover {
-            color: var(--brand);
-        }
-
-        /* রেটিং এবং রিভিউর অংশ */
-        .rating-wrapper {
-            margin-bottom: 10px;
-            color: #f5c71a;
-            /* সোনালী কালার - স্টার */
-            font-size: 0.9rem;
-        }
-
-        .review-count {
-            color: var(--muted);
-            font-size: 0.8rem;
-            margin-left: 5px;
-        }
-
-        /* দামের অংশ */
-        .top-review-price-wrapper {
-            margin-bottom: 15px;
-        }
-
-        .top-review-current-price {
-            font-size: 1.1rem;
-            font-weight: 700;
-            color: var(--brand);
-            margin-right: 5px;
-        }
-
-        /* কালেকশন বাটন */
-        .btn-top-review-add-cart {
-            width: 100%;
-            background-color: transparent;
-            color: var(--brand);
-            border: 1px solid var(--brand);
-            font-size: 0.85rem;
-            font-weight: 600;
-            padding: 8px;
-            border-radius: 5px;
-            transition: all 0.3s;
-        }
-
-        .btn-top-review-add-cart:hover {
-            background-color: var(--brand);
-            color: #fff;
-        }
-
-        /* মোবাইল স্ক্রিনের জন্য অ্যাডজাস্টমেন্ট */
-        @media (max-width: 575.98px) {
-            .top-review-img-container {
-                height: 160px;
-                /* মোবাইলে ইমেজের উচ্চতা কম */
-            }
-
-            .top-review-title {
-                font-size: 0.85rem;
-            }
-
-            .top-review-current-price {
-                font-size: 1rem;
-            }
-        }
-    </style>
-
+    <!-- Top Review Products Section -->
     <div class="container-fluid px-2 px-md-5 my-5">
-        <!-- সেকশন টাইটেল এবং "View All" বাটন -->
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2 class="fw-bold text-dark mb-0">Top Rated Products</h2>
             <a href="#" class="text-success text-decoration-none fw-semibold">
@@ -2025,10 +1314,7 @@
             </a>
         </div>
 
-        <!-- প্রোডাক্ট গ্রিড (৪টি কলাম) -->
         <div class="row row-cols-2 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-3 g-md-4">
-
-            <!-- প্রোডাক্ট ১ -->
             <div class="col">
                 <div class="top-review-card">
                     <div class="top-review-img-container">
@@ -2060,7 +1346,6 @@
                 </div>
             </div>
 
-            <!-- প্রোডাক্ট ২ -->
             <div class="col">
                 <div class="top-review-card">
                     <div class="top-review-img-container">
@@ -2092,7 +1377,6 @@
                 </div>
             </div>
 
-            <!-- প্রোডাক্ট ৩ -->
             <div class="col">
                 <div class="top-review-card">
                     <div class="top-review-img-container">
@@ -2124,7 +1408,6 @@
                 </div>
             </div>
 
-            <!-- প্রোডাক্ট ৪ -->
             <div class="col">
                 <div class="top-review-card">
                     <div class="top-review-img-container">
@@ -2155,126 +1438,15 @@
                     </div>
                 </div>
             </div>
-
         </div>
     </div>
-    <!-- ================= Top Review Products Section End ================= -->
 
-
-
-    <!-- ================= Footer Section Start ================= -->
-    <style>
-        /* ফুটারের জন্য কাস্টম স্টাইল */
-        .footer {
-            background-color: #212529;
-            /* ডার্ক ব্যাকগ্রাউন্ড */
-            color: #ced4da;
-            /* হালকা টেক্সট কালার */
-            font-size: 0.9rem;
-            padding-top: 50px;
-        }
-
-        .footer a {
-            color: #ced4da;
-            /* লিংকের ডিফল্ট কালার */
-            text-decoration: none;
-            transition: 0.3s;
-        }
-
-        .footer a:hover {
-            color: #fff;
-            /* হোভার করলে সাদা হবে */
-            padding-left: 5px;
-            /* একটু ডানদিকে সরবে */
-        }
-
-        .footer-title {
-            color: #fff;
-            font-weight: 600;
-            font-size: 1.1rem;
-            margin-bottom: 20px;
-            position: relative;
-            padding-bottom: 10px;
-        }
-
-        /* টাইটেলের নিচে ছোট গ্রিন দাগ */
-        .footer-title::after {
-            content: '';
-            position: absolute;
-            left: 0;
-            bottom: 0;
-            width: 50px;
-            height: 2px;
-            background-color: var(--brand);
-            /* গ্রিন কালার */
-        }
-
-        .footer-logo img {
-            width: 130px;
-            height: auto;
-            margin-bottom: 15px;
-        }
-
-        .footer-social-icons a {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 36px;
-            height: 36px;
-            background-color: rgba(255, 255, 255, 0.1);
-            border-radius: 50%;
-            margin-right: 8px;
-            color: #fff;
-            transition: 0.3s;
-        }
-
-        .footer-social-icons a:hover {
-            background-color: var(--brand);
-            /* হোভার করলে গ্রিন হবে */
-            transform: translateY(-3px);
-            padding-left: 0;
-            /* ডিফল্ট লিংকের এফেক্ট সরানোর জন্য */
-        }
-
-        /* পেমেন্ট মেথড আইকন */
-        .payment-icons img {
-            height: 25px;
-            margin-right: 10px;
-            margin-bottom: 10px;
-            filter: grayscale(100%);
-            /* ডিফল্ট ধূসর */
-            transition: 0.3s;
-        }
-
-        .payment-icons img:hover {
-            filter: grayscale(0%);
-            /* হোভার করলে কালার হবে */
-        }
-
-        .footer-bottom {
-            background-color: #1a1e21;
-            /* আরও ডার্ক */
-            padding: 15px 0;
-            font-size: 0.85rem;
-            border-top: 1px solid rgba(255, 255, 255, 0.05);
-        }
-
-        @media (max-width: 767.98px) {
-            .footer-col {
-                margin-bottom: 30px;
-                /* মোবাইলে কলামের মাঝে গ্যাপ */
-            }
-        }
-    </style>
-
+    <!-- Footer Section -->
     <footer class="footer mt-5">
         <div class="container-fluid px-2 px-md-5">
             <div class="row footer-col">
-
-                <!-- কলাম ১: লোগো এবং পরিচিতি -->
                 <div class="col-md-6 col-lg-4 mb-4 mb-lg-0 pr-lg-5">
                     <div class="footer-logo">
-                        <!-- ছবিতে ব্যবহৃত লোগোর প্লেসহোল্ডার -->
                         <img src="assets/img/logo1.png" alt="AmarShop Logo" class="rounded bg-white p-1">
                     </div>
                     <p class="mb-3">AmarShop is your one-stop online shop for the best quality products at affordable prices. Experience fast delivery and great customer support.</p>
@@ -2286,7 +1458,6 @@
                     </div>
                 </div>
 
-                <!-- কলাম ২: কুইক লিংক -->
                 <div class="col-6 col-md-3 col-lg-2 mb-4 mb-lg-0">
                     <h5 class="footer-title">Quick Links</h5>
                     <ul class="list-unstyled">
@@ -2299,7 +1470,6 @@
                     </ul>
                 </div>
 
-                <!-- কলাম ৩: কাস্টমার সার্ভিস -->
                 <div class="col-6 col-md-3 col-lg-2 mb-4 mb-lg-0">
                     <h5 class="footer-title">Customer Care</h5>
                     <ul class="list-unstyled">
@@ -2312,7 +1482,6 @@
                     </ul>
                 </div>
 
-                <!-- কলাম ৪: যোগাযোগ এবং পেমেন্ট -->
                 <div class="col-md-6 col-lg-4">
                     <h5 class="footer-title">Contact & Payment</h5>
                     <ul class="list-unstyled text-light mb-3">
@@ -2330,7 +1499,6 @@
                         </li>
                     </ul>
                     <div class="payment-icons pt-2">
-                        <!-- পেমেন্ট মেথড আইকনের প্লেসহোল্ডার -->
                         <img src="https://via.placeholder.com/50x25/ffffff/000000?text=Bkash" alt="Bkash">
                         <img src="https://via.placeholder.com/50x25/ffffff/000000?text=Nagad" alt="Nagad">
                         <img src="https://via.placeholder.com/50x25/ffffff/000000?text=Rocket" alt="Rocket">
@@ -2339,11 +1507,9 @@
                         <img src="https://via.placeholder.com/70x25/ffffff/000000?text=COD" alt="Cash on Delivery">
                     </div>
                 </div>
-
             </div>
         </div>
 
-        <!-- ফুটার বটম: কপিরাইট এবং ক্রেডিট -->
         <div class="footer-bottom mt-4">
             <div class="container-fluid px-2 px-md-5">
                 <div class="row align-items-center">
@@ -2357,9 +1523,8 @@
             </div>
         </div>
     </footer>
-    <!-- ================= Footer Section End ================= -->
 
-    <!-- সঠিক Bootstrap 5 JS Bundle CDN লিংক -->
+    <!-- Bootstrap 5 JS Bundle CDN -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 
