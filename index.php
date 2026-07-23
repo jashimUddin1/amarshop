@@ -5,7 +5,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Amarshop - Website</title>
-    
+
     <!-- Bootstrap 5 CSS CDN -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
@@ -59,8 +59,13 @@
         }
 
         @keyframes marquee {
-            from { transform: translateX(0); }
-            to { transform: translateX(-100%); }
+            from {
+                transform: translateX(0);
+            }
+
+            to {
+                transform: translateX(-100%);
+            }
         }
 
         /* Header */
@@ -236,7 +241,11 @@
         }
 
         /* Universal Product Cards */
-        .product-card, .top-deals-card, .high-discount-card, .top-sales-card, .top-review-card {
+        .product-card,
+        .top-deals-card,
+        .high-discount-card,
+        .top-sales-card,
+        .top-review-card {
             border: 1px solid #e9ecef;
             border-radius: 10px;
             transition: all 0.3s ease;
@@ -247,13 +256,21 @@
             flex-direction: column;
         }
 
-        .product-card:hover, .top-deals-card:hover, .high-discount-card:hover, .top-sales-card:hover, .top-review-card:hover {
+        .product-card:hover,
+        .top-deals-card:hover,
+        .high-discount-card:hover,
+        .top-sales-card:hover,
+        .top-review-card:hover {
             transform: translateY(-5px);
             box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
             border-color: #dee2e6;
         }
 
-        .product-img-container, .top-deals-img-container, .high-discount-img-container, .top-sales-img-container, .top-review-img-container {
+        .product-img-container,
+        .top-deals-img-container,
+        .high-discount-img-container,
+        .top-sales-img-container,
+        .top-review-img-container {
             position: relative;
             height: 200px;
             overflow: hidden;
@@ -264,14 +281,22 @@
             padding: 10px;
         }
 
-        .product-img-container img, .top-deals-img-container img, .high-discount-img-container img, .top-sales-img-container img, .top-review-img-container img {
+        .product-img-container img,
+        .top-deals-img-container img,
+        .high-discount-img-container img,
+        .top-sales-img-container img,
+        .top-review-img-container img {
             max-height: 100%;
             max-width: 100%;
             object-fit: contain;
             transition: transform 0.5s ease;
         }
 
-        .product-card:hover img, .top-deals-card:hover img, .high-discount-card:hover img, .top-sales-card:hover img, .top-review-card:hover img {
+        .product-card:hover img,
+        .top-deals-card:hover img,
+        .high-discount-card:hover img,
+        .top-sales-card:hover img,
+        .top-review-card:hover img {
             transform: scale(1.05);
         }
 
@@ -342,7 +367,11 @@
         }
 
         /* Card Content Body */
-        .product-card-body, .top-deals-card-body, .high-discount-card-body, .top-sales-card-body, .top-review-card-body {
+        .product-card-body,
+        .top-deals-card-body,
+        .high-discount-card-body,
+        .top-sales-card-body,
+        .top-review-card-body {
             padding: 15px;
             flex-grow: 1;
             display: flex;
@@ -350,7 +379,11 @@
             justify-content: space-between;
         }
 
-        .product-category, .top-deals-category, .high-discount-category, .top-sales-category, .top-review-category {
+        .product-category,
+        .top-deals-category,
+        .high-discount-category,
+        .top-sales-category,
+        .top-review-category {
             font-size: 0.8rem;
             color: var(--muted);
             text-transform: uppercase;
@@ -358,42 +391,66 @@
             margin-bottom: 5px;
         }
 
-        .product-title, .top-deals-title, .high-discount-title, .top-sales-title, .top-review-title {
+        .product-title,
+        .top-deals-title,
+        .high-discount-title,
+        .top-sales-title,
+        .top-review-title {
             font-size: 0.95rem;
             font-weight: 600;
             color: #333;
             text-decoration: none;
             margin-bottom: 10px;
             display: -webkit-box;
+            line-clamp: 2;
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
             transition: color 0.3s;
         }
 
-        .product-title:hover, .top-deals-title:hover, .high-discount-title:hover, .top-sales-title:hover, .top-review-title:hover {
+        .product-title:hover,
+        .top-deals-title:hover,
+        .high-discount-title:hover,
+        .top-sales-title:hover,
+        .top-review-title:hover {
             color: var(--brand);
         }
 
         /* Pricing & Buttons */
-        .price-wrapper, .top-deals-price-wrapper, .high-discount-price-wrapper, .top-sales-price-wrapper, .top-review-price-wrapper {
+        .price-wrapper,
+        .top-deals-price-wrapper,
+        .high-discount-price-wrapper,
+        .top-sales-price-wrapper,
+        .top-review-price-wrapper {
             margin-bottom: 15px;
         }
 
-        .current-price, .top-deals-current-price, .high-discount-current-price, .top-sales-current-price, .top-review-current-price {
+        .current-price,
+        .top-deals-current-price,
+        .high-discount-current-price,
+        .top-sales-current-price,
+        .top-review-current-price {
             font-size: 1.1rem;
             font-weight: 700;
             color: var(--brand);
             margin-right: 5px;
         }
 
-        .old-price, .top-deals-old-price, .high-discount-old-price, .top-sales-old-price {
+        .old-price,
+        .top-deals-old-price,
+        .high-discount-old-price,
+        .top-sales-old-price {
             font-size: 0.9rem;
             color: #adb5bd;
             text-decoration: line-through;
         }
 
-        .btn-add-cart, .btn-top-deals-add-cart, .btn-high-discount-add-cart, .btn-top-sales-add-cart, .btn-top-review-add-cart {
+        .btn-add-cart,
+        .btn-top-deals-add-cart,
+        .btn-high-discount-add-cart,
+        .btn-top-sales-add-cart,
+        .btn-top-review-add-cart {
             width: 100%;
             background-color: transparent;
             color: var(--brand);
@@ -405,7 +462,11 @@
             transition: all 0.3s;
         }
 
-        .btn-add-cart:hover, .btn-top-deals-add-cart:hover, .btn-high-discount-add-cart:hover, .btn-top-sales-add-cart:hover, .btn-top-review-add-cart:hover {
+        .btn-add-cart:hover,
+        .btn-top-deals-add-cart:hover,
+        .btn-high-discount-add-cart:hover,
+        .btn-top-sales-add-cart:hover,
+        .btn-top-review-add-cart:hover {
             background-color: var(--brand);
             color: #fff;
         }
@@ -507,31 +568,124 @@
 
         /* Responsive Breakpoints */
         @media (max-width: 768px) {
-            .logo-area img { width: 50px; }
-            .custom-header-row { padding: 0 5px; gap: 3px; }
-            .search-area { margin: 0 4px; }
-            .input-group-custom { gap: 3px; }
-            .input-group-custom .form-select-custom { width: 60px; font-size: 8px; }
-            .input-group-custom .btn-custom { padding: 0 10px; }
-            .icon-btn { width: 36px; height: 36px; }
-            .footer-col { margin-bottom: 30px; }
+            .logo-area img {
+                width: 50px;
+            }
+
+            .custom-header-row {
+                padding: 0 5px;
+                gap: 3px;
+            }
+
+            .search-area {
+                margin: 0 4px;
+            }
+
+            .input-group-custom {
+                gap: 3px;
+            }
+
+            .input-group-custom .form-select-custom {
+                width: 60px;
+                font-size: 8px;
+            }
+
+            .input-group-custom .btn-custom {
+                padding: 0 10px;
+            }
+
+            .icon-btn {
+                width: 36px;
+                height: 36px;
+            }
+
+            .footer-col {
+                margin-bottom: 30px;
+            }
         }
 
         @media (min-width: 768px) {
-            .logo-area img { width: 130px; height: 45px; }
-            .input-group-custom .form-select-custom { width: 140px; font-size: 0.82rem; }
-            .input-group-custom .form-control-custom { font-size: 0.82rem; }
-            .input-group-custom .btn-custom { font-size: 0.85rem; padding: 0 18px; }
-            .icon-btn { width: 42px; height: 42px; font-size: 18px; }
-            .header { padding: 12px 0; }
+            .logo-area img {
+                width: 130px;
+                height: 45px;
+            }
+
+            .input-group-custom .form-select-custom {
+                width: 140px;
+                font-size: 0.82rem;
+            }
+
+            .input-group-custom .form-control-custom {
+                font-size: 0.82rem;
+            }
+
+            .input-group-custom .btn-custom {
+                font-size: 0.85rem;
+                padding: 0 18px;
+            }
+
+            .icon-btn {
+                width: 42px;
+                height: 42px;
+                font-size: 18px;
+            }
+
+            .header {
+                padding: 12px 0;
+            }
         }
 
         @media (max-width: 575.98px) {
-            .category-img-container { height: 100px; }
-            .category-text { font-size: 0.85rem; }
-            .product-img-container, .top-deals-img-container, .high-discount-img-container, .top-sales-img-container, .top-review-img-container { height: 160px; }
-            .product-title, .top-deals-title, .high-discount-title, .top-sales-title, .top-review-title { font-size: 0.85rem; }
-            .current-price, .top-deals-current-price, .high-discount-current-price, .top-sales-current-price, .top-review-current-price { font-size: 1rem; }
+            .category-img-container {
+                height: 100px;
+            }
+
+            .category-text {
+                font-size: 0.85rem;
+            }
+
+            .product-img-container,
+            .top-deals-img-container,
+            .high-discount-img-container,
+            .top-sales-img-container,
+            .top-review-img-container {
+                height: 160px;
+            }
+
+            .product-title,
+            .top-deals-title,
+            .high-discount-title,
+            .top-sales-title,
+            .top-review-title {
+                font-size: 0.85rem;
+            }
+
+            .current-price,
+            .top-deals-current-price,
+            .high-discount-current-price,
+            .top-sales-current-price,
+            .top-review-current-price {
+                font-size: 1rem;
+            }
+        }
+
+        /* Quick View Button Style */
+        .btn-quick-view {
+            width: 100%;
+            background-color: #f8f9fa;
+            color: var(--text);
+            border: 1px solid var(--border);
+            font-size: 0.85rem;
+            font-weight: 600;
+            padding: 8px;
+            border-radius: 5px;
+            transition: all 0.3s;
+        }
+
+        .btn-quick-view:hover {
+            background-color: #e9ecef;
+            border-color: #ced4da;
+            color: #000;
         }
     </style>
 </head>
@@ -543,7 +697,7 @@
         <div class="topbar py-1">
             <div class="container d-flex justify-content-between align-items-center">
                 <small>Welcome to Amarshop</small>
-                <small>Free delivery on orders over $50</small>
+                <small>Free delivery on orders over ৳2000</small>
             </div>
         </div>
 
@@ -574,10 +728,10 @@
                         <div class="input-group-custom">
                             <select class="form-select-custom">
                                 <option selected>Category</option>
-                                <option>Electronics</option>
-                                <option>Fashion</option>
-                                <option>Mobile</option>
-                                <option>Books</option>
+                                <option>Shirt</option>
+                                <option>Katua</option>
+                                <option>T-Shirt</option>
+                                <option>Pant</option>
                             </select>
                             <input type="text" class="form-control-custom" placeholder="Search...">
                             <button class="btn btn-success btn-custom" type="submit">
@@ -602,8 +756,8 @@
         </div>
     </header>
 
-    <!-- Navigation Menu -->
-    <nav class="navbar navbar-expand-lg bg-white border-bottom py-2">
+    <!-- Navigation Menu menu ar kaj pore dhorbo tai comment kora--> 
+    <!-- <nav class="navbar navbar-expand-lg bg-white border-bottom py-2">
         <div class="container-fluid px-2 px-md-3">
             <div class="custom-header-row justify-content-between align-items-center w-100">
                 <button class="navbar-toggler border-0 p-0 d-lg-none icon-btn" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileMenu" aria-controls="mobileMenu">
@@ -658,7 +812,7 @@
                 </div>
             </div>
         </div>
-    </nav>
+    </nav> -->
 
     <!-- Offcanvas Mobile Drawer -->
     <div class="offcanvas offcanvas-start" tabindex="-1" id="mobileMenu" aria-labelledby="mobileMenuLabel" style="width: 280px;">
@@ -903,9 +1057,15 @@
                                 <span class="current-price">$35.00</span>
                                 <span class="old-price">$45.00</span>
                             </div>
+                            <div class="d-flex">
+            <a href="product-details.html" class="btn btn-quick-view" title="Quick View">
+    <i class="bi bi-eye me-1"></i> View
+</a>&nbsp;
                             <button class="btn btn-add-cart">
                                 <i class="bi bi-cart-plus me-1"></i> Add to Cart
                             </button>
+                            </div>
+                            
                         </div>
                     </div>
                 </div>
