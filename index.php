@@ -1,3 +1,31 @@
+<?php //index.php main page - main frontend
+require_once('auth/config.php');
+/**
+ * @param \PDO $pdo
+ * @param string $collection_name
+ */
+
+function get_products_by_collection($pdo, $collection_name, $limit = 12)
+{
+    try {
+        $stmt = $pdo->prepare("SELECT * FROM products WHERE collection_name = :collection ORDER BY id DESC LIMIT :limit");
+
+        $stmt->bindValue(':collection', $collection_name, PDO::PARAM_STR);
+        $stmt->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
+        $stmt->execute();
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        return [];
+    }
+}
+
+$new_arrivals  = get_products_by_collection($pdo, 'new_arrivals');
+$top_deals     = get_products_by_collection($pdo, 'top_deals');
+$high_discount = get_products_by_collection($pdo, 'high_discount');
+$top_sales     = get_products_by_collection($pdo, 'top_sales');
+$top_rated     = get_products_by_collection($pdo, 'top_rated');
+?>
 <!doctype html>
 <html lang="en">
 
@@ -10,6 +38,8 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <!-- Swiper CSS CDN -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
 
     <style>
         :root {
@@ -756,7 +786,7 @@
         </div>
     </header>
 
-    <!-- Navigation Menu menu ar kaj pore dhorbo tai comment kora--> 
+    <!-- Navigation Menu menu ar kaj pore dhorbo tai comment kora-->
     <!-- <nav class="navbar navbar-expand-lg bg-white border-bottom py-2">
         <div class="container-fluid px-2 px-md-3">
             <div class="custom-header-row justify-content-between align-items-center w-100">
@@ -937,7 +967,7 @@
     </div>
 
     <!-- Product Category Grid -->
-    <div class="container-fluid px-2 px-md-5 my-5">
+    <!-- <div class="container-fluid px-2 px-md-5 my-5">
         <div class="text-center mb-5">
             <h2 class="fw-bold text-dark">Top Categories</h2>
             <p class="text-muted">Explore our wide range of products across different categories</p>
@@ -1029,117 +1059,56 @@
                 </a>
             </div>
         </div>
-    </div>
+    </div> -->
 
     <!-- New Arrivals Section -->
     <div class="container-fluid px-2 px-md-5 my-5">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2 class="fw-bold text-dark mb-0">New Arrivals</h2>
-            <a href="#" class="text-success text-decoration-none fw-semibold">
-                View All <i class="bi bi-arrow-right fs-7 ms-1"></i>
+            <a href="collection.php?name=new_arrivals" class="btn btn-success text-decoration-none">
+                View All
             </a>
         </div>
 
         <div class="row row-cols-2 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-3 g-md-4">
-            <div class="col">
-                <div class="product-card">
-                    <div class="product-img-container">
-                        <span class="product-badge">New</span>
-                        <img src="https://via.placeholder.com/200x200/f8f9fa/374151?text=Product+1" class="img-fluid" alt="Men's Casual Shirt">
-                    </div>
-                    <div class="product-card-body">
-                        <div>
-                            <p class="product-category mb-1">Men's Fashion</p>
-                            <a href="#" class="product-title">Men's Premium Casual Shirt - Dark Green</a>
-                        </div>
-                        <div>
-                            <div class="price-wrapper mb-2">
-                                <span class="current-price">$35.00</span>
-                                <span class="old-price">$45.00</span>
+            <?php if (!empty($new_arrivals)): ?>
+                <?php foreach ($new_arrivals as $product): ?>
+                    <div class="col">
+                        <div class="product-card">
+                            <div class="product-img-container">
+                                <span class="product-badge">New</span>
+                                <img src="<?= base_url('uploads/' . ($product['main_img'] ?: 'placeholder.jpg')); ?>" class="img-fluid" alt="<?= htmlspecialchars($product['name']); ?>">
                             </div>
-                            <div class="d-flex">
-            <a href="product-details.html" class="btn btn-quick-view" title="Quick View">
-    <i class="bi bi-eye me-1"></i> View
-</a>&nbsp;
-                            <button class="btn btn-add-cart">
-                                <i class="bi bi-cart-plus me-1"></i> Add to Cart
-                            </button>
-                            </div>
-                            
-                        </div>
-                    </div>
-                </div>
-            </div>
+                            <div class="product-card-body">
+                                <div>
+                                    <p class="product-category mb-1"><?= htmlspecialchars($product['category_name'] ?: 'General'); ?></p>
+                                    <a href="product-details.php?id=<?= $product['id']; ?>" class="product-title"><?= htmlspecialchars($product['name']); ?></a>
+                                </div>
+                                <div>
+                                    <div class="price-wrapper mb-2">
+                                        <span class="current-price">৳<?= number_format($product['actual_price'] ?? $product['sell_price'], 2); ?></span>
+                                        <?php if (!empty($product['discount_percent']) && $product['discount_percent'] > 0): ?>
+                                            <span class="old-price">৳<?= number_format($product['sell_price'], 2); ?></span>
+                                        <?php endif; ?>
+                                    </div>
+                                    <div class="d-flex">
+                                        <a href="product_details.php?product_id=<?=  $product['id'] ?>" class="btn btn-quick-view" title="Quick View">
+                                            <i class="bi bi-eye me-1"></i> View
+                                        </a>&nbsp;
+                                        <button class="btn btn-add-cart">
+                                            <i class="bi bi-cart-plus me-1"></i> Add to Cart
+                                        </button>
+                                    </div>
 
-            <div class="col">
-                <div class="product-card">
-                    <div class="product-img-container">
-                        <span class="product-badge">New</span>
-                        <img src="https://via.placeholder.com/200x200/f8f9fa/374151?text=Product+2" class="img-fluid" alt="Women's Bag">
-                    </div>
-                    <div class="product-card-body">
-                        <div>
-                            <p class="product-category mb-1">Accessories</p>
-                            <a href="#" class="product-title">Elegant Women's Leather Handbag - Black</a>
-                        </div>
-                        <div>
-                            <div class="price-wrapper mb-2">
-                                <span class="current-price">$60.00</span>
+                                </div>
                             </div>
-                            <button class="btn btn-add-cart">
-                                <i class="bi bi-cart-plus me-1"></i> Add to Cart
-                            </button>
                         </div>
                     </div>
-                </div>
-            </div>
+                <?php endforeach; ?>
+            <?php else: ?>
+                <p class="text-muted">No products found in New Arrivals.</p>
+            <?php endif; ?>
 
-            <div class="col">
-                <div class="product-card">
-                    <div class="product-img-container">
-                        <span class="product-badge">New</span>
-                        <img src="https://via.placeholder.com/200x200/f8f9fa/374151?text=Product+3" class="img-fluid" alt="Wireless Earbuds">
-                    </div>
-                    <div class="product-card-body">
-                        <div>
-                            <p class="product-category mb-1">Electronics</p>
-                            <a href="#" class="product-title">True Wireless Earbuds - Bluetooth 5.3</a>
-                        </div>
-                        <div>
-                            <div class="price-wrapper mb-2">
-                                <span class="current-price">$28.00</span>
-                                <span class="old-price">$32.00</span>
-                            </div>
-                            <button class="btn btn-add-cart">
-                                <i class="bi bi-cart-plus me-1"></i> Add to Cart
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col">
-                <div class="product-card">
-                    <div class="product-img-container">
-                        <span class="product-badge">New</span>
-                        <img src="https://via.placeholder.com/200x200/f8f9fa/374151?text=Product+4" class="img-fluid" alt="Running Shoes">
-                    </div>
-                    <div class="product-card-body">
-                        <div>
-                            <p class="product-category mb-1">Men's Fashion</p>
-                            <a href="#" class="product-title">Sport Running Shoes - Lightweight</a>
-                        </div>
-                        <div>
-                            <div class="price-wrapper mb-2">
-                                <span class="current-price">$45.00</span>
-                            </div>
-                            <button class="btn btn-add-cart">
-                                <i class="bi bi-cart-plus me-1"></i> Add to Cart
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
         </div>
     </div>
 
@@ -1147,107 +1116,48 @@
     <div class="container-fluid px-2 px-md-5 my-5">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2 class="fw-bold text-dark mb-0">Top Deals</h2>
-            <a href="#" class="text-success text-decoration-none fw-semibold">
-                View All <i class="bi bi-arrow-right fs-7 ms-1"></i>
+            <a href="collection.php?name=top_deals" class="btn btn-success text-decoration-none">
+                View All
             </a>
         </div>
 
         <div class="row row-cols-2 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-3 g-md-4">
-            <div class="col">
-                <div class="top-deals-card">
-                    <div class="top-deals-img-container">
-                        <span class="top-deals-badge">Hot Deal</span>
-                        <img src="https://via.placeholder.com/200x200/f8f9fa/374151?text=Top+Deal+1" class="img-fluid" alt="Men's Running Shoes">
-                    </div>
-                    <div class="top-deals-card-body">
-                        <div>
-                            <p class="top-deals-category mb-1">Footwear</p>
-                            <a href="#" class="top-deals-title">Men's Lightweight Running Shoes - Blue</a>
-                        </div>
-                        <div>
-                            <div class="top-deals-price-wrapper mb-2">
-                                <span class="top-deals-current-price">$40.00</span>
-                                <span class="top-deals-old-price">$60.00</span>
+            <?php if (!empty($top_deals)): ?>
+                <?php foreach ($top_deals as $product): ?>
+                    <div class="col">
+                        <div class="top-deals-card">
+                            <div class="top-deals-img-container">
+                                <span class="top-deals-badge">Hot Deal</span>
+                                <img src="<?= base_url('uploads/' . ($product['main_img'] ?: 'placeholder.jpg')); ?>" class="img-fluid" alt="<?= htmlspecialchars($product['name']); ?>">
                             </div>
-                            <button class="btn-top-deals-add-cart">
-                                <i class="bi bi-cart-plus me-1"></i> Add to Cart
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col">
-                <div class="top-deals-card">
-                    <div class="top-deals-img-container">
-                        <span class="top-deals-badge">Hot Deal</span>
-                        <img src="https://via.placeholder.com/200x200/f8f9fa/374151?text=Top+Deal+2" class="img-fluid" alt="Smartphone">
-                    </div>
-                    <div class="top-deals-card-body">
-                        <div>
-                            <p class="top-deals-category mb-1">Electronics</p>
-                            <a href="#" class="top-deals-title">Latest Smartphone - 128GB, 8GB RAM</a>
-                        </div>
-                        <div>
-                            <div class="top-deals-price-wrapper mb-2">
-                                <span class="top-deals-current-price">$300.00</span>
-                                <span class="top-deals-old-price">$350.00</span>
+                            <div class="top-deals-card-body">
+                                <div>
+                                    <p class="top-deals-category mb-1"><?= htmlspecialchars($product['category_name'] ?: 'General'); ?></p>
+                                    <a href="product-details.php?id=<?= $product['id']; ?>" class="top-deals-title"><?= htmlspecialchars($product['name']); ?></a>
+                                </div>
+                                <div>
+                                    <div class="top-deals-price-wrapper mb-2">
+                                        <span class="top-deals-current-price">৳<?= number_format($product['actual_price'] ?? $product['sell_price'], 2); ?></span>
+                                        <?php if (!empty($product['discount_percent']) && $product['discount_percent'] > 0): ?>
+                                            <span class="top-deals-old-price">৳<?= number_format($product['sell_price'], 2); ?></span>
+                                        <?php endif; ?>
+                                    </div>
+                                    <div class="d-flex">
+                                        <a href="product_details.php" class="btn btn-quick-view" title="Quick View">
+                                            <i class="bi bi-eye me-1"></i> View
+                                        </a>&nbsp;
+                                        <button class="btn btn-add-cart">
+                                            <i class="bi bi-cart-plus me-1"></i> Add to Cart
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
-                            <button class="btn-top-deals-add-cart">
-                                <i class="bi bi-cart-plus me-1"></i> Add to Cart
-                            </button>
                         </div>
                     </div>
-                </div>
-            </div>
-
-            <div class="col">
-                <div class="top-deals-card">
-                    <div class="top-deals-img-container">
-                        <span class="top-deals-badge">Hot Deal</span>
-                        <img src="https://via.placeholder.com/200x200/f8f9fa/374151?text=Top+Deal+3" class="img-fluid" alt="Men's Casual T-Shirt">
-                    </div>
-                    <div class="top-deals-card-body">
-                        <div>
-                            <p class="top-deals-category mb-1">Apparel</p>
-                            <a href="#" class="top-deals-title">Men's Premium Casual T-Shirt - Black</a>
-                        </div>
-                        <div>
-                            <div class="top-deals-price-wrapper mb-2">
-                                <span class="top-deals-current-price">$18.00</span>
-                                <span class="top-deals-old-price">$25.00</span>
-                            </div>
-                            <button class="btn-top-deals-add-cart">
-                                <i class="bi bi-cart-plus me-1"></i> Add to Cart
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col">
-                <div class="top-deals-card">
-                    <div class="top-deals-img-container">
-                        <span class="top-deals-badge">Hot Deal</span>
-                        <img src="https://via.placeholder.com/200x200/f8f9fa/374151?text=Top+Deal+4" class="img-fluid" alt="Coffee Maker">
-                    </div>
-                    <div class="top-deals-card-body">
-                        <div>
-                            <p class="top-deals-category mb-1">Home Appliances</p>
-                            <a href="#" class="top-deals-title">Automatic Coffee Maker - Programmable</a>
-                        </div>
-                        <div>
-                            <div class="top-deals-price-wrapper mb-2">
-                                <span class="top-deals-current-price">$75.00</span>
-                                <span class="top-deals-old-price">$100.00</span>
-                            </div>
-                            <button class="btn-top-deals-add-cart">
-                                <i class="bi bi-cart-plus me-1"></i> Add to Cart
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
+                <?php endforeach; ?>
+            <?php else: ?>
+                <p class="text-muted">No products found in Top Deals.</p>
+            <?php endif; ?>
         </div>
     </div>
 
@@ -1255,107 +1165,46 @@
     <div class="container-fluid px-2 px-md-5 my-5">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2 class="fw-bold text-dark mb-0">High Discount Products</h2>
-            <a href="#" class="text-success text-decoration-none fw-semibold">
-                View All <i class="bi bi-arrow-right fs-7 ms-1"></i>
+            <a href="collection.php?name=high_discount" class="btn btn-success text-decoration-none">
+                View All
             </a>
         </div>
 
         <div class="row row-cols-2 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-3 g-md-4">
-            <div class="col">
-                <div class="high-discount-card">
-                    <div class="high-discount-img-container">
-                        <span class="high-discount-badge">50% OFF</span>
-                        <img src="https://via.placeholder.com/200x200/f8f9fa/374151?text=Discounted+1" class="img-fluid" alt="Headphones">
-                    </div>
-                    <div class="high-discount-card-body">
-                        <div>
-                            <p class="high-discount-category mb-1">Electronics</p>
-                            <a href="#" class="high-discount-title">Wireless Over-Ear Headphones - Noise Cancelling</a>
-                        </div>
-                        <div>
-                            <div class="high-discount-price-wrapper mb-2">
-                                <span class="high-discount-current-price">$50.00</span>
-                                <span class="high-discount-old-price">$100.00</span>
+            <?php if (!empty($high_discount)): ?>
+                <?php foreach ($high_discount as $product): ?>
+                    <div class="col">
+                        <div class="high-discount-card">
+                            <div class="high-discount-img-container">
+                                <span class="high-discount-badge"><?= $product['discount_percent'] ?? 0; ?>% OFF</span>
+                                <img src="<?= base_url('uploads/' . ($product['main_img'] ?: 'placeholder.jpg')); ?>" class="img-fluid" alt="<?= htmlspecialchars($product['name']); ?>">
                             </div>
-                            <button class="btn-high-discount-add-cart">
-                                <i class="bi bi-cart-plus me-1"></i> Add to Cart
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col">
-                <div class="high-discount-card">
-                    <div class="high-discount-img-container">
-                        <span class="high-discount-badge">40% OFF</span>
-                        <img src="https://via.placeholder.com/200x200/f8f9fa/374151?text=Discounted+2" class="img-fluid" alt="Digital Watch">
-                    </div>
-                    <div class="high-discount-card-body">
-                        <div>
-                            <p class="high-discount-category mb-1">Accessories</p>
-                            <a href="#" class="high-discount-title">Digital Watch - Water Resistant, Fitness Tracker</a>
-                        </div>
-                        <div>
-                            <div class="high-discount-price-wrapper mb-2">
-                                <span class="high-discount-current-price">$30.00</span>
-                                <span class="high-discount-old-price">$50.00</span>
+                            <div class="high-discount-card-body">
+                                <div>
+                                    <p class="high-discount-category mb-1"><?= htmlspecialchars($product['category_name'] ?: 'General'); ?></p>
+                                    <a href="product-details.php?id=<?= $product['id']; ?>" class="high-discount-title"><?= htmlspecialchars($product['name']); ?></a>
+                                </div>
+                                <div>
+                                    <div class="high-discount-price-wrapper mb-2">
+                                        <span class="high-discount-current-price">৳<?= number_format($product['actual_price'] ?? $product['sell_price'], 2); ?></span>
+                                        <span class="high-discount-old-price">৳<?= number_format($product['sell_price'], 2); ?></span>
+                                    </div>
+                                    <div class="d-flex">
+                                        <a href="product_details.php" class="btn btn-quick-view" title="Quick View">
+                                            <i class="bi bi-eye me-1"></i> View
+                                        </a>&nbsp;
+                                        <button class="btn btn-add-cart">
+                                            <i class="bi bi-cart-plus me-1"></i> Add to Cart
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
-                            <button class="btn-high-discount-add-cart">
-                                <i class="bi bi-cart-plus me-1"></i> Add to Cart
-                            </button>
                         </div>
                     </div>
-                </div>
-            </div>
-
-            <div class="col">
-                <div class="high-discount-card">
-                    <div class="high-discount-img-container">
-                        <span class="high-discount-badge">60% OFF</span>
-                        <img src="https://via.placeholder.com/200x200/f8f9fa/374151?text=Discounted+3" class="img-fluid" alt="Women's Dress">
-                    </div>
-                    <div class="high-discount-card-body">
-                        <div>
-                            <p class="high-discount-category mb-1">Women's Fashion</p>
-                            <a href="#" class="high-discount-title">Women's Summer Dress - Cotton, Stylish</a>
-                        </div>
-                        <div>
-                            <div class="high-discount-price-wrapper mb-2">
-                                <span class="high-discount-current-price">$20.00</span>
-                                <span class="high-discount-old-price">$50.00</span>
-                            </div>
-                            <button class="btn-high-discount-add-cart">
-                                <i class="bi bi-cart-plus me-1"></i> Add to Cart
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col">
-                <div class="high-discount-card">
-                    <div class="high-discount-img-container">
-                        <span class="high-discount-badge">30% OFF</span>
-                        <img src="https://via.placeholder.com/200x200/f8f9fa/374151?text=Discounted+4" class="img-fluid" alt="Laptop Bag">
-                    </div>
-                    <div class="high-discount-card-body">
-                        <div>
-                            <p class="high-discount-category mb-1">Accessories</p>
-                            <a href="#" class="high-discount-title">Premium Laptop Bag - Water Repellent, Durable</a>
-                        </div>
-                        <div>
-                            <div class="high-discount-price-wrapper mb-2">
-                                <span class="high-discount-current-price">$35.00</span>
-                                <span class="high-discount-old-price">$50.00</span>
-                            </div>
-                            <button class="btn-high-discount-add-cart">
-                                <i class="bi bi-cart-plus me-1"></i> Add to Cart
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
+                <?php endforeach; ?>
+            <?php else: ?>
+                <p class="text-muted">No products found in High Discount.</p>
+            <?php endif; ?>
         </div>
     </div>
 
@@ -1363,105 +1212,48 @@
     <div class="container-fluid px-2 px-md-5 my-5">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2 class="fw-bold text-dark mb-0">Top Sales</h2>
-            <a href="#" class="text-success text-decoration-none fw-semibold">
-                View All <i class="bi bi-arrow-right fs-7 ms-1"></i>
+            <a href="collection.php?name=top_sales" class="btn btn-success text-decoration-none">
+                View All
             </a>
         </div>
 
         <div class="row row-cols-2 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-3 g-md-4">
-            <div class="col">
-                <div class="top-sales-card">
-                    <div class="top-sales-img-container">
-                        <span class="top-sales-badge">Best Seller</span>
-                        <img src="https://via.placeholder.com/200x200/f8f9fa/374151?text=Top+Sales+1" class="img-fluid" alt="Men's Casual Shirt">
-                    </div>
-                    <div class="top-sales-card-body">
-                        <div>
-                            <p class="top-sales-category mb-1">Men's Fashion</p>
-                            <a href="#" class="top-sales-title">Men's Premium Casual Shirt - Dark Green</a>
-                        </div>
-                        <div>
-                            <div class="top-sales-price-wrapper mb-2">
-                                <span class="top-sales-current-price">$35.00</span>
-                                <span class="top-sales-old-price">$45.00</span>
+            <?php if (!empty($top_sales)): ?>
+                <?php foreach ($top_sales as $product): ?>
+                    <div class="col">
+                        <div class="top-sales-card">
+                            <div class="top-sales-img-container">
+                                <span class="top-sales-badge">Best Seller</span>
+                                <img src="<?= base_url('uploads/' . ($product['main_img'] ?: 'placeholder.jpg')); ?>" class="img-fluid" alt="<?= htmlspecialchars($product['name']); ?>">
                             </div>
-                            <button class="btn-top-sales-add-cart">
-                                <i class="bi bi-cart-plus me-1"></i> Add to Cart
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col">
-                <div class="top-sales-card">
-                    <div class="top-sales-img-container">
-                        <span class="top-sales-badge">Best Seller</span>
-                        <img src="https://via.placeholder.com/200x200/f8f9fa/374151?text=Top+Sales+2" class="img-fluid" alt="Women's Bag">
-                    </div>
-                    <div class="top-sales-card-body">
-                        <div>
-                            <p class="top-sales-category mb-1">Accessories</p>
-                            <a href="#" class="top-sales-title">Elegant Women's Leather Handbag - Black</a>
-                        </div>
-                        <div>
-                            <div class="top-sales-price-wrapper mb-2">
-                                <span class="top-sales-current-price">$60.00</span>
+                            <div class="top-sales-card-body">
+                                <div>
+                                    <p class="top-sales-category mb-1"><?= htmlspecialchars($product['category_name'] ?: 'General'); ?></p>
+                                    <a href="product-details.php?id=<?= $product['id']; ?>" class="top-sales-title"><?= htmlspecialchars($product['name']); ?></a>
+                                </div>
+                                <div>
+                                    <div class="top-sales-price-wrapper mb-2">
+                                        <span class="top-sales-current-price">৳<?= number_format($product['actual_price'] ?? $product['sell_price'], 2); ?></span>
+                                        <?php if (!empty($product['discount_percent']) && $product['discount_percent'] > 0): ?>
+                                            <span class="top-sales-old-price">৳<?= number_format($product['sell_price'], 2); ?></span>
+                                        <?php endif; ?>
+                                    </div>
+                                    <div class="d-flex">
+                                        <a href="product_details.php" class="btn btn-quick-view" title="Quick View">
+                                            <i class="bi bi-eye me-1"></i> View
+                                        </a>&nbsp;
+                                        <button class="btn btn-add-cart">
+                                            <i class="bi bi-cart-plus me-1"></i> Add to Cart
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
-                            <button class="btn-top-sales-add-cart">
-                                <i class="bi bi-cart-plus me-1"></i> Add to Cart
-                            </button>
                         </div>
                     </div>
-                </div>
-            </div>
-
-            <div class="col">
-                <div class="top-sales-card">
-                    <div class="top-sales-img-container">
-                        <span class="top-sales-badge">Best Seller</span>
-                        <img src="https://via.placeholder.com/200x200/f8f9fa/374151?text=Top+Sales+3" class="img-fluid" alt="Wireless Earbuds">
-                    </div>
-                    <div class="top-sales-card-body">
-                        <div>
-                            <p class="top-sales-category mb-1">Electronics</p>
-                            <a href="#" class="top-sales-title">True Wireless Earbuds - Bluetooth 5.3</a>
-                        </div>
-                        <div>
-                            <div class="top-sales-price-wrapper mb-2">
-                                <span class="top-sales-current-price">$28.00</span>
-                                <span class="top-sales-old-price">$32.00</span>
-                            </div>
-                            <button class="btn-top-sales-add-cart">
-                                <i class="bi bi-cart-plus me-1"></i> Add to Cart
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col">
-                <div class="top-sales-card">
-                    <div class="top-sales-img-container">
-                        <span class="top-sales-badge">Best Seller</span>
-                        <img src="https://via.placeholder.com/200x200/f8f9fa/374151?text=Top+Sales+4" class="img-fluid" alt="Running Shoes">
-                    </div>
-                    <div class="top-sales-card-body">
-                        <div>
-                            <p class="top-sales-category mb-1">Men's Fashion</p>
-                            <a href="#" class="top-sales-title">Sport Running Shoes - Lightweight</a>
-                        </div>
-                        <div>
-                            <div class="top-sales-price-wrapper mb-2">
-                                <span class="top-sales-current-price">$45.00</span>
-                            </div>
-                            <button class="btn-top-sales-add-cart">
-                                <i class="bi bi-cart-plus me-1"></i> Add to Cart
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
+                <?php endforeach; ?>
+            <?php else: ?>
+                <p class="text-muted">No products found in Top Sales.</p>
+            <?php endif; ?>
         </div>
     </div>
 
@@ -1469,135 +1261,53 @@
     <div class="container-fluid px-2 px-md-5 my-5">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2 class="fw-bold text-dark mb-0">Top Rated Products</h2>
-            <a href="#" class="text-success text-decoration-none fw-semibold">
-                View All <i class="bi bi-arrow-right fs-7 ms-1"></i>
+            <a href="collection.php?name=top_rated" class="btn btn-success text-decoration-none">
+                View All
             </a>
         </div>
 
         <div class="row row-cols-2 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-3 g-md-4">
-            <div class="col">
-                <div class="top-review-card">
-                    <div class="top-review-img-container">
-                        <span class="top-review-badge">Top Rated</span>
-                        <img src="https://via.placeholder.com/200x200/f8f9fa/374151?text=Top+Rated+1" class="img-fluid" alt="Wireless Headphones">
-                    </div>
-                    <div class="top-review-card-body">
-                        <div>
-                            <p class="top-review-category mb-1">Electronics</p>
-                            <a href="#" class="top-review-title">Wireless Over-Ear Headphones - Noise Cancelling</a>
-                            <div class="rating-wrapper">
-                                <i class="bi bi-star-fill"></i>
-                                <i class="bi bi-star-fill"></i>
-                                <i class="bi bi-star-fill"></i>
-                                <i class="bi bi-star-fill"></i>
-                                <i class="bi bi-star-fill"></i>
-                                <span class="review-count">(120 Reviews)</span>
+            <?php if (!empty($top_rated)): ?>
+                <?php foreach ($top_rated as $product): ?>
+                    <div class="col">
+                        <div class="top-review-card">
+                            <div class="top-review-img-container">
+                                <span class="top-review-badge">Top Rated</span>
+                                <img src="<?= base_url('uploads/' . ($product['main_img'] ?: 'placeholder.jpg')); ?>" class="img-fluid" alt="<?= htmlspecialchars($product['name']); ?>">
+                            </div>
+                            <div class="top-review-card-body">
+                                <div>
+                                    <p class="top-review-category mb-1"><?= htmlspecialchars($product['category_name'] ?: 'General'); ?></p>
+                                    <a href="product-details.php?id=<?= $product['id']; ?>" class="top-review-title"><?= htmlspecialchars($product['name']); ?></a>
+                                    <div class="rating-wrapper">
+                                        <i class="bi bi-star-fill"></i>
+                                        <i class="bi bi-star-fill"></i>
+                                        <i class="bi bi-star-fill"></i>
+                                        <i class="bi bi-star-fill"></i>
+                                        <i class="bi bi-star-fill"></i>
+                                        <span class="review-count">(120 Reviews)</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="top-review-price-wrapper mb-2">
+                                        <span class="top-review-current-price">৳<?= number_format($product['actual_price'] ?? $product['sell_price'], 0); ?></span>
+                                    </div>
+                                    <div class="d-flex">
+                                        <a href="product_details.php" class="btn btn-quick-view" title="Quick View">
+                                            <i class="bi bi-eye me-1"></i> View
+                                        </a>&nbsp;
+                                        <button class="btn btn-add-cart">
+                                            <i class="bi bi-cart-plus me-1"></i> Add to Cart
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                        <div>
-                            <div class="top-review-price-wrapper mb-2">
-                                <span class="top-review-current-price">$80.00</span>
-                            </div>
-                            <button class="btn-top-review-add-cart">
-                                <i class="bi bi-cart-plus me-1"></i> Add to Cart
-                            </button>
-                        </div>
                     </div>
-                </div>
-            </div>
-
-            <div class="col">
-                <div class="top-review-card">
-                    <div class="top-review-img-container">
-                        <span class="top-review-badge">Top Rated</span>
-                        <img src="https://via.placeholder.com/200x200/f8f9fa/374151?text=Top+Rated+2" class="img-fluid" alt="Digital Watch">
-                    </div>
-                    <div class="top-review-card-body">
-                        <div>
-                            <p class="top-review-category mb-1">Accessories</p>
-                            <a href="#" class="top-review-title">Digital Watch - Water Resistant, Fitness Tracker</a>
-                            <div class="rating-wrapper">
-                                <i class="bi bi-star-fill"></i>
-                                <i class="bi bi-star-fill"></i>
-                                <i class="bi bi-star-fill"></i>
-                                <i class="bi bi-star-fill"></i>
-                                <i class="bi bi-star-half"></i>
-                                <span class="review-count">(85 Reviews)</span>
-                            </div>
-                        </div>
-                        <div>
-                            <div class="top-review-price-wrapper mb-2">
-                                <span class="top-review-current-price">$35.00</span>
-                            </div>
-                            <button class="btn-top-review-add-cart">
-                                <i class="bi bi-cart-plus me-1"></i> Add to Cart
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col">
-                <div class="top-review-card">
-                    <div class="top-review-img-container">
-                        <span class="top-review-badge">Top Rated</span>
-                        <img src="https://via.placeholder.com/200x200/f8f9fa/374151?text=Top+Rated+3" class="img-fluid" alt="Women's Sneakers">
-                    </div>
-                    <div class="top-review-card-body">
-                        <div>
-                            <p class="top-review-category mb-1">Women's Fashion</p>
-                            <a href="#" class="top-review-title">Women's Stylish Sneakers - Casual Wear</a>
-                            <div class="rating-wrapper">
-                                <i class="bi bi-star-fill"></i>
-                                <i class="bi bi-star-fill"></i>
-                                <i class="bi bi-star-fill"></i>
-                                <i class="bi bi-star-fill"></i>
-                                <i class="bi bi-star-fill"></i>
-                                <span class="review-count">(150 Reviews)</span>
-                            </div>
-                        </div>
-                        <div>
-                            <div class="top-review-price-wrapper mb-2">
-                                <span class="top-review-current-price">$55.00</span>
-                            </div>
-                            <button class="btn-top-review-add-cart">
-                                <i class="bi bi-cart-plus me-1"></i> Add to Cart
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col">
-                <div class="top-review-card">
-                    <div class="top-review-img-container">
-                        <span class="top-review-badge">Top Rated</span>
-                        <img src="https://via.placeholder.com/200x200/f8f9fa/374151?text=Top+Rated+4" class="img-fluid" alt="Laptop Bag">
-                    </div>
-                    <div class="top-review-card-body">
-                        <div>
-                            <p class="top-review-category mb-1">Accessories</p>
-                            <a href="#" class="top-review-title">Premium Laptop Bag - Water Repellent, Durable</a>
-                            <div class="rating-wrapper">
-                                <i class="bi bi-star-fill"></i>
-                                <i class="bi bi-star-fill"></i>
-                                <i class="bi bi-star-fill"></i>
-                                <i class="bi bi-star-fill"></i>
-                                <i class="bi bi-star-fill"></i>
-                                <span class="review-count">(110 Reviews)</span>
-                            </div>
-                        </div>
-                        <div>
-                            <div class="top-review-price-wrapper mb-2">
-                                <span class="top-review-current-price">$45.00</span>
-                            </div>
-                            <button class="btn-top-review-add-cart">
-                                <i class="bi bi-cart-plus me-1"></i> Add to Cart
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
+                <?php endforeach; ?>
+            <?php else: ?>
+                <p class="text-muted">No products found in Top Rated.</p>
+            <?php endif; ?>
         </div>
     </div>
 
@@ -1677,7 +1387,7 @@
                         <p class="mb-0">&copy; 2026 AmarShop. All Rights Reserved.</p>
                     </div>
                     <div class="col-md-6 text-center text-md-end">
-                        <p class="mb-0">Designed & Developed by <a href="#" class="text-success fw-semibold">Your Name</a></p>
+                        <p class="mb-0">Designed & Developed by <a href="#" class="text-success fw-semibold">Developer Jasim</a></p>
                     </div>
                 </div>
             </div>
