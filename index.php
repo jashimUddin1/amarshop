@@ -699,24 +699,6 @@ $top_rated     = get_products_by_collection($pdo, 'top_rated');
             }
         }
 
-        /* Quick View Button Style */
-        .btn-quick-view {
-            width: 100%;
-            background-color: #f8f9fa;
-            color: var(--text);
-            border: 1px solid var(--border);
-            font-size: 0.85rem;
-            font-weight: 600;
-            padding: 8px;
-            border-radius: 5px;
-            transition: all 0.3s;
-        }
-
-        .btn-quick-view:hover {
-            background-color: #e9ecef;
-            border-color: #ced4da;
-            color: #000;
-        }
     </style>
 </head>
 
@@ -946,7 +928,7 @@ $top_rated     = get_products_by_collection($pdo, 'top_rated');
                             <h1 class="display-4 fw-bold text-dark lh-sm mb-3">Exclusive Premium <br class="d-none d-lg-block">Gadgets Pack</h1>
                             <p class="text-secondary mb-4">Up To 50% Off On Modern Tech Accessories. <br>Grab It Before It's Gone!</p>
                             <a href="#" class="btn btn-success btn-lg px-4 py-2.5 fs-6 shadow-sm border-0 d-inline-flex align-items-center gap-2" style="background-color: var(--brand); border-radius: 4px;">
-                                Shop Collection <i class="bi bi-arrow-right"></i>
+                                Shop Collection
                             </a>
                         </div>
                     </div>
@@ -1081,7 +1063,7 @@ $top_rated     = get_products_by_collection($pdo, 'top_rated');
                             </div>
                             <div class="product-card-body">
                                 <div>
-                                    <p class="product-category mb-1"><?= htmlspecialchars($product['category_name'] ?: 'General'); ?></p>
+                                    <p class="product-category mb-1 d-none d-md-inline"><?= htmlspecialchars($product['category_name'] ?: 'General'); ?></p>
                                     <a href="product-details.php?id=<?= $product['id']; ?>" class="product-title"><?= htmlspecialchars($product['name']); ?></a>
                                 </div>
                                 <div>
@@ -1091,12 +1073,12 @@ $top_rated     = get_products_by_collection($pdo, 'top_rated');
                                             <span class="old-price">৳<?= number_format($product['sell_price'], 2); ?></span>
                                         <?php endif; ?>
                                     </div>
-                                    <div class="d-flex">
-                                        <a href="product_details.php?product_id=<?=  $product['id'] ?>" class="btn btn-quick-view" title="Quick View">
-                                            <i class="bi bi-eye me-1"></i> View
-                                        </a>&nbsp;
-                                        <button class="btn btn-add-cart">
-                                            <i class="bi bi-cart-plus me-1"></i> Add to Cart
+                                    <div class="d-flex justify-content-between gap-2">
+                                        <a href="product_details.php?product_id=<?=  $product['id'] ?>" class="d-flex btn btn-outline-secondary w-50 justify-content-center align-items-center" title="Product Details">
+                                            <span class="d-none d-md-inline"><i class="bi bi-eye me-1"></i></span>  View
+                                        </a>
+                                        <button class="btn btn-outline-success w-50 justify-content-center align-items-center">
+                                            <span class="d-none d-md-inline"><i class="bi bi-cart-plus me-1"></i></span> Add <span class="d-none d-md-inline">to Cart</span>
                                         </button>
                                     </div>
 
