@@ -514,6 +514,11 @@ $top_rated     = get_products_by_collection($pdo, 'top_rated');
             margin-left: 5px;
         }
 
+        /* add to card modal */
+        .mwt {
+            min-width: 50%;
+        }
+
         /* Footer */
         .footer {
             background-color: #212529;
@@ -1055,35 +1060,91 @@ $top_rated     = get_products_by_collection($pdo, 'top_rated');
             <?php if (!empty($new_arrivals)): ?>
                 <?php foreach ($new_arrivals as $product): ?>
                     <div class="col">
-                        <div class="product-card">
-                            <div class="product-img-container">
-                                <span class="product-badge">New</span>
-                                <img src="<?= base_url('uploads/' . ($product['main_img'] ?: 'placeholder.jpg')); ?>" class="img-fluid" alt="<?= htmlspecialchars($product['name']); ?>">
+                        <!-- ১. কার্ডে position-relative যুক্ত করা হয়েছে -->
+                        <div class="product-card position-relative border rounded p-2 bg-white shadow-sm h-100">
+
+                            <div class="product-img-container text-center mb-2">
+                                <span class="product-badge bg-danger text-white position-absolute top-0 start-0 m-2 px-2 py-1 rounded small">New</span>
+                                <img src="<?= base_url('uploads/' . ($product['main_img'] ?: 'placeholder.jpg')); ?>" class="img-fluid rounded" alt="<?= htmlspecialchars($product['name']); ?>">
                             </div>
-                            <div class="product-card-body">
+
+                            <div class="product-card-body d-flex flex-column justify-content-between">
                                 <div>
-                                    <p class="product-category mb-1 d-none d-md-inline"><?= htmlspecialchars($product['category_name'] ?: 'General'); ?></p>
-                                    <a href="product-details.php?id=<?= $product['id']; ?>" class="product-title"><?= htmlspecialchars($product['name']); ?></a>
-                                </div>
-                                <div>
-                                    <div class="price-wrapper mb-2">
-                                        <span class="current-price">৳<?= number_format($product['actual_price'] ?? $product['sell_price'], 2); ?></span>
-                                        <?php if (!empty($product['discount_percent']) && $product['discount_percent'] > 0): ?>
-                                            <span class="old-price">৳<?= number_format($product['sell_price'], 2); ?></span>
-                                        <?php endif; ?>
+                                    <div class="d-flex justify-content-between">
+                                        <p class="product-category text-muted small mb-1 d-none d-md-block text-capitalize"><?= htmlspecialchars($product['category_name'] ?: 'General'); ?></p>
+                                        <p class="product-category text-muted small mb-1 d-none d-md-block text-capitalize"><?= htmlspecialchars($product['product_code'] ?: ''); ?></p>
                                     </div>
-                                    <div class="d-flex justify-content-between gap-2">
-                                        <a href="product_details.php?product_id=<?= $product['id'] ?>" class="d-flex btn btn-outline-secondary w-50 justify-content-center align-items-center" title="Product Details">
-                                            <span class="d-none d-md-inline"><i class="bi bi-eye me-1"></i></span> View
-                                        </a>
-                                        <button class="btn btn-outline-success w-50 justify-content-center align-items-center"
-                                            onclick="openSimpleCartModal('<?= $product['id']; ?>', '<?= htmlspecialchars($product['size'] ?? ''); ?>')">
-                                            <i class="bi bi-cart-plus me-1"></i> Add to Cart
-                                        </button>
+                                    <a href="product-details.php?id=<?= $product['id']; ?>" class="product-title text-decoration-none text-dark fw-bold d-block text-truncate"><?= htmlspecialchars($product['name']); ?></a>
+                                </div>
+
+                                <div class="mt-2">
+                                    <div class="price-wrapper mb-2">
+                                        <span class="current-price fw-bold text-success">৳<?= number_format($product['actual_price'] ?? $product['sell_price'], 2); ?></span>
                                     </div>
 
+                                    <div class="d-flex justify-content-between gap-2">
+                                        <a href="product_details.php?product_id=<?= $product['id'] ?>" class="btn btn-outline-secondary w-50 btn-sm">
+                                            <span class="d-none d-md-inline"><i class="bi bi-eye me-1"></i></span>  View
+                                        </a>
+
+                                        <!-- ২. Add to Cart বাটন (যা ক্লিক করলে পপ-আপ আসবে) -->
+                                        <button type="button" class="btn btn-outline-success w-50 btn-sm open-options-btn">
+                                            <span class="d-none d-md-inline"><i class="bi bi-cart-plus me-1"></i></span> Add <span class="d-none d-md-inline">to Cart</span>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
+
+                            <!-- ৩. পপ-আপ অপশন বক্স (Bootstrap Utility Classes দিয়ে ডিজাইন করা) -->
+                            <div class="card-options-overlay position-absolute bottom-0 end-0 mwt bg-white rounded p-3 shadow d-none flex-column justify-content-between" style="z-index: 10;">
+
+                                <!-- হেডার: টাইটেল ও ক্লোজ বাটন -->
+                                <div class="d-flex justify-content-between align-items-center pb-1 border-bottom">
+                                    <span class="fw-bold text-dark small">Select Options</span>
+                                    <button type="button" class="btn-close close-options-btn" style="font-size: 0.7rem;"></button>
+                                </div>
+
+                                <!-- ডাইনামিক সাইজ সিলেক্ট অংশ -->
+                                <?php if (!empty($product['size'])): ?>
+                                    <div class="my-2">
+                                        <label class="d-block text-secondary fw-semibold small mb-1" style="font-size: 0.75rem;">Size:</label>
+                                        <div class="d-flex gap-1 justify-content-start flex-wrap">
+                                            <?php
+                                            // কমা দিয়ে আলাদা করা সাইজগুলোকে অ্যারেতে কনভার্ট করা
+                                            $sizes = array_map('trim', explode(',', $product['size']));
+
+                                            foreach ($sizes as $index => $size):
+                                                if (!empty($size)):
+                                            ?>
+                                                    <!-- প্রথম সাইজটি ডিফল্টভাবে active থাকবে -->
+                                                    <button type="button" class="btn btn-sm btn-outline-success px-2 py-0 fw-bold <?= $index === 0 ? 'active' : ''; ?>">
+                                                        <?= htmlspecialchars($size); ?>
+                                                    </button>
+                                            <?php
+                                                endif;
+                                            endforeach;
+                                            ?>
+                                        </div>
+                                    </div>
+                                <?php endif; ?>
+
+                                <!-- পরিমাণ (Quantity) অংশ -->
+                                <div class="mb-2">
+                                    <label class="d-block text-secondary fw-semibold small mb-1" style="font-size: 0.75rem;">Quantity (Max 6):</label>
+                                    <div class="d-flex align-items-center justify-content-center gap-1">
+                                        <button type="button" class="btn btn-sm btn-light border px-2 py-0 minus-btn fw-bold">-</button>
+                                        <input type="text" class="form-control form-control-sm text-center p-0 qty-input fw-bold" value="1" readonly style="width: 35px; height: 28px; font-size: 0.8rem;">
+                                        <button type="button" class="btn btn-sm btn-light border px-2 py-0 plus-btn fw-bold">+</button>
+                                    </div>
+                                </div>
+
+                                <!-- ফাইনাল সাবমিট বাটন -->
+                                <button type="button" class="btn btn-success btn-sm w-100 fw-semibold final-add-cart-btn">
+                                    Add to Cart
+                                </button>
+                            </div>
+                            <!-- অপশন বক্স শেষ -->
+
                         </div>
                     </div>
                 <?php endforeach; ?>
@@ -1377,116 +1438,55 @@ $top_rated     = get_products_by_collection($pdo, 'top_rated');
     </footer>
 
 
-    <!-- Simple Quick Add Modal -->
-    <div class="modal fade" id="simpleCartModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-sm">
-            <div class="modal-content">
-                <div class="modal-header border-0 pb-0">
-                    <h6 class="modal-title fw-bold">Select Options</h6>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <input type="hidden" id="simpleProdId">
-
-                    <!-- Size Section -->
-                    <div id="simpleSizeArea" class="mb-3 d-none">
-                        <label class="fw-bold mb-2 d-block">Select Size:</label>
-                        <div id="simpleSizeContainer" class="d-flex flex-wrap gap-2">
-                            <!-- Dynamic Radio Buttons -->
-                        </div>
-                    </div>
-
-                    <!-- Quantity Section -->
-                    <div class="mb-2">
-                        <label class="fw-bold mb-2 d-block">Quantity (Max 6):</label>
-                        <div class="d-flex align-items-center gap-2">
-                            <button class="btn btn-outline-secondary px-3" type="button" onclick="updateSimpleQty(-1)">-</button>
-                            <input type="text" id="simpleQtyInput" class="form-control text-center" style="width: 50px;" value="1" readonly>
-                            <button class="btn btn-outline-secondary px-3" type="button" onclick="updateSimpleQty(1)">+</button>
-                        </div>
-                        <small id="simpleQtyMsg" class="text-danger d-none mt-1">সর্বোচ্চ ৬ টি নির্বাচন করতে পারবেন।</small>
-                    </div>
-                </div>
-                <div class="modal-footer border-0 pt-0">
-                    <button type="button" class="btn btn-success w-100" onclick="confirmSimpleCart()">Add to Cart</button>
-                </div>
-            </div>
-        </div>
-    </div>
     <!-- Bootstrap 5 JS Bundle CDN -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
-        let cartModalObj = null;
+        document.addEventListener('DOMContentLoaded', function() {
+            // পপ-আপ খোলা (d-none সরিয়ে d-flex যোগ করা)
+            document.querySelectorAll('.open-options-btn').forEach(button => {
+                button.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const card = this.closest('.position-relative');
+                    const overlay = card.querySelector('.card-options-overlay');
 
-        function openSimpleCartModal(productId, sizeString) {
-            document.getElementById('simpleProdId').value = productId;
-            document.getElementById('simpleQtyInput').value = 1;
-            document.getElementById('simpleQtyMsg').classList.add('d-none');
+                    // অন্য সব খোলা বক্স বন্ধ করা
+                    document.querySelectorAll('.card-options-overlay').forEach(el => {
+                        el.classList.add('d-none');
+                        el.classList.remove('d-flex');
+                    });
 
-            const sizeArea = document.getElementById('simpleSizeArea');
-            const sizeContainer = document.getElementById('simpleSizeContainer');
-            sizeContainer.innerHTML = '';
-
-            // সাইজ খালি না থাকলে সাইজ বাটনগুলো দেখাবে, খালি থাকলে পুরো সেকশন হাইড থাকবে
-            if (sizeString && sizeString.trim() !== '') {
-                const sizes = sizeString.split(',').map(s => s.trim());
-
-                sizes.forEach((sz, index) => {
-                    const radioId = `simple_size_${index}`;
-                    const html = `
-                <input type="radio" class="btn-check" name="simple_selected_size" id="${radioId}" value="${sz}" ${index === 0 ? 'checked' : ''}>
-                <label class="btn btn-outline-success px-3 py-1" for="${radioId}">${sz}</label>
-            `;
-                    sizeContainer.insertAdjacentHTML('beforeend', html);
+                    overlay.classList.remove('d-none');
+                    overlay.classList.add('d-flex');
                 });
-
-                sizeArea.classList.remove('d-none');
-            } else {
-                sizeArea.classList.add('d-none');
-            }
-
-            cartModalObj = new bootstrap.Modal(document.getElementById('simpleCartModal'));
-            cartModalObj.show();
-        }
-
-        function updateSimpleQty(change) {
-            let qtyInput = document.getElementById('simpleQtyInput');
-            let qtyMsg = document.getElementById('simpleQtyMsg');
-            let currentQty = parseInt(qtyInput.value);
-            let newQty = currentQty + change;
-
-            if (newQty >= 1 && newQty <= 6) {
-                qtyInput.value = newQty;
-                qtyMsg.classList.add('d-none');
-            } else if (newQty > 6) {
-                qtyMsg.classList.remove('d-none');
-            }
-        }
-
-        function confirmSimpleCart() {
-            let prodId = document.getElementById('simpleProdId').value;
-            let qty = document.getElementById('simpleQtyInput').value;
-            let selectedSize = '';
-
-            if (!document.getElementById('simpleSizeArea').classList.contains('d-none')) {
-                let sizeElem = document.querySelector('input[name="simple_selected_size"]:checked');
-                if (sizeElem) {
-                    selectedSize = sizeElem.value;
-                }
-            }
-
-            console.log("Adding to Cart:", {
-                product_id: prodId,
-                size: selectedSize,
-                quantity: qty
             });
 
-            // মোডাল বন্ধ করা
-            if (cartModalObj) {
-                cartModalObj.hide();
-            }
-        }
+            // পপ-আপ বন্ধ করা
+            document.querySelectorAll('.close-options-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    const overlay = this.closest('.card-options-overlay');
+                    overlay.classList.add('d-none');
+                    overlay.classList.remove('d-flex');
+                });
+            });
+
+            // Quantity কমানো-বাড়ানো
+            document.querySelectorAll('.card-options-overlay').forEach(overlay => {
+                const minusBtn = overlay.querySelector('.minus-btn');
+                const plusBtn = overlay.querySelector('.plus-btn');
+                const qtyInput = overlay.querySelector('.qty-input');
+
+                minusBtn.addEventListener('click', () => {
+                    let val = parseInt(qtyInput.value);
+                    if (val > 1) qtyInput.value = val - 1;
+                });
+
+                plusBtn.addEventListener('click', () => {
+                    let val = parseInt(qtyInput.value);
+                    if (val < 6) qtyInput.value = val + 1;
+                });
+            });
+        });
     </script>
 </body>
 
