@@ -518,7 +518,8 @@ $top_rated     = get_products_by_collection($pdo, 'top_rated');
         .mwt {
             min-width: 50%;
         }
-        .cart_popup{
+
+        .cart_popup {
             margin-right: 5px;
             margin-bottom: 5px;
         }
@@ -893,13 +894,13 @@ $top_rated     = get_products_by_collection($pdo, 'top_rated');
 
     <!-- Session Alert Messages (Success, Warning, Danger) -->
     <?php if (isset($_SESSION['status']) && isset($_SESSION['message'])): ?>
-        <?php 
-            $alert_type = 'danger';
-            if ($_SESSION['status'] === 'success') {
-                $alert_type = 'success';
-            } elseif ($_SESSION['status'] === 'warning') {
-                $alert_type = 'warning';
-            }
+        <?php
+        $alert_type = 'danger';
+        if ($_SESSION['status'] === 'success') {
+            $alert_type = 'success';
+        } elseif ($_SESSION['status'] === 'warning') {
+            $alert_type = 'warning';
+        }
         ?>
         <div class="container my-3">
             <div class="alert alert-<?= $alert_type; ?> alert-dismissible fade show shadow-sm py-2 px-3 mb-0" role="alert">
@@ -911,10 +912,10 @@ $top_rated     = get_products_by_collection($pdo, 'top_rated');
                 <button type="button" class="btn-close py-2 px-3" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
         </div>
-        <?php 
-            // মেসেজ দেখানোর পর Session মুছে ফেলা হচ্ছে
-            unset($_SESSION['status']);
-            unset($_SESSION['message']);
+        <?php
+        // মেসেজ দেখানোর পর Session মুছে ফেলা হচ্ছে
+        unset($_SESSION['status']);
+        unset($_SESSION['message']);
         ?>
     <?php endif; ?>
 
@@ -1115,7 +1116,7 @@ $top_rated     = get_products_by_collection($pdo, 'top_rated');
 
                                     <div class="d-flex justify-content-between gap-2">
                                         <a href="product_details.php?product_id=<?= $product['id'] ?>" class="btn btn-outline-secondary w-50 btn-sm">
-                                            <span class="d-none d-md-inline"><i class="bi bi-eye me-1"></i></span>  View
+                                            <span class="d-none d-md-inline"><i class="bi bi-eye me-1"></i></span> View
                                         </a>
 
                                         <!-- ২. Add to Cart বাটন (যা ক্লিক করলে পপ-আপ আসবে) -->
@@ -1141,14 +1142,12 @@ $top_rated     = get_products_by_collection($pdo, 'top_rated');
                                         <label class="d-block text-secondary fw-semibold small mb-1" style="font-size: 0.75rem;">Size:</label>
                                         <div class="d-flex gap-1 justify-content-start flex-wrap">
                                             <?php
-                                            // কমা দিয়ে আলাদা করা সাইজগুলোকে অ্যারেতে কনভার্ট করা
                                             $sizes = array_map('trim', explode(',', $product['size']));
-
                                             foreach ($sizes as $index => $size):
                                                 if (!empty($size)):
                                             ?>
-                                                    <!-- প্রথম সাইজটি ডিফল্টভাবে active থাকবে -->
-                                                    <button type="button" class="btn btn-sm btn-outline-success px-2 py-0 fw-bold <?= $index === 0 ? 'active' : ''; ?>">
+                                                    <!-- size-btn ক্লাসটি যোগ করা হয়েছে এবং dynamic active দেয়া হয়েছে -->
+                                                    <button type="button" class="btn btn-sm btn-outline-success size-btn px-2 py-0 fw-bold <?= $index === 0 ? 'active' : ''; ?>">
                                                         <?= htmlspecialchars($size); ?>
                                                     </button>
                                             <?php
@@ -1473,40 +1472,55 @@ $top_rated     = get_products_by_collection($pdo, 'top_rated');
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // পপ-আপ খোলা (d-none সরিয়ে d-flex যোগ করা)
-            document.querySelectorAll('.open-options-btn').forEach(button => {
-                button.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    const card = this.closest('.position-relative');
-                    const overlay = card.querySelector('.card-options-overlay');
+    document.addEventListener('DOMContentLoaded', function() {
+        // ১. পপ-আপ খোলা
+        document.querySelectorAll('.open-options-btn').forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.stopPropagation();
+                e.preventDefault();
+                const card = this.closest('.position-relative');
+                const overlay = card.querySelector('.card-options-overlay');
 
-                    // অন্য সব খোলা বক্স বন্ধ করা
-                    document.querySelectorAll('.card-options-overlay').forEach(el => {
-                        el.classList.add('d-none');
-                        el.classList.remove('d-flex');
-                    });
-
-                    overlay.classList.remove('d-none');
-                    overlay.classList.add('d-flex');
+                // অন্য সব খোলা বক্স বন্ধ করা
+                document.querySelectorAll('.card-options-overlay').forEach(el => {
+                    el.classList.add('d-none');
+                    el.classList.remove('d-flex');
                 });
-            });
 
-            // পপ-আপ বন্ধ করা
-            document.querySelectorAll('.close-options-btn').forEach(button => {
-                button.addEventListener('click', function() {
-                    const overlay = this.closest('.card-options-overlay');
-                    overlay.classList.add('d-none');
-                    overlay.classList.remove('d-flex');
+                overlay.classList.remove('d-none');
+                overlay.classList.add('d-flex');
+            });
+        });
+
+        // ২. পপ-আপ বন্ধ করা
+        document.querySelectorAll('.close-options-btn').forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const overlay = this.closest('.card-options-overlay');
+                overlay.classList.add('d-none');
+                overlay.classList.remove('d-flex');
+            });
+        });
+
+        // ৩. ডাইনামিক সাইজ সিলেক্ট করার লজিক (যা আপনার মিসিং ছিল)
+        document.querySelectorAll('.card-options-overlay').forEach(overlay => {
+            const sizeBtns = overlay.querySelectorAll('.size-btn');
+            
+            sizeBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    // বর্তমান পপ-আপের অন্যান্য সাইজ বাটন থেকে active ক্লাস সরানো
+                    sizeBtns.forEach(b => b.classList.remove('active'));
+                    // যেটিতে ক্লিক করা হয়েছে সেটিতে active ক্লাস যোগ করা
+                    this.classList.add('active');
                 });
             });
 
             // Quantity কমানো-বাড়ানো
-            document.querySelectorAll('.card-options-overlay').forEach(overlay => {
-                const minusBtn = overlay.querySelector('.minus-btn');
-                const plusBtn = overlay.querySelector('.plus-btn');
-                const qtyInput = overlay.querySelector('.qty-input');
+            const minusBtn = overlay.querySelector('.minus-btn');
+            const plusBtn = overlay.querySelector('.plus-btn');
+            const qtyInput = overlay.querySelector('.qty-input');
 
+            if (minusBtn && plusBtn && qtyInput) {
                 minusBtn.addEventListener('click', () => {
                     let val = parseInt(qtyInput.value);
                     if (val > 1) qtyInput.value = val - 1;
@@ -1516,9 +1530,20 @@ $top_rated     = get_products_by_collection($pdo, 'top_rated');
                     let val = parseInt(qtyInput.value);
                     if (val < 6) qtyInput.value = val + 1;
                 });
-            });
+            }
         });
-    </script>
+
+        // ৪. পপ-আপের বাইরে ক্লিক করলে পপ-আপ বন্ধ হয়ে যাওয়া
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.card-options-overlay') && !e.target.closest('.open-options-btn')) {
+                document.querySelectorAll('.card-options-overlay').forEach(el => {
+                    el.classList.add('d-none');
+                    el.classList.remove('d-flex');
+                });
+            }
+        });
+    });
+</script>
 </body>
 
 </html>
