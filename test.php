@@ -887,6 +887,33 @@ $top_rated     = get_products_by_collection($pdo, 'top_rated');
         </div>
     </div>
 
+    <!-- Session Alert Messages (Success, Warning, Danger) -->
+    <?php if (isset($_SESSION['status']) && isset($_SESSION['message'])): ?>
+        <?php 
+            $alert_type = 'danger';
+            if ($_SESSION['status'] === 'success') {
+                $alert_type = 'success';
+            } elseif ($_SESSION['status'] === 'warning') {
+                $alert_type = 'warning';
+            }
+        ?>
+        <div class="container my-3">
+            <div class="alert alert-<?= $alert_type; ?> alert-dismissible fade show shadow-sm py-2 px-3 mb-0" role="alert">
+                <div class="d-flex align-items-center">
+                    <div>
+                        <?= htmlspecialchars($_SESSION['message']); ?>
+                    </div>
+                </div>
+                <button type="button" class="btn-close py-2 px-3" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        </div>
+        <?php 
+            // মেসেজ দেখানোর পর Session মুছে ফেলা হচ্ছে
+            unset($_SESSION['status']);
+            unset($_SESSION['message']);
+        ?>
+    <?php endif; ?>
+
     <!-- Hero Slider -->
     <div id="heroCarousel" class="carousel slide carousel-fade shadow-sm my-3" data-bs-ride="carousel">
         <div class="carousel-indicators">
@@ -1131,7 +1158,7 @@ $top_rated     = get_products_by_collection($pdo, 'top_rated');
                                 <!-- পরিমাণ (Quantity) অংশ -->
                                 <div class="mb-2">
                                     <label class="d-block text-secondary fw-semibold small mb-1" style="font-size: 0.75rem;">Quantity (Max 6):</label>
-                                    <div class="d-flex align-items-center justify-content-center gap-1">
+                                    <div class="d-flex gap-1">
                                         <button type="button" class="btn btn-sm btn-light border px-2 py-0 minus-btn fw-bold">-</button>
                                         <input type="text" class="form-control form-control-sm text-center p-0 qty-input fw-bold" value="1" readonly style="width: 35px; height: 28px; font-size: 0.8rem;">
                                         <button type="button" class="btn btn-sm btn-light border px-2 py-0 plus-btn fw-bold">+</button>

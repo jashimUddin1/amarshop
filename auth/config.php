@@ -32,3 +32,30 @@ function require_login() {
         exit;
     }
 }
+
+// config.php - এর নিচে যোগ করুন
+define('SMTP_HOST', 'smtp.gmail.com');
+define('SMTP_PORT', 587);
+define('SMTP_USER', 'developermdjasim@gmail.com');       // আপনার Gmail ইমেইল
+define('SMTP_PASS', 'zdtq wxte duca xabi');          // Google App Password (১৬ ডিজিটের)
+define('SMTP_FROM', 'amarshop@gmail.com');
+define('SMTP_NAME', 'AmarShop');
+
+
+// login from cookie
+if (!isset($_SESSION['user_id']) && isset($_COOKIE['remember_me'])) {
+    $token = $_COOKIE['remember_me'];
+    
+    // কুকির টোকেন দিয়ে ডাটাবেজে ইউজার খোঁজা
+    $stmt = $pdo->prepare("SELECT * FROM users WHERE remember_token = :token AND verify_status = 1 LIMIT 1");
+    $stmt->execute([':token' => $token]);
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if ($user) {
+        // অটো লগইন সেশন সেট
+        $_SESSION['user_id']    = $user['id'];
+        $_SESSION['user_name']  = $user['customar_name'];
+        $_SESSION['user_email'] = $user['email'];
+        $_SESSION['user_role']  = $user['role'];
+    }
+}

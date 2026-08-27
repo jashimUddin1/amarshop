@@ -1,3 +1,8 @@
+<?php
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+?>
 <!doctype html>
 <html lang="en">
 
@@ -86,9 +91,9 @@
                         unset($_SESSION['message']);
                     ?>
                 <?php endif; ?>
-                
+
                 <!-- লগইন ফর্ম -->
-                <form action="login_process.php" method="POST">
+                <form action="../core/login_process.php" method="POST">
                     
                     <!-- Phone or Email -->
                     <div class="mb-3">
