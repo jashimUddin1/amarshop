@@ -518,6 +518,10 @@ $top_rated     = get_products_by_collection($pdo, 'top_rated');
         .mwt {
             min-width: 50%;
         }
+        .cart_popup{
+            margin-right: 5px;
+            margin-bottom: 5px;
+        }
 
         /* Footer */
         .footer {
@@ -1110,18 +1114,20 @@ $top_rated     = get_products_by_collection($pdo, 'top_rated');
                                     </div>
 
                                     <div class="d-flex justify-content-between gap-2">
-                                        <a href="product_details.php?product_id=<?= $product['id'] ?>" class="btn btn-outline-secondary w-50 btn-sm">View</a>
+                                        <a href="product_details.php?product_id=<?= $product['id'] ?>" class="btn btn-outline-secondary w-50 btn-sm">
+                                            <span class="d-none d-md-inline"><i class="bi bi-eye me-1"></i></span>  View
+                                        </a>
 
                                         <!-- ২. Add to Cart বাটন (যা ক্লিক করলে পপ-আপ আসবে) -->
                                         <button type="button" class="btn btn-outline-success w-50 btn-sm open-options-btn">
-                                            Add to Cart
+                                            <span class="d-none d-md-inline"><i class="bi bi-cart-plus me-1"></i></span> Add <span class="d-none d-md-inline">to Cart</span>
                                         </button>
                                     </div>
                                 </div>
                             </div>
 
                             <!-- ৩. পপ-আপ অপশন বক্স (Bootstrap Utility Classes দিয়ে ডিজাইন করা) -->
-                            <div class="card-options-overlay position-absolute bottom-0 end-0 mwt bg-white rounded p-3 shadow d-none flex-column justify-content-between" style="z-index: 10;">
+                            <div class="card-options-overlay position-absolute bottom-0 end-0 mwt bg-white rounded p-3 shadow d-none flex-column justify-content-between cart_popup" style="z-index: 10;">
 
                                 <!-- হেডার: টাইটেল ও ক্লোজ বাটন -->
                                 <div class="d-flex justify-content-between align-items-center pb-1 border-bottom">
@@ -1156,7 +1162,7 @@ $top_rated     = get_products_by_collection($pdo, 'top_rated');
                                 <!-- পরিমাণ (Quantity) অংশ -->
                                 <div class="mb-2">
                                     <label class="d-block text-secondary fw-semibold small mb-1" style="font-size: 0.75rem;">Quantity (Max 6):</label>
-                                    <div class="d-flex align-items-center justify-content-center gap-1">
+                                    <div class="d-flex gap-1">
                                         <button type="button" class="btn btn-sm btn-light border px-2 py-0 minus-btn fw-bold">-</button>
                                         <input type="text" class="form-control form-control-sm text-center p-0 qty-input fw-bold" value="1" readonly style="width: 35px; height: 28px; font-size: 0.8rem;">
                                         <button type="button" class="btn btn-sm btn-light border px-2 py-0 plus-btn fw-bold">+</button>
@@ -1463,42 +1469,6 @@ $top_rated     = get_products_by_collection($pdo, 'top_rated');
     </footer>
 
 
-    <!-- Simple Quick Add Modal -->
-    <div class="modal fade" id="simpleCartModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-sm">
-            <div class="modal-content">
-                <div class="modal-header border-0 pb-0">
-                    <h6 class="modal-title fw-bold">Select Options</h6>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <input type="hidden" id="simpleProdId">
-
-                    <!-- Size Section -->
-                    <div id="simpleSizeArea" class="mb-3 d-none">
-                        <label class="fw-bold mb-2 d-block">Select Size:</label>
-                        <div id="simpleSizeContainer" class="d-flex flex-wrap gap-2">
-                            <!-- Dynamic Radio Buttons -->
-                        </div>
-                    </div>
-
-                    <!-- Quantity Section -->
-                    <div class="mb-2">
-                        <label class="fw-bold mb-2 d-block">Quantity (Max 6):</label>
-                        <div class="d-flex align-items-center gap-2">
-                            <button class="btn btn-outline-secondary px-3" type="button" onclick="updateSimpleQty(-1)">-</button>
-                            <input type="text" id="simpleQtyInput" class="form-control text-center" style="width: 50px;" value="1" readonly>
-                            <button class="btn btn-outline-secondary px-3" type="button" onclick="updateSimpleQty(1)">+</button>
-                        </div>
-                        <small id="simpleQtyMsg" class="text-danger d-none mt-1">সর্বোচ্চ ৬ টি নির্বাচন করতে পারবেন।</small>
-                    </div>
-                </div>
-                <div class="modal-footer border-0 pt-0">
-                    <button type="button" class="btn btn-success w-100" onclick="confirmSimpleCart()">Add to Cart</button>
-                </div>
-            </div>
-        </div>
-    </div>
     <!-- Bootstrap 5 JS Bundle CDN -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
