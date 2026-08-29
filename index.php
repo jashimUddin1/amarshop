@@ -62,15 +62,12 @@ $is_logged_in = isset($_SESSION['user_id']) ? true : false;
             box-sizing: border-box;
         }
 
-        body {
-            font-family: Arial, sans-serif;
-            background: var(--bg);
-            color: var(--text);
-        }
-
-        html, body {
-    max-width: 100%;
-    overflow-x: hidden;
+       /* overflow-x: hidden থাকলে sticky-top কাজ করে না */
+body {
+    font-family: Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    overflow-x: hidden; /* html থেকে স্রেফ body তে রাখা হলো */
 }
 
         /* Topbar & Marquee */
@@ -506,6 +503,11 @@ $is_logged_in = isset($_SESSION['user_id']) ? true : false;
 
 <body>
 
+<div class="sticky-top z-3">
+    <!-- Topbar -->
+    <!-- Marquee -->
+    <!-- Header -->
+
     <!-- Topbar & Announcement -->
     <div>
         <div class="topbar py-1">
@@ -603,6 +605,8 @@ $is_logged_in = isset($_SESSION['user_id']) ? true : false;
             </div>
         </div>
     </header>
+
+</div>
 
     <!-- Navigation Menu menu ar kaj pore dhorbo tai comment kora-->
     <!-- <nav class="navbar navbar-expand-lg bg-white border-bottom py-2">
@@ -946,8 +950,16 @@ $is_logged_in = isset($_SESSION['user_id']) ? true : false;
             'slug'          => 'top_rated',
             'products'      => $top_rated ?? [],
             'badge'         => 'Top Rated',
-            'badge_bg'      => 'bg-warning text-dark', // typo ঠিক করা হয়েছে (bg-waring -> bg-warning)
+            'badge_bg'      => 'bg-warning text-dark',
             'percentage_bg' => 'bg-info text-dark'
+        ],
+        [
+            'title'         => 'test',
+            'slug'          => 'top_test',
+            'products'      => $top_test ?? [],
+            'badge'         => 'Top test',
+            'badge_bg'      => 'bg-warning text-dark', 
+            'percentage_bg' => 'bg-info text-success'
         ]
     ];
     ?>
