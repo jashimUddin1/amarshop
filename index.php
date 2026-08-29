@@ -68,6 +68,11 @@ $is_logged_in = isset($_SESSION['user_id']) ? true : false;
             color: var(--text);
         }
 
+        html, body {
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
         /* Topbar & Marquee */
         .topbar {
             background: #0d6efd;
@@ -277,6 +282,47 @@ $is_logged_in = isset($_SESSION['user_id']) ? true : false;
             color: var(--brand);
         }
 
+
+        /* Universal Product Cards */
+        .product-card{
+            border: 1px solid #e9ecef;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+            background: #fff;
+            overflow: hidden;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .product-card:hover{
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
+            border-color: #dee2e6;
+        }
+
+        .product-img-container{
+            position: relative;
+            height: 200px;
+            overflow: hidden;
+            background-color: #f8f9fa;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+        }
+
+        .product-img-container img{
+            max-height: 100%;
+            max-width: 100%;
+            object-fit: contain;
+            transition: transform 0.5s ease;
+        }
+
+        .product-card:hover img{
+            transform: scale(1.05);
+        }
+
         /* add to card modal */
         .mwt {
             min-width: 50%;
@@ -447,6 +493,13 @@ $is_logged_in = isset($_SESSION['user_id']) ? true : false;
                 font-size: 0.85rem;
             }
 
+            .product-img-container{
+                height: 160px;
+            }
+
+            .product-title{
+                font-size: 0.85rem;
+            }
         }
     </style>
 </head>
@@ -854,38 +907,51 @@ $is_logged_in = isset($_SESSION['user_id']) ? true : false;
     </div> -->
 
     <?php
-    // ১. আপনার ডাটাবেজ থেকে ফেচ করা ডাটাগুলোর কালেকশন লিস্ট (টাইটেল, স্লাগ/প্যারামিটার, প্রোডাক্ট লিস্ট, ব্যাজ নাম)
+    // ১. আপনার ডাটাবেজ থেকে ফেচ করা ডাটাগুলোর কালেকশন লিস্ট
     $all_collections = [
         [
-            'title'      => 'New Arrivals',
-            'slug'       => 'new_arrivals',
-            'products'   => $new_arrivals ?? [],
-            'badge'      => 'New',
-            'badge_bg'   => 'bg-danger'
+            'title'         => 'New Arrivals',
+            'slug'          => 'new_arrivals',
+            'products'      => $new_arrivals ?? [],
+            'badge'         => 'New',
+            'badge_bg'      => 'bg-danger',
+            'percentage_bg' => 'bg-dark' // % ব্যাজের ব্যাকগ্রাউন্ড কালার
         ],
         [
-            'title'      => 'Top Deals',
-            'slug'       => 'top_deals',
-            'products'   => $top_deals ?? [],
-            'badge'      => 'Hot Deal',
-            'badge_bg'   => 'bg-warning text-dark'
+            'title'         => 'Top Deals',
+            'slug'          => 'top_deals',
+            'products'      => $top_deals ?? [],
+            'badge'         => 'Hot Deal',
+            'badge_bg'      => 'bg-warning text-dark',
+            'percentage_bg' => 'bg-danger'
         ],
         [
-            'title'      => 'High Discount',
-            'slug'       => 'high_discount',
-            'products'   => $high_discount ?? [],
-            'badge'      => 'Offer',
-            'badge_bg'   => 'bg-primary'
+            'title'         => 'High Discount',
+            'slug'          => 'high_discount',
+            'products'      => $high_discount ?? [],
+            'badge'         => 'Offer',
+            'badge_bg'      => 'bg-primary',
+            'percentage_bg' => 'bg-danger'
         ],
         [
-            'title'      => 'Top Rated',
-            'slug'       => 'top_rated',
-            'products'   => $top_rated ?? [],
-            'badge'      => 'Top Rated',
-            'badge_bg'   => 'bg-success'
+            'title'         => 'Top Sales',
+            'slug'          => 'top_sales',
+            'products'      => $top_sales ?? [],
+            'badge'         => 'Best Seller',
+            'badge_bg'      => 'bg-success',
+            'percentage_bg' => 'bg-danger'
+        ],
+        [
+            'title'         => 'Top Rated',
+            'slug'          => 'top_rated',
+            'products'      => $top_rated ?? [],
+            'badge'         => 'Top Rated',
+            'badge_bg'      => 'bg-warning text-dark', // typo ঠিক করা হয়েছে (bg-waring -> bg-warning)
+            'percentage_bg' => 'bg-info text-dark'
         ]
     ];
     ?>
+
     <?php foreach ($all_collections as $collection): ?>
         <!-- Collection Section Start -->
         <div class="container-fluid px-2 px-md-5 my-5">
@@ -899,7 +965,7 @@ $is_logged_in = isset($_SESSION['user_id']) ? true : false;
             </div>
 
             <!-- Products Grid -->
-            <div class="row row-cols-2 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-3 g-md-4">
+            <div class="row row-cols-2 row-cols-sm-2 row-cols-md-3 py-2 row-cols-lg-4 g-3 g-md-4">
                 <?php if (!empty($collection['products'])): ?>
                     <?php foreach ($collection['products'] as $product): ?>
                         <?php
@@ -924,14 +990,14 @@ $is_logged_in = isset($_SESSION['user_id']) ? true : false;
                                 <!-- Product Image & Dual Badges (Left & Right) -->
                                 <div class="product-img-container text-center mb-2 position-relative">
 
-                                    <!-- বাম পাশে: কালেকশন ব্যাজ (সবসময় দেখাবে) -->
+                                    <!-- বাম পাশে: কালেকশন ব্যাজ (সবসময় দেখাবে) -->
                                     <span class="product-badge <?= $collection['badge_bg']; ?> text-white position-absolute top-0 start-0 px-2 py-1 rounded small fw-bold">
                                         <?= htmlspecialchars($collection['badge']); ?>
                                     </span>
 
-                                    <!-- ডান পাশে: % ডিসকাউন্ট ব্যাজ (ডিসকাউন্ট > ০ হলে দেখাবে) -->
+                                    <!-- ডান পাশে: % ডিসকাউন্ট ব্যাজ (ডাইনামিক কালার) -->
                                     <?php if ($discount_percent > 0): ?>
-                                        <span class="product-badge bg-success text-white position-absolute top-0 end-0 px-2 py-1 rounded small fw-bold">
+                                        <span class="product-badge <?= $collection['percentage_bg'] ?? 'bg-danger'; ?> text-white position-absolute top-0 end-0 px-2 py-1 rounded small fw-bold">
                                             <?= $discount_percent; ?>%
                                         </span>
                                     <?php endif; ?>
@@ -978,7 +1044,7 @@ $is_logged_in = isset($_SESSION['user_id']) ? true : false;
                                         </div>
 
                                         <!-- Action Buttons -->
-                                        <div class="d-flex justify-content-between gap-2">
+                                        <div class="d-flex justify-content-between gap-2 mb-2 mx-2">
                                             <a href="product-details.php?id=<?= $product['id']; ?>" class="btn btn-outline-secondary w-50 btn-sm">
                                                 <span class="d-none d-md-inline"><i class="bi bi-eye me-1"></i></span> View
                                             </a>
@@ -1238,7 +1304,7 @@ $is_logged_in = isset($_SESSION['user_id']) ? true : false;
 
         // ১. ডাটাবেজ থেকে ইউনিক আইটেম কাউন্ট আপডেট
         function updateCartBadge() {
-            fetch('get_cart_count.php')
+            fetch('core/get_cart_count.php')
                 .then(res => res.json())
                 .then(data => {
                     if (data.status === 'success') {
@@ -1251,7 +1317,7 @@ $is_logged_in = isset($_SESSION['user_id']) ? true : false;
 
         // ২. Offcanvas কার্ট ড্রয়ারে বিস্তারিত ডাটা লোড (নতুন লেআউটসহ)
         function loadCartDetails() {
-            fetch('get_cart_data.php')
+            fetch('core/get_cart_data.php')
                 .then(res => res.json())
                 .then(data => {
                     const container = document.getElementById('cartItemsContainer');
@@ -1332,7 +1398,7 @@ $is_logged_in = isset($_SESSION['user_id']) ? true : false;
             formData.append('cart_id', cartId);
             formData.append('action', action);
 
-            fetch('update_cart.php', {
+            fetch('core/update_cart.php', {
                     method: 'POST',
                     body: formData
                 })
@@ -1388,7 +1454,7 @@ $is_logged_in = isset($_SESSION['user_id']) ? true : false;
                 const formData = new FormData();
                 formData.append('cart_id', cartId);
 
-                fetch('remove_cart_item.php', {
+                fetch('core/remove_cart_item.php', {
                         method: 'POST',
                         body: formData
                     })
@@ -1495,7 +1561,7 @@ $is_logged_in = isset($_SESSION['user_id']) ? true : false;
                     formData.append('size', size);
                     formData.append('quantity', quantity);
 
-                    fetch('add_to_cart.php', {
+                    fetch('core/add_to_cart.php', {
                             method: 'POST',
                             body: formData
                         })

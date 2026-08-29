@@ -1,5 +1,5 @@
 <?php
-require_once('auth/config.php');
+require_once('../auth/config.php');
 
 if (!isset($_SESSION['user_id'])) {
     header('Location: auth/login.php?status=warning&message=' . urlencode('Please login to place an order.'));
@@ -97,7 +97,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $pdo->commit();
 
         // ৬. Success পেজে রিডাইরেক্ট
-        header('Location: order_success.php?order_id=' . urlencode($order_number));
+        header('Location: ../order_success.php?order_id=' . urlencode($order_number));
         exit;
 
     } catch (Exception $e) {

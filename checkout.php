@@ -50,7 +50,7 @@ foreach ($cart_items as $item) {
 <div class="container">
     <h3 class="fw-bold mb-4"><i class="bi bi-credit-card text-success me-2"></i>Checkout</h3>
 
-    <form action="place_order.php" method="POST">
+    <form action="core/place_order.php" method="POST">
         <div class="row g-4">
             <!-- Left Side: Delivery Information Form -->
             <div class="col-lg-7">

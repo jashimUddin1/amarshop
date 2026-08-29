@@ -1,5 +1,5 @@
 <?php
-require_once('auth/config.php');
+require_once('../auth/config.php');
 header('Content-Type: application/json');
 
 if (!isset($_SESSION['user_id'])) {
