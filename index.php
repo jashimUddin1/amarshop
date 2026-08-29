@@ -277,250 +277,6 @@ $is_logged_in = isset($_SESSION['user_id']) ? true : false;
             color: var(--brand);
         }
 
-        /* Universal Product Cards */
-        .product-card,
-        .top-deals-card,
-        .high-discount-card,
-        .top-sales-card,
-        .top-review-card {
-            border: 1px solid #e9ecef;
-            border-radius: 10px;
-            transition: all 0.3s ease;
-            background: #fff;
-            overflow: hidden;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .product-card:hover,
-        .top-deals-card:hover,
-        .high-discount-card:hover,
-        .top-sales-card:hover,
-        .top-review-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
-            border-color: #dee2e6;
-        }
-
-        .product-img-container,
-        .top-deals-img-container,
-        .high-discount-img-container,
-        .top-sales-img-container,
-        .top-review-img-container {
-            position: relative;
-            height: 200px;
-            overflow: hidden;
-            background-color: #f8f9fa;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 10px;
-        }
-
-        .product-img-container img,
-        .top-deals-img-container img,
-        .high-discount-img-container img,
-        .top-sales-img-container img,
-        .top-review-img-container img {
-            max-height: 100%;
-            max-width: 100%;
-            object-fit: contain;
-            transition: transform 0.5s ease;
-        }
-
-        .product-card:hover img,
-        .top-deals-card:hover img,
-        .high-discount-card:hover img,
-        .top-sales-card:hover img,
-        .top-review-card:hover img {
-            transform: scale(1.05);
-        }
-
-        /* Badges */
-        .product-badge {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            background-color: var(--brand);
-            color: #fff;
-            font-size: 0.75rem;
-            font-weight: 600;
-            padding: 4px 8px;
-            border-radius: 4px;
-            z-index: 1;
-        }
-
-        .top-deals-badge {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            background-color: #dc3545;
-            color: #fff;
-            font-size: 0.75rem;
-            font-weight: 600;
-            padding: 4px 8px;
-            border-radius: 4px;
-            z-index: 1;
-        }
-
-        .high-discount-badge {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background-color: #f57c00;
-            color: #fff;
-            font-size: 0.75rem;
-            font-weight: 700;
-            padding: 4px 10px;
-            border-radius: 4px;
-            z-index: 1;
-        }
-
-        .top-sales-badge {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            background-color: #28a745;
-            color: #fff;
-            font-size: 0.75rem;
-            font-weight: 600;
-            padding: 4px 8px;
-            border-radius: 4px;
-            z-index: 1;
-        }
-
-        .top-review-badge {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background-color: #f5c71a;
-            color: #333;
-            font-size: 0.75rem;
-            font-weight: 600;
-            padding: 4px 8px;
-            border-radius: 4px;
-            z-index: 1;
-        }
-
-        /* Card Content Body */
-        .product-card-body,
-        .top-deals-card-body,
-        .high-discount-card-body,
-        .top-sales-card-body,
-        .top-review-card-body {
-            padding: 15px;
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-        }
-
-        .product-category,
-        .top-deals-category,
-        .high-discount-category,
-        .top-sales-category,
-        .top-review-category {
-            font-size: 0.8rem;
-            color: var(--muted);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 5px;
-        }
-
-        .product-title,
-        .top-deals-title,
-        .high-discount-title,
-        .top-sales-title,
-        .top-review-title {
-            font-size: 0.95rem;
-            font-weight: 600;
-            color: #333;
-            text-decoration: none;
-            margin-bottom: 10px;
-            display: -webkit-box;
-            line-clamp: 2;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-            transition: color 0.3s;
-        }
-
-        .product-title:hover,
-        .top-deals-title:hover,
-        .high-discount-title:hover,
-        .top-sales-title:hover,
-        .top-review-title:hover {
-            color: var(--brand);
-        }
-
-        /* Pricing & Buttons */
-        .price-wrapper,
-        .top-deals-price-wrapper,
-        .high-discount-price-wrapper,
-        .top-sales-price-wrapper,
-        .top-review-price-wrapper {
-            margin-bottom: 15px;
-        }
-
-        .current-price,
-        .top-deals-current-price,
-        .high-discount-current-price,
-        .top-sales-current-price,
-        .top-review-current-price {
-            font-size: 1.1rem;
-            font-weight: 700;
-            color: var(--brand);
-            margin-right: 5px;
-        }
-
-        .old-price,
-        .top-deals-old-price,
-        .high-discount-old-price,
-        .top-sales-old-price {
-            font-size: 0.9rem;
-            color: #adb5bd;
-            text-decoration: line-through;
-        }
-
-        .btn-add-cart,
-        .btn-top-deals-add-cart,
-        .btn-high-discount-add-cart,
-        .btn-top-sales-add-cart,
-        .btn-top-review-add-cart {
-            width: 100%;
-            background-color: transparent;
-            color: var(--brand);
-            border: 1px solid var(--brand);
-            font-size: 0.85rem;
-            font-weight: 600;
-            padding: 8px;
-            border-radius: 5px;
-            transition: all 0.3s;
-        }
-
-        .btn-add-cart:hover,
-        .btn-top-deals-add-cart:hover,
-        .btn-high-discount-add-cart:hover,
-        .btn-top-sales-add-cart:hover,
-        .btn-top-review-add-cart:hover {
-            background-color: var(--brand);
-            color: #fff;
-        }
-
-        /* Ratings */
-        .rating-wrapper {
-            margin-bottom: 10px;
-            color: #f5c71a;
-            font-size: 0.9rem;
-        }
-
-        .review-count {
-            color: var(--muted);
-            font-size: 0.8rem;
-            margin-left: 5px;
-        }
-
         /* add to card modal */
         .mwt {
             min-width: 50%;
@@ -691,29 +447,6 @@ $is_logged_in = isset($_SESSION['user_id']) ? true : false;
                 font-size: 0.85rem;
             }
 
-            .product-img-container,
-            .top-deals-img-container,
-            .high-discount-img-container,
-            .top-sales-img-container,
-            .top-review-img-container {
-                height: 160px;
-            }
-
-            .product-title,
-            .top-deals-title,
-            .high-discount-title,
-            .top-sales-title,
-            .top-review-title {
-                font-size: 0.85rem;
-            }
-
-            .current-price,
-            .top-deals-current-price,
-            .high-discount-current-price,
-            .top-sales-current-price,
-            .top-review-current-price {
-                font-size: 1rem;
-            }
         }
     </style>
 </head>
@@ -1120,314 +853,204 @@ $is_logged_in = isset($_SESSION['user_id']) ? true : false;
         </div>
     </div> -->
 
-    <!-- New Arrivals Section -->
-    <div class="container-fluid px-2 px-md-5 my-5">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2 class="fw-bold text-dark mb-0">New Arrivals</h2>
-            <a href="collection.php?name=new_arrivals" class="btn btn-success text-decoration-none">
-                View All
-            </a>
-        </div>
+    <?php
+    // ১. আপনার ডাটাবেজ থেকে ফেচ করা ডাটাগুলোর কালেকশন লিস্ট (টাইটেল, স্লাগ/প্যারামিটার, প্রোডাক্ট লিস্ট, ব্যাজ নাম)
+    $all_collections = [
+        [
+            'title'      => 'New Arrivals',
+            'slug'       => 'new_arrivals',
+            'products'   => $new_arrivals ?? [],
+            'badge'      => 'New',
+            'badge_bg'   => 'bg-danger'
+        ],
+        [
+            'title'      => 'Top Deals',
+            'slug'       => 'top_deals',
+            'products'   => $top_deals ?? [],
+            'badge'      => 'Hot Deal',
+            'badge_bg'   => 'bg-warning text-dark'
+        ],
+        [
+            'title'      => 'High Discount',
+            'slug'       => 'high_discount',
+            'products'   => $high_discount ?? [],
+            'badge'      => 'Offer',
+            'badge_bg'   => 'bg-primary'
+        ],
+        [
+            'title'      => 'Top Rated',
+            'slug'       => 'top_rated',
+            'products'   => $top_rated ?? [],
+            'badge'      => 'Top Rated',
+            'badge_bg'   => 'bg-success'
+        ]
+    ];
+    ?>
+    <?php foreach ($all_collections as $collection): ?>
+        <!-- Collection Section Start -->
+        <div class="container-fluid px-2 px-md-5 my-5">
 
-        <div class="row row-cols-2 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-3 g-md-4">
-            <?php if (!empty($new_arrivals)): ?>
-                <?php foreach ($new_arrivals as $product): ?>
-                    <div class="col">
-                        <!-- ১. কার্ডে position-relative যুক্ত করা হয়েছে -->
-                        <div class="product-card position-relative border rounded p-2 bg-white shadow-sm h-100">
+            <!-- Header: Title & View All Link -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="fw-bold text-dark mb-0"><?= htmlspecialchars($collection['title']); ?></h2>
+                <a href="collection.php?name=<?= urlencode($collection['slug']); ?>" class="btn btn-success text-decoration-none">
+                    View All
+                </a>
+            </div>
 
-                            <div class="product-img-container text-center mb-2">
-                                <span class="product-badge bg-danger text-white position-absolute top-0 start-0 m-2 px-2 py-1 rounded small">New</span>
-                                <img src="<?= base_url('uploads/' . ($product['main_img'] ?: 'placeholder.jpg')); ?>" class="img-fluid rounded" alt="<?= htmlspecialchars($product['name']); ?>">
-                            </div>
+            <!-- Products Grid -->
+            <div class="row row-cols-2 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-3 g-md-4">
+                <?php if (!empty($collection['products'])): ?>
+                    <?php foreach ($collection['products'] as $product): ?>
+                        <?php
+                        // ১. প্রাইস ও ডিসকাউন্ট হিসেব
+                        $sell_price   = (float)($product['sell_price'] ?? 0);
+                        $actual_price = (float)($product['actual_price'] ?? $sell_price);
 
-                            <div class="product-card-body d-flex flex-column justify-content-between">
-                                <div>
-                                    <div class="d-flex justify-content-between">
-                                        <p class="product-category text-muted small mb-1 d-none d-md-block text-capitalize"><?= htmlspecialchars($product['category_name'] ?: 'General'); ?></p>
-                                        <p class="product-category text-muted small mb-1 d-none d-md-block text-capitalize"><?= htmlspecialchars($product['product_code'] ?: ''); ?></p>
-                                    </div>
-                                    <a href="product-details.php?id=<?= $product['id']; ?>" class="product-title text-decoration-none text-dark fw-bold d-block text-truncate"><?= htmlspecialchars($product['name']); ?></a>
+                        $has_discount = ($sell_price > $actual_price && $sell_price > 0);
+                        $discount_percent = 0;
+                        if ($has_discount) {
+                            $discount_percent = round((($sell_price - $actual_price) / $sell_price) * 100);
+                        }
+
+                        // ২. রিভিউ ও রেটিং তথ্য
+                        $rating        = (float)($product['rating'] ?? 0);
+                        $total_reviews = (int)($product['total_reviews'] ?? 0);
+                        ?>
+
+                        <div class="col">
+                            <div class="product-card position-relative border rounded p-2 bg-white shadow-sm h-100">
+
+                                <!-- Product Image & Dual Badges (Left & Right) -->
+                                <div class="product-img-container text-center mb-2 position-relative">
+
+                                    <!-- বাম পাশে: কালেকশন ব্যাজ (সবসময় দেখাবে) -->
+                                    <span class="product-badge <?= $collection['badge_bg']; ?> text-white position-absolute top-0 start-0 px-2 py-1 rounded small fw-bold">
+                                        <?= htmlspecialchars($collection['badge']); ?>
+                                    </span>
+
+                                    <!-- ডান পাশে: % ডিসকাউন্ট ব্যাজ (ডিসকাউন্ট > ০ হলে দেখাবে) -->
+                                    <?php if ($discount_percent > 0): ?>
+                                        <span class="product-badge bg-success text-white position-absolute top-0 end-0 px-2 py-1 rounded small fw-bold">
+                                            <?= $discount_percent; ?>%
+                                        </span>
+                                    <?php endif; ?>
+
+                                    <img src="<?= base_url('uploads/' . ($product['main_img'] ?: 'placeholder.jpg')); ?>" class="img-fluid rounded" alt="<?= htmlspecialchars($product['name']); ?>">
                                 </div>
 
-                                <div class="mt-2">
-                                    <div class="price-wrapper mb-2">
-                                        <span class="current-price fw-bold text-success">৳<?= number_format($product['actual_price'] ?? $product['sell_price'], 2); ?></span>
-                                    </div>
-
-                                    <div class="d-flex justify-content-between gap-2">
-                                        <a href="product_details.php?product_id=<?= $product['id'] ?>" class="btn btn-outline-secondary w-50 btn-sm">
-                                            <span class="d-none d-md-inline"><i class="bi bi-eye me-1"></i></span> View
+                                <!-- Product Details -->
+                                <div class="product-card-body d-flex flex-column justify-content-between">
+                                    <div>
+                                        <div class="d-flex justify-content-between">
+                                            <p class="product-category text-muted small mb-1 d-none d-md-block text-capitalize">
+                                                <?= htmlspecialchars($product['category_name'] ?? 'General'); ?>
+                                            </p>
+                                            <p class="product-category text-muted small mb-1 d-none d-md-block text-capitalize">
+                                                <?= htmlspecialchars($product['product_code'] ?? ''); ?>
+                                            </p>
+                                        </div>
+                                        <a href="product-details.php?id=<?= $product['id']; ?>" class="product-title text-decoration-none text-dark fw-bold d-block text-truncate">
+                                            <?= htmlspecialchars($product['name']); ?>
                                         </a>
 
-                                        <!-- ২. Add to Cart বাটন (যা ক্লিক করলে পপ-আপ আসবে) -->
-                                        <button type="button" class="btn btn-outline-success w-50 btn-sm open-options-btn">
-                                            <span class="d-none d-md-inline"><i class="bi bi-cart-plus me-1"></i></span> Add <span class="d-none d-md-inline">to Cart</span>
-                                        </button>
+                                        <!-- ডাইনামিক রিভিউ অ্যান্ড রেটিং -->
+                                        <?php if ($total_reviews > 0): ?>
+                                            <div class="product-rating my-1 d-flex align-items-center gap-1">
+                                                <i class="bi bi-star-fill text-warning small"></i>
+                                                <span class="fw-bold small text-dark"><?= number_format($rating, 1); ?></span>
+                                                <small class="text-muted" style="font-size: 0.75rem;">(<?= $total_reviews; ?>)</small>
+                                            </div>
+                                        <?php endif; ?>
                                     </div>
-                                </div>
-                            </div>
 
-                            <!-- ৩. পপ-আপ অপশন বক্স (Bootstrap Utility Classes দিয়ে ডিজাইন করা) -->
-                            <div class="card-options-overlay position-absolute bottom-0 end-0 mwt bg-white rounded p-3 shadow d-none flex-column justify-content-between cart_popup" style="z-index: 10;">
+                                    <div class="mt-2">
+                                        <!-- ডাইনামিক প্রাইস -->
+                                        <div class="price-wrapper mb-2 d-flex align-items-center gap-2">
+                                            <span class="current-price fw-bold text-success fs-6">
+                                                ৳<?= number_format($actual_price, 2); ?>
+                                            </span>
+                                            <?php if ($has_discount): ?>
+                                                <span class="old-price text-muted text-decoration-line-through small">
+                                                    ৳<?= number_format($sell_price, 2); ?>
+                                                </span>
+                                            <?php endif; ?>
+                                        </div>
 
-                                <!-- হেডার: টাইটেল ও ক্লোজ বাটন -->
-                                <div class="d-flex justify-content-between align-items-center pb-1 border-bottom">
-                                    <span class="fw-bold text-dark small">Select Options</span>
-                                    <button type="button" class="btn-close close-options-btn" style="font-size: 0.7rem;"></button>
-                                </div>
+                                        <!-- Action Buttons -->
+                                        <div class="d-flex justify-content-between gap-2">
+                                            <a href="product-details.php?id=<?= $product['id']; ?>" class="btn btn-outline-secondary w-50 btn-sm">
+                                                <span class="d-none d-md-inline"><i class="bi bi-eye me-1"></i></span> View
+                                            </a>
 
-                                <!-- ডাইনামিক সাইজ সিলেক্ট অংশ -->
-                                <?php if (!empty($product['size'])): ?>
-                                    <div class="my-2">
-                                        <label class="d-block text-secondary fw-semibold small mb-1" style="font-size: 0.75rem;">Size:</label>
-                                        <div class="d-flex gap-1 justify-content-start flex-wrap">
-                                            <?php
-                                            $sizes = array_map('trim', explode(',', $product['size']));
-                                            foreach ($sizes as $index => $size):
-                                                if (!empty($size)):
-                                            ?>
-                                                    <!-- size-btn ক্লাসটি যোগ করা হয়েছে এবং dynamic active দেয়া হয়েছে -->
-                                                    <button type="button" class="btn btn-sm btn-outline-success size-btn px-2 py-0 fw-bold <?= $index === 0 ? 'active' : ''; ?>">
-                                                        <?= htmlspecialchars($size); ?>
-                                                    </button>
-                                            <?php
-                                                endif;
-                                            endforeach;
-                                            ?>
+                                            <button type="button" class="btn btn-outline-success w-50 btn-sm open-options-btn">
+                                                <span class="d-none d-md-inline"><i class="bi bi-cart-plus me-1"></i></span> Add <span class="d-none d-md-inline">to Cart</span>
+                                            </button>
                                         </div>
                                     </div>
-                                <?php endif; ?>
-
-                                <!-- পরিমাণ (Quantity) অংশ -->
-                                <div class="mb-2">
-                                    <label class="d-block text-secondary fw-semibold small mb-1" style="font-size: 0.75rem;">Quantity (Max 6):</label>
-                                    <div class="d-flex gap-1">
-                                        <button type="button" class="btn btn-sm btn-light border px-2 py-0 minus-btn fw-bold">-</button>
-                                        <input type="text" class="form-control form-control-sm text-center p-0 qty-input fw-bold" value="1" readonly style="width: 35px; height: 28px; font-size: 0.8rem;">
-                                        <button type="button" class="btn btn-sm btn-light border px-2 py-0 plus-btn fw-bold">+</button>
-                                    </div>
                                 </div>
 
-                                <!-- ফাইনাল সাবমিট বাটন -->
-                                <button type="button"
-                                    class="btn btn-success btn-sm w-100 fw-semibold final-add-cart-btn"
-                                    data-product-id="<?= $product['id']; ?>"
-                                    data-product-code="<?= $product['product_code']; ?>">
-                                    Add to Cart
-                                </button>
+                                <!-- Options Pop-up Overlay -->
+                                <div class="card-options-overlay position-absolute bottom-0 end-0 mwt bg-white rounded p-3 shadow d-none flex-column justify-content-between cart_popup" style="z-index: 10;">
 
-                            </div>
-                            <!-- অপশন বক্স শেষ -->
-
-                        </div>
-                    </div>
-                <?php endforeach; ?>
-            <?php else: ?>
-                <p class="text-muted">No products found in New Arrivals.</p>
-            <?php endif; ?>
-
-        </div>
-    </div>
-
-    <!-- Top Deals Section -->
-    <div class="container-fluid px-2 px-md-5 my-5">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2 class="fw-bold text-dark mb-0">Top Deals</h2>
-            <a href="collection.php?name=top_deals" class="btn btn-success text-decoration-none">
-                View All
-            </a>
-        </div>
-
-        <div class="row row-cols-2 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-3 g-md-4">
-            <?php if (!empty($top_deals)): ?>
-                <?php foreach ($top_deals as $product): ?>
-                    <div class="col">
-                        <div class="top-deals-card">
-                            <div class="top-deals-img-container">
-                                <span class="top-deals-badge">Hot Deal</span>
-                                <img src="<?= base_url('uploads/' . ($product['main_img'] ?: 'placeholder.jpg')); ?>" class="img-fluid" alt="<?= htmlspecialchars($product['name']); ?>">
-                            </div>
-                            <div class="top-deals-card-body">
-                                <div>
-                                    <p class="top-deals-category mb-1"><?= htmlspecialchars($product['category_name'] ?: 'General'); ?></p>
-                                    <a href="product-details.php?id=<?= $product['id']; ?>" class="top-deals-title"><?= htmlspecialchars($product['name']); ?></a>
-                                </div>
-                                <div>
-                                    <div class="top-deals-price-wrapper mb-2">
-                                        <span class="top-deals-current-price">৳<?= number_format($product['actual_price'] ?? $product['sell_price'], 2); ?></span>
-                                        <?php if (!empty($product['discount_percent']) && $product['discount_percent'] > 0): ?>
-                                            <span class="top-deals-old-price">৳<?= number_format($product['sell_price'], 2); ?></span>
-                                        <?php endif; ?>
+                                    <div class="d-flex justify-content-between align-items-center pb-1 border-bottom">
+                                        <span class="fw-bold text-dark small">Select Options</span>
+                                        <button type="button" class="btn-close close-options-btn" style="font-size: 0.7rem;"></button>
                                     </div>
-                                    <div class="d-flex">
-                                        <a href="product_details.php" class="btn btn-quick-view" title="Quick View">
-                                            <i class="bi bi-eye me-1"></i> View
-                                        </a>&nbsp;
-                                        <button class="btn btn-add-cart">
-                                            <i class="bi bi-cart-plus me-1"></i> Add to Cart
-                                        </button>
+
+                                    <!-- Dynamic Size Selection -->
+                                    <?php if (!empty($product['size'])): ?>
+                                        <div class="my-2">
+                                            <label class="d-block text-secondary fw-semibold small mb-1" style="font-size: 0.75rem;">Size:</label>
+                                            <div class="d-flex gap-1 justify-content-start flex-wrap">
+                                                <?php
+                                                $sizes = array_map('trim', explode(',', $product['size']));
+                                                foreach ($sizes as $index => $size):
+                                                    if (!empty($size)):
+                                                ?>
+                                                        <button type="button" class="btn btn-sm btn-outline-success size-btn px-2 py-0 fw-bold <?= $index === 0 ? 'active' : ''; ?>">
+                                                            <?= htmlspecialchars($size); ?>
+                                                        </button>
+                                                <?php
+                                                    endif;
+                                                endforeach;
+                                                ?>
+                                            </div>
+                                        </div>
+                                    <?php endif; ?>
+
+                                    <!-- Quantity Selection -->
+                                    <div class="mb-2">
+                                        <label class="d-block text-secondary fw-semibold small mb-1" style="font-size: 0.75rem;">Quantity (Max 6):</label>
+                                        <div class="d-flex gap-1">
+                                            <button type="button" class="btn btn-sm btn-light border px-2 py-0 minus-btn fw-bold">-</button>
+                                            <input type="text" class="form-control form-control-sm text-center p-0 qty-input fw-bold" value="1" readonly style="width: 35px; height: 28px; font-size: 0.8rem;">
+                                            <button type="button" class="btn btn-sm btn-light border px-2 py-0 plus-btn fw-bold">+</button>
+                                        </div>
                                     </div>
+
+                                    <!-- Final Submit Button -->
+                                    <button type="button"
+                                        class="btn btn-success btn-sm w-100 fw-semibold final-add-cart-btn"
+                                        data-product-id="<?= $product['id']; ?>"
+                                        data-product-code="<?= htmlspecialchars($product['product_code'] ?? ''); ?>">
+                                        Add to Cart
+                                    </button>
+
                                 </div>
+
                             </div>
                         </div>
+                    <?php endforeach; ?>
+                <?php else: ?>
+                    <div class="col-12">
+                        <p class="text-muted">No products found in <?= htmlspecialchars($collection['title']); ?>.</p>
                     </div>
-                <?php endforeach; ?>
-            <?php else: ?>
-                <p class="text-muted">No products found in Top Deals.</p>
-            <?php endif; ?>
+                <?php endif; ?>
+            </div>
         </div>
-    </div>
-
-    <!-- High Discount Section -->
-    <div class="container-fluid px-2 px-md-5 my-5">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2 class="fw-bold text-dark mb-0">High Discount Products</h2>
-            <a href="collection.php?name=high_discount" class="btn btn-success text-decoration-none">
-                View All
-            </a>
-        </div>
-
-        <div class="row row-cols-2 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-3 g-md-4">
-            <?php if (!empty($high_discount)): ?>
-                <?php foreach ($high_discount as $product): ?>
-                    <div class="col">
-                        <div class="high-discount-card">
-                            <div class="high-discount-img-container">
-                                <span class="high-discount-badge"><?= $product['discount_percent'] ?? 0; ?>% OFF</span>
-                                <img src="<?= base_url('uploads/' . ($product['main_img'] ?: 'placeholder.jpg')); ?>" class="img-fluid" alt="<?= htmlspecialchars($product['name']); ?>">
-                            </div>
-                            <div class="high-discount-card-body">
-                                <div>
-                                    <p class="high-discount-category mb-1"><?= htmlspecialchars($product['category_name'] ?: 'General'); ?></p>
-                                    <a href="product-details.php?id=<?= $product['id']; ?>" class="high-discount-title"><?= htmlspecialchars($product['name']); ?></a>
-                                </div>
-                                <div>
-                                    <div class="high-discount-price-wrapper mb-2">
-                                        <span class="high-discount-current-price">৳<?= number_format($product['actual_price'] ?? $product['sell_price'], 2); ?></span>
-                                        <span class="high-discount-old-price">৳<?= number_format($product['sell_price'], 2); ?></span>
-                                    </div>
-                                    <div class="d-flex">
-                                        <a href="product_details.php" class="btn btn-quick-view" title="Quick View">
-                                            <i class="bi bi-eye me-1"></i> View
-                                        </a>&nbsp;
-                                        <button class="btn btn-add-cart">
-                                            <i class="bi bi-cart-plus me-1"></i> Add to Cart
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                <?php endforeach; ?>
-            <?php else: ?>
-                <p class="text-muted">No products found in High Discount.</p>
-            <?php endif; ?>
-        </div>
-    </div>
-
-    <!-- Top Sales Section -->
-    <div class="container-fluid px-2 px-md-5 my-5">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2 class="fw-bold text-dark mb-0">Top Sales</h2>
-            <a href="collection.php?name=top_sales" class="btn btn-success text-decoration-none">
-                View All
-            </a>
-        </div>
-
-        <div class="row row-cols-2 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-3 g-md-4">
-            <?php if (!empty($top_sales)): ?>
-                <?php foreach ($top_sales as $product): ?>
-                    <div class="col">
-                        <div class="top-sales-card">
-                            <div class="top-sales-img-container">
-                                <span class="top-sales-badge">Best Seller</span>
-                                <img src="<?= base_url('uploads/' . ($product['main_img'] ?: 'placeholder.jpg')); ?>" class="img-fluid" alt="<?= htmlspecialchars($product['name']); ?>">
-                            </div>
-                            <div class="top-sales-card-body">
-                                <div>
-                                    <p class="top-sales-category mb-1"><?= htmlspecialchars($product['category_name'] ?: 'General'); ?></p>
-                                    <a href="product-details.php?id=<?= $product['id']; ?>" class="top-sales-title"><?= htmlspecialchars($product['name']); ?></a>
-                                </div>
-                                <div>
-                                    <div class="top-sales-price-wrapper mb-2">
-                                        <span class="top-sales-current-price">৳<?= number_format($product['actual_price'] ?? $product['sell_price'], 2); ?></span>
-                                        <?php if (!empty($product['discount_percent']) && $product['discount_percent'] > 0): ?>
-                                            <span class="top-sales-old-price">৳<?= number_format($product['sell_price'], 2); ?></span>
-                                        <?php endif; ?>
-                                    </div>
-                                    <div class="d-flex">
-                                        <a href="product_details.php" class="btn btn-quick-view" title="Quick View">
-                                            <i class="bi bi-eye me-1"></i> View
-                                        </a>&nbsp;
-                                        <button class="btn btn-add-cart">
-                                            <i class="bi bi-cart-plus me-1"></i> Add to Cart
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                <?php endforeach; ?>
-            <?php else: ?>
-                <p class="text-muted">No products found in Top Sales.</p>
-            <?php endif; ?>
-        </div>
-    </div>
-
-    <!-- Top Review Products Section -->
-    <div class="container-fluid px-2 px-md-5 my-5">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2 class="fw-bold text-dark mb-0">Top Rated Products</h2>
-            <a href="collection.php?name=top_rated" class="btn btn-success text-decoration-none">
-                View All
-            </a>
-        </div>
-
-        <div class="row row-cols-2 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-3 g-md-4">
-            <?php if (!empty($top_rated)): ?>
-                <?php foreach ($top_rated as $product): ?>
-                    <div class="col">
-                        <div class="top-review-card">
-                            <div class="top-review-img-container">
-                                <span class="top-review-badge">Top Rated</span>
-                                <img src="<?= base_url('uploads/' . ($product['main_img'] ?: 'placeholder.jpg')); ?>" class="img-fluid" alt="<?= htmlspecialchars($product['name']); ?>">
-                            </div>
-                            <div class="top-review-card-body">
-                                <div>
-                                    <p class="top-review-category mb-1"><?= htmlspecialchars($product['category_name'] ?: 'General'); ?></p>
-                                    <a href="product-details.php?id=<?= $product['id']; ?>" class="top-review-title"><?= htmlspecialchars($product['name']); ?></a>
-                                    <div class="rating-wrapper">
-                                        <i class="bi bi-star-fill"></i>
-                                        <i class="bi bi-star-fill"></i>
-                                        <i class="bi bi-star-fill"></i>
-                                        <i class="bi bi-star-fill"></i>
-                                        <i class="bi bi-star-fill"></i>
-                                        <span class="review-count">(120 Reviews)</span>
-                                    </div>
-                                </div>
-                                <div>
-                                    <div class="top-review-price-wrapper mb-2">
-                                        <span class="top-review-current-price">৳<?= number_format($product['actual_price'] ?? $product['sell_price'], 0); ?></span>
-                                    </div>
-                                    <div class="d-flex">
-                                        <a href="product_details.php" class="btn btn-quick-view" title="Quick View">
-                                            <i class="bi bi-eye me-1"></i> View
-                                        </a>&nbsp;
-                                        <button class="btn btn-add-cart">
-                                            <i class="bi bi-cart-plus me-1"></i> Add to Cart
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                <?php endforeach; ?>
-            <?php else: ?>
-                <p class="text-muted">No products found in Top Rated.</p>
-            <?php endif; ?>
-        </div>
-    </div>
+        <!-- Collection Section End -->
+    <?php endforeach; ?>
 
     <!-- Footer Section -->
     <footer class="footer mt-5">

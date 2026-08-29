@@ -25,6 +25,13 @@ $top_deals     = get_products_by_collection($pdo, 'top_deals');
 $high_discount = get_products_by_collection($pdo, 'high_discount');
 $top_sales     = get_products_by_collection($pdo, 'top_sales');
 $top_rated     = get_products_by_collection($pdo, 'top_rated');
+
+$is_logged_in = isset($_SESSION['user_id']) ? true : false;
+
+
+// echo "<pre>";
+// print_r($_SESSION);
+// echo "</pre>";
 ?>
 <!doctype html>
 <html lang="en">
@@ -519,6 +526,11 @@ $top_rated     = get_products_by_collection($pdo, 'top_rated');
             min-width: 50%;
         }
 
+        .cart_popup {
+            margin-right: 5px;
+            margin-bottom: 5px;
+        }
+
         /* Footer */
         .footer {
             background-color: #212529;
@@ -760,13 +772,47 @@ $top_rated     = get_products_by_collection($pdo, 'top_rated');
 
                 <!-- Action Icons -->
                 <div class="icons-area">
-                    <a href="#" class="icon-btn" title="Cart">
+                    <!-- Cart Icon Button -->
+                    <a href="#cartOffcanvas" class="icon-btn" data-bs-toggle="offcanvas" role="button" aria-controls="cartOffcanvas" title="Cart">
                         <i class="bi bi-cart3"></i>
-                        <span class="badge bg-danger rounded-pill">3</span>
+                        <!-- id="cartBadge" যুক্ত করা হয়েছে -->
+                        <span class="badge bg-success rounded-pill" id="cartBadge">0</span>
                     </a>
-                    <a href="#" class="icon-btn" title="Profile">
-                        <i class="bi bi-person"></i>
-                    </a>
+
+                    <!-- Navbar User Icon -->
+                    <?php if (!$is_logged_in): ?>
+                        <!-- ১. লগইন না থাকলে: আউটলাইন আইকন & ডাইরেক্ট লগইন পেজের লিংক -->
+                        <a href="auth/login.php" class="icon-btn" title="Login / Register">
+                            <i class="bi bi-person"></i>
+                            <span class="badge bg-danger rounded-pill">?</span>
+                        </a>
+                    <?php else: ?>
+                        <!-- ২. লগইন থাকলে: ফিল করা আইকন & Offcanvas ট্র্রিগার বাটন -->
+                        <?php
+                        $user_name = trim($_SESSION['user_name'] ?? '');
+
+                        if (!empty($user_name)) {
+                            // ১. নাম থেকে প্রথম শব্দটি বের করা
+                            $first_word = explode(' ', $user_name)[0];
+
+                            // ২. প্রথম শব্দ ৩ অক্ষরের বেশি কি না চেক করা (multibyte safe string length)
+                            if (mb_strlen($first_word) > 3) {
+                                $display_name = mb_substr($first_word, 0, 3) . '.';
+                            } else {
+                                $display_name = $first_word;
+                            }
+                        } else {
+                            $display_name = 'User';
+                        }
+                        ?>
+                        <button class="icon-btn" type="button" data-bs-toggle="offcanvas" data-bs-target="#userProfileDrawer" aria-controls="userProfileDrawer" title="My Account">
+                            <i class="bi bi-person"></i>
+                            <span class="badge bg-success">
+                                <?= htmlspecialchars($display_name); ?>
+                            </span>
+                        </button>
+                    <?php endif; ?>
+
                 </div>
             </div>
         </div>
@@ -886,6 +932,33 @@ $top_rated     = get_products_by_collection($pdo, 'top_rated');
             </ul>
         </div>
     </div>
+
+    <!-- Session Alert Messages (Success, Warning, Danger) -->
+    <?php if (isset($_SESSION['status']) && isset($_SESSION['message'])): ?>
+        <?php
+        $alert_type = 'danger';
+        if ($_SESSION['status'] === 'success') {
+            $alert_type = 'success';
+        } elseif ($_SESSION['status'] === 'warning') {
+            $alert_type = 'warning';
+        }
+        ?>
+        <div class="container my-3">
+            <div class="alert alert-<?= $alert_type; ?> alert-dismissible fade show shadow-sm py-2 px-3 mb-0" role="alert">
+                <div class="d-flex align-items-center">
+                    <div>
+                        <?= htmlspecialchars($_SESSION['message']); ?>
+                    </div>
+                </div>
+                <button type="button" class="btn-close py-2 px-3" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        </div>
+        <?php
+        // মেসেজ দেখানোর পর Session মুছে ফেলা হচ্ছে
+        unset($_SESSION['status']);
+        unset($_SESSION['message']);
+        ?>
+    <?php endif; ?>
 
     <!-- Hero Slider -->
     <div id="heroCarousel" class="carousel slide carousel-fade shadow-sm my-3" data-bs-ride="carousel">
@@ -1084,7 +1157,7 @@ $top_rated     = get_products_by_collection($pdo, 'top_rated');
 
                                     <div class="d-flex justify-content-between gap-2">
                                         <a href="product_details.php?product_id=<?= $product['id'] ?>" class="btn btn-outline-secondary w-50 btn-sm">
-                                            <span class="d-none d-md-inline"><i class="bi bi-eye me-1"></i></span>  View
+                                            <span class="d-none d-md-inline"><i class="bi bi-eye me-1"></i></span> View
                                         </a>
 
                                         <!-- ২. Add to Cart বাটন (যা ক্লিক করলে পপ-আপ আসবে) -->
@@ -1096,7 +1169,7 @@ $top_rated     = get_products_by_collection($pdo, 'top_rated');
                             </div>
 
                             <!-- ৩. পপ-আপ অপশন বক্স (Bootstrap Utility Classes দিয়ে ডিজাইন করা) -->
-                            <div class="card-options-overlay position-absolute bottom-0 end-0 mwt bg-white rounded p-3 shadow d-none flex-column justify-content-between" style="z-index: 10;">
+                            <div class="card-options-overlay position-absolute bottom-0 end-0 mwt bg-white rounded p-3 shadow d-none flex-column justify-content-between cart_popup" style="z-index: 10;">
 
                                 <!-- হেডার: টাইটেল ও ক্লোজ বাটন -->
                                 <div class="d-flex justify-content-between align-items-center pb-1 border-bottom">
@@ -1110,14 +1183,12 @@ $top_rated     = get_products_by_collection($pdo, 'top_rated');
                                         <label class="d-block text-secondary fw-semibold small mb-1" style="font-size: 0.75rem;">Size:</label>
                                         <div class="d-flex gap-1 justify-content-start flex-wrap">
                                             <?php
-                                            // কমা দিয়ে আলাদা করা সাইজগুলোকে অ্যারেতে কনভার্ট করা
                                             $sizes = array_map('trim', explode(',', $product['size']));
-
                                             foreach ($sizes as $index => $size):
                                                 if (!empty($size)):
                                             ?>
-                                                    <!-- প্রথম সাইজটি ডিফল্টভাবে active থাকবে -->
-                                                    <button type="button" class="btn btn-sm btn-outline-success px-2 py-0 fw-bold <?= $index === 0 ? 'active' : ''; ?>">
+                                                    <!-- size-btn ক্লাসটি যোগ করা হয়েছে এবং dynamic active দেয়া হয়েছে -->
+                                                    <button type="button" class="btn btn-sm btn-outline-success size-btn px-2 py-0 fw-bold <?= $index === 0 ? 'active' : ''; ?>">
                                                         <?= htmlspecialchars($size); ?>
                                                     </button>
                                             <?php
@@ -1131,7 +1202,7 @@ $top_rated     = get_products_by_collection($pdo, 'top_rated');
                                 <!-- পরিমাণ (Quantity) অংশ -->
                                 <div class="mb-2">
                                     <label class="d-block text-secondary fw-semibold small mb-1" style="font-size: 0.75rem;">Quantity (Max 6):</label>
-                                    <div class="d-flex align-items-center justify-content-center gap-1">
+                                    <div class="d-flex gap-1">
                                         <button type="button" class="btn btn-sm btn-light border px-2 py-0 minus-btn fw-bold">-</button>
                                         <input type="text" class="form-control form-control-sm text-center p-0 qty-input fw-bold" value="1" readonly style="width: 35px; height: 28px; font-size: 0.8rem;">
                                         <button type="button" class="btn btn-sm btn-light border px-2 py-0 plus-btn fw-bold">+</button>
@@ -1139,9 +1210,13 @@ $top_rated     = get_products_by_collection($pdo, 'top_rated');
                                 </div>
 
                                 <!-- ফাইনাল সাবমিট বাটন -->
-                                <button type="button" class="btn btn-success btn-sm w-100 fw-semibold final-add-cart-btn">
+                                <button type="button"
+                                    class="btn btn-success btn-sm w-100 fw-semibold final-add-cart-btn"
+                                    data-product-id="<?= $product['id']; ?>"
+                                    data-product-code="<?= $product['product_code']; ?>">
                                     Add to Cart
                                 </button>
+
                             </div>
                             <!-- অপশন বক্স শেষ -->
 
@@ -1438,19 +1513,302 @@ $top_rated     = get_products_by_collection($pdo, 'top_rated');
     </footer>
 
 
+    <!-- Right Side Cart Offcanvas Drawer -->
+    <div class="offcanvas offcanvas-end" tabindex="-1" id="cartOffcanvas" aria-labelledby="cartOffcanvasLabel" style="width: 380px;">
+        <div class="offcanvas-header border-bottom">
+            <h5 class="offcanvas-title fw-bold text-dark" id="cartOffcanvasLabel">
+                <i class="bi bi-bag-check text-success me-2"></i>Your Shopping Cart
+            </h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+
+        <div class="offcanvas-body d-flex flex-column justify-content-between p-3">
+            <!-- ডিলিট মেসেজ দেখানোর জন্য অ্যালার্ট নোটিফিকেশন কন্টেইনার -->
+            <div id="cartAlertMessage"></div>
+
+            <!-- Cart Items List Container -->
+            <div id="cartItemsContainer" class="flex-grow-1 overflow-auto pe-1">
+                <!-- Dynamic Cart Items will be loaded here via AJAX -->
+                <div class="text-center py-5 text-muted">
+                    <i class="bi bi-cart-x fs-1 opacity-50"></i>
+                    <p class="mt-2 mb-0">Your cart is empty</p>
+                </div>
+            </div>
+
+            <!-- Footer / Checkout Section -->
+            <div class="border-top pt-3 mt-2">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span class="fw-bold text-secondary">Subtotal:</span>
+                    <span class="fw-bold fs-5 text-success" id="cartSubtotal">৳0.00</span>
+                </div>
+                <div class="d-grid gap-2">
+                    <a href="cart.php" class="btn btn-outline-success fw-semibold">View Full Cart</a>
+                    <a href="checkout.php" class="btn btn-success fw-semibold">Proceed to Checkout</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <?php if ($is_logged_in): ?>
+        <!-- Profile Offcanvas Drawer -->
+        <div class="offcanvas offcanvas-end" tabindex="-1" id="userProfileDrawer" aria-labelledby="userProfileDrawerLabel" style="width: 330px;">
+
+            <!-- Drawer Header -->
+            <div class="offcanvas-header bg-light border-bottom">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="bg-success text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 42px; height: 42px; font-size: 1.2rem; font-weight: bold;">
+                        <?= strtoupper(substr($_SESSION['user_name'] ?? 'U', 0, 1)); ?>
+                    </div>
+                    <div>
+                        <h6 class="offcanvas-title fw-bold mb-0" id="userProfileDrawerLabel">
+                            <?= htmlspecialchars($_SESSION['user_name'] ?? 'My Account'); ?>
+                        </h6>
+                        <small class="text-muted"><?= htmlspecialchars($_SESSION['user_email'] ?? 'Welcome back!'); ?></small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+            </div>
+
+            <!-- Drawer Menu Items -->
+            <div class="offcanvas-body p-0">
+                <div class="list-group list-group-flush">
+
+                    <a href="user/profile.php" class="list-group-item list-group-item-action py-3 px-4 border-0 d-flex align-items-center">
+                        <i class="bi bi-person-vcard text-primary me-3 fs-5"></i>
+                        <span class="fw-semibold text-dark">My Profile</span>
+                    </a>
+
+                    <a href="user/my_orders.php" class="list-group-item list-group-item-action py-3 px-4 border-0 d-flex align-items-center">
+                        <i class="bi bi-box-seam text-warning me-3 fs-5"></i>
+                        <span class="fw-semibold text-dark">My Orders</span>
+                    </a>
+
+                    <a href="user/addresses.php" class="list-group-item list-group-item-action py-3 px-4 border-0 d-flex align-items-center">
+                        <i class="bi bi-geo-alt text-danger me-3 fs-5"></i>
+                        <span class="fw-semibold text-dark">Saved Addresses</span>
+                    </a>
+
+                    <a href="user/transactions.php" class="list-group-item list-group-item-action py-3 px-4 border-0 d-flex align-items-center">
+                        <i class="bi bi-receipt text-info me-3 fs-5"></i>
+                        <span class="fw-semibold text-dark">Transaction History</span>
+                    </a>
+
+                    <hr class="my-2">
+
+                    <a href="auth/logout.php" class="list-group-item list-group-item-action py-3 px-4 border-0 d-flex align-items-center text-danger">
+                        <i class="bi bi-box-arrow-right me-3 fs-5"></i>
+                        <span class="fw-bold">Logout</span>
+                    </a>
+
+                </div>
+            </div>
+        </div>
+    <?php endif; ?>
+
+
     <!-- Bootstrap 5 JS Bundle CDN -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
+        const isLoggedIn = <?= $is_logged_in; ?>;
+
+        // ১. ডাটাবেজ থেকে ইউনিক আইটেম কাউন্ট আপডেট
+        function updateCartBadge() {
+            fetch('get_cart_count.php')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        const badge = document.getElementById('cartBadge');
+                        if (badge) badge.innerText = data.cart_count;
+                    }
+                })
+                .catch(err => console.error('Error updating badge:', err));
+        }
+
+        // ২. Offcanvas কার্ট ড্রয়ারে বিস্তারিত ডাটা লোড (নতুন লেআউটসহ)
+        function loadCartDetails() {
+            fetch('get_cart_data.php')
+                .then(res => res.json())
+                .then(data => {
+                    const container = document.getElementById('cartItemsContainer');
+                    const subtotalEl = document.getElementById('cartSubtotal');
+
+                    updateCartBadge();
+                    if (subtotalEl) subtotalEl.innerText = '৳' + data.subtotal;
+
+                    if (!data.items || data.items.length === 0) {
+                        container.innerHTML = `
+                    <div class="text-center py-5 text-muted">
+                        <i class="bi bi-cart-x fs-1 opacity-50"></i>
+                        <p class="mt-2 mb-0">Your cart is empty</p>
+                    </div>`;
+                        return;
+                    }
+
+                    let html = '';
+                    data.items.forEach(item => {
+                        const itemTotal = (item.price * item.quantity).toFixed(2);
+
+                        // ২ নম্বর রোর জন্য সাইজ ড্রপডাউন
+                        let sizeSelectHtml = '';
+                        if (item.available_sizes) {
+                            const sizes = item.available_sizes.split(',').map(s => s.trim());
+                            sizeSelectHtml = `<select class="form-select form-select-sm py-0 ps-2 pe-4" style="font-size: 0.75rem; width: auto;" onchange="updateCartSize(${item.cart_id}, this.value)">`;
+                            sizes.forEach(sz => {
+                                const selected = (sz === item.selected_size) ? 'selected' : '';
+                                sizeSelectHtml += `<option value="${sz}" ${selected}>Size: ${sz}</option>`;
+                            });
+                            sizeSelectHtml += `</select>`;
+                        }
+
+                        html += `
+                    <div class="d-flex align-items-center justify-content-between border-bottom py-3">
+                        <!-- Left: Image -->
+                        <img src="uploads/${item.main_img}" class="rounded border" style="width: 65px; height: 65px; object-fit: contain;">
+                        
+                        <!-- Middle: Details Stack (3 Rows Layout) -->
+                        <div class="flex-grow-1 px-3">
+                            <!-- Row 1: Product Name -->
+                            <h6 class="mb-1 text-truncate fw-semibold" style="max-width: 170px; font-size: 0.85rem;" title="${item.name}">${item.name}</h6>
+                            
+                            <!-- Row 2: Size & Quantity Controls -->
+                            <div class="d-flex align-items-center gap-2 my-1">
+                                ${sizeSelectHtml}
+                                <div class="input-group input-group-sm" style="width: 75px;">
+                                    <button class="btn btn-outline-secondary px-2 py-0" type="button" onclick="updateCartQuantity(${item.cart_id}, 'decrease')">-</button>
+                                    <input type="text" class="form-control text-center p-0 fw-bold" value="${item.quantity}" readonly style="font-size: 0.75rem;">
+                                    <button class="btn btn-outline-secondary px-2 py-0" type="button" onclick="updateCartQuantity(${item.cart_id}, 'increase')">+</button>
+                                </div>
+                            </div>
+                            
+                            <!-- Row 3: Total (Price * Quantity) -->
+                            <div class="mt-1" style="font-size: 0.8rem;">
+                                <span class="fw-bold text-success">Total: ৳${itemTotal}</span>
+                                <small class="text-muted ms-1">(৳${item.price} × ${item.quantity})</small>
+                            </div>
+                        </div>
+
+                        <!-- Right: Delete Icon Button -->
+                        <div>
+                            <button type="button" class="btn btn-sm text-danger p-1" onclick="removeCartItem(${item.cart_id})" title="Remove Item">
+                                <i class="bi bi-trash fs-5"></i>
+                            </button>
+                        </div>
+                    </div>`;
+                    });
+
+                    container.innerHTML = html;
+                })
+                .catch(err => console.error('Error loading cart details:', err));
+        }
+
+        // ৩. Quantity Update
+        function updateCartQuantity(cartId, action) {
+            const formData = new FormData();
+            formData.append('cart_id', cartId);
+            formData.append('action', action);
+
+            fetch('update_cart.php', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(res => res.json())
+                .then(res => {
+                    if (res.status === 'success') loadCartDetails();
+                });
+        }
+
+        // ৪. Size Update
+        function updateCartSize(cartId, newSize) {
+            const formData = new FormData();
+            formData.append('cart_id', cartId);
+            formData.append('action', 'update_size');
+            formData.append('size', newSize);
+
+            fetch('update_cart.php', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(res => res.json())
+                .then(res => {
+                    if (res.status === 'success') loadCartDetails();
+                });
+        }
+
+
+        // ১. অ্যালার্ট মেসেজ দেখানোর কাস্টম ফংশন
+        function showCartAlert(message, type = 'success') {
+            const alertBox = document.getElementById('cartAlertMessage');
+            if (alertBox) {
+                alertBox.innerHTML = `
+            <div class="alert alert-${type} alert-dismissible fade show py-2 px-3 mb-3 text-center" style="font-size: 0.85rem;" role="alert">
+                <i class="bi bi-check-circle-fill me-1"></i> ${message}
+                <button type="button" class="btn-close py-2 px-3" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        `;
+
+                // ৩ সেকেন্ড পর অটোমেটিক মেসেজ গায়েব হয়ে যাবে
+                setTimeout(() => {
+                    const currentAlert = alertBox.querySelector('.alert');
+                    if (currentAlert) {
+                        currentAlert.classList.remove('show');
+                        setTimeout(() => alertBox.innerHTML = '', 150);
+                    }
+                }, 3000);
+            }
+        }
+
+        // ২. আপডেটেড ডিলিট ফংশন
+        function removeCartItem(cartId) {
+            if (confirm("Are you sure you want to remove this item?")) {
+                const formData = new FormData();
+                formData.append('cart_id', cartId);
+
+                fetch('remove_cart_item.php', {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.status === 'success') {
+                            // কার্ট লিস্ট ও ব্যাজ রিফ্রেশ করা
+                            loadCartDetails();
+                            updateCartBadge();
+
+                            // Offcanvas-এর একদম উপরে মেসেজ শো করা
+                            showCartAlert("Item successfully removed from cart!", "danger");
+                        } else {
+                            showCartAlert(data.message || "Failed to remove item", "warning");
+                        }
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        showCartAlert("Something went wrong!", "danger");
+                    });
+            }
+        }
+        // DOM Ready Events
         document.addEventListener('DOMContentLoaded', function() {
-            // পপ-আপ খোলা (d-none সরিয়ে d-flex যোগ করা)
+            updateCartBadge();
+
+            const cartOffcanvasEl = document.getElementById('cartOffcanvas');
+            if (cartOffcanvasEl) {
+                cartOffcanvasEl.addEventListener('show.bs.offcanvas', loadCartDetails);
+            }
+
+            // Open Popup & Auth Check
             document.querySelectorAll('.open-options-btn').forEach(button => {
                 button.addEventListener('click', function(e) {
+                    e.stopPropagation();
                     e.preventDefault();
-                    const card = this.closest('.position-relative');
-                    const overlay = card.querySelector('.card-options-overlay');
 
-                    // অন্য সব খোলা বক্স বন্ধ করা
+                    if (!isLoggedIn) {
+                        window.location.href = 'auth/login.php?status=warning&message=' + encodeURIComponent('Login first then add to cart');
+                        return;
+                    }
+
+                    const overlay = this.closest('.position-relative').querySelector('.card-options-overlay');
                     document.querySelectorAll('.card-options-overlay').forEach(el => {
                         el.classList.add('d-none');
                         el.classList.remove('d-flex');
@@ -1461,30 +1819,83 @@ $top_rated     = get_products_by_collection($pdo, 'top_rated');
                 });
             });
 
-            // পপ-আপ বন্ধ করা
+            // Close Popup
             document.querySelectorAll('.close-options-btn').forEach(button => {
-                button.addEventListener('click', function() {
+                button.addEventListener('click', function(e) {
+                    e.stopPropagation();
                     const overlay = this.closest('.card-options-overlay');
                     overlay.classList.add('d-none');
                     overlay.classList.remove('d-flex');
                 });
             });
 
-            // Quantity কমানো-বাড়ানো
+            // Card Overlay Size & Quantity Handlers
             document.querySelectorAll('.card-options-overlay').forEach(overlay => {
+                const sizeBtns = overlay.querySelectorAll('.size-btn');
+                sizeBtns.forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        sizeBtns.forEach(b => b.classList.remove('active'));
+                        this.classList.add('active');
+                    });
+                });
+
                 const minusBtn = overlay.querySelector('.minus-btn');
                 const plusBtn = overlay.querySelector('.plus-btn');
                 const qtyInput = overlay.querySelector('.qty-input');
 
-                minusBtn.addEventListener('click', () => {
-                    let val = parseInt(qtyInput.value);
-                    if (val > 1) qtyInput.value = val - 1;
-                });
+                if (minusBtn && plusBtn && qtyInput) {
+                    minusBtn.addEventListener('click', () => {
+                        let val = parseInt(qtyInput.value);
+                        if (val > 1) qtyInput.value = val - 1;
+                    });
 
-                plusBtn.addEventListener('click', () => {
-                    let val = parseInt(qtyInput.value);
-                    if (val < 6) qtyInput.value = val + 1;
+                    plusBtn.addEventListener('click', () => {
+                        let val = parseInt(qtyInput.value);
+                        if (val < 6) qtyInput.value = val + 1;
+                    });
+                }
+            });
+
+            // Add To Cart Final Click
+            document.querySelectorAll('.final-add-cart-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const overlay = this.closest('.card-options-overlay');
+                    const productId = this.getAttribute('data-product-id');
+                    const productCode = this.getAttribute('data-product-code') || '';
+                    const selectedSizeBtn = overlay.querySelector('.size-btn.active');
+                    const size = selectedSizeBtn ? selectedSizeBtn.innerText.trim() : '';
+                    const quantity = overlay.querySelector('.qty-input').value;
+
+                    const formData = new FormData();
+                    formData.append('product_id', productId);
+                    formData.append('product_code', productCode);
+                    formData.append('size', size);
+                    formData.append('quantity', quantity);
+
+                    fetch('add_to_cart.php', {
+                            method: 'POST',
+                            body: formData
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            alert(data.message);
+                            if (data.status === 'success') {
+                                updateCartBadge();
+                                overlay.classList.add('d-none');
+                                overlay.classList.remove('d-flex');
+                            }
+                        });
                 });
+            });
+
+            // Outside Click handler
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('.card-options-overlay') && !e.target.closest('.open-options-btn')) {
+                    document.querySelectorAll('.card-options-overlay').forEach(el => {
+                        el.classList.add('d-none');
+                        el.classList.remove('d-flex');
+                    });
+                }
             });
         });
     </script>
