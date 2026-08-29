@@ -2,6 +2,11 @@
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
+
+if (isset($_GET['message'])) {
+    $_SESSION['message'] = $_GET['message'];
+    $_SESSION['status'] = $_GET['status'] ?? 'warning';
+}
 ?>
 <!doctype html>
 <html lang="en">
