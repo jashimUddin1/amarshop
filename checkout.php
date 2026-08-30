@@ -34,21 +34,25 @@ $subtotal = 0;
 foreach ($cart_items as $item) {
     $subtotal += ($item['price'] * $item['quantity']);
 }
+$page_title = "Checkout";
+include 'includes/header.php'; 
 ?>
 
-<!DOCTYPE html>
-<html lang="bn">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Checkout</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-</head>
-<body class="bg-light py-5">
 
 <div class="container">
-    <h3 class="fw-bold mb-4"><i class="bi bi-credit-card text-success me-2"></i>Checkout</h3>
+    <div class="d-flex justify-content-between">
+        <h3 class="fw-bold mb-2 mt-4"><i class="bi bi-credit-card text-success me-2"></i>Checkout</h3>
+
+        <!-- Payment Method -->
+                <div class="card border-0 shadow-sm p-2 m-2">
+                    <div class="form-check mb-2 mt-2">
+                        <input class="form-check-input" type="radio" name="payment_method" id="cod" value="COD" checked>
+                        <label class="form-check-label fw-semibold" for="cod">
+                            Cash on Delivery (COD)
+                        </label>
+                    </div>
+                </div>
+    </div>
 
     <form action="core/place_order.php" method="POST">
         <div class="row g-4">
@@ -56,10 +60,10 @@ foreach ($cart_items as $item) {
             <div class="col-lg-7">
                 <div class="card border-0 shadow-sm p-4 mb-4">
                     <h5 class="fw-bold border-bottom pb-2 mb-3">Shipping Address</h5>
-                    
+
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Full Name *</label>
-                        <input type="text" name="fullname" class="form-control" value="<?= htmlspecialchars($user_info['name'] ?? ''); ?>" required>
+                        <input type="text" name="fullname" class="form-control" value="<?= htmlspecialchars($user_info['customar_name'] ?? ''); ?>" required>
                     </div>
 
                     <div class="row">
@@ -87,26 +91,16 @@ foreach ($cart_items as $item) {
                     </div>
                 </div>
 
-                <!-- Payment Method -->
-                <div class="card border-0 shadow-sm p-4">
-                    <h5 class="fw-bold border-bottom pb-2 mb-3">Payment Method</h5>
-                    <div class="form-check mb-2">
-                        <input class="form-check-input" type="radio" name="payment_method" id="cod" value="COD" checked>
-                        <label class="form-check-label fw-semibold" for="cod">
-                            Cash on Delivery (COD)
-                        </label>
-                    </div>
-                </div>
             </div>
 
             <!-- Right Side: Order Summary -->
             <div class="col-lg-5">
                 <div class="card border-0 shadow-sm p-4">
                     <h5 class="fw-bold border-bottom pb-2 mb-3">Your Items</h5>
-                    
+
                     <!-- Items -->
                     <div class="mb-3 overflow-auto" style="max-height: 250px;">
-                        <?php foreach ($cart_items as $item): 
+                        <?php foreach ($cart_items as $item):
                             $item_total = $item['price'] * $item['quantity'];
                         ?>
                             <div class="d-flex align-items-center justify-content-between border-bottom py-2 me-2">
@@ -145,19 +139,18 @@ foreach ($cart_items as $item) {
 </div>
 
 <script>
-function calculateTotal() {
-    const subtotal = parseFloat(document.getElementById('subtotalVal').innerText);
-    const shippingArea = parseFloat(document.getElementById('shippingArea').value);
-    
-    document.getElementById('shippingCharge').innerText = shippingArea.toFixed(2);
-    
-    const grandTotal = subtotal + shippingArea;
-    document.getElementById('grandTotal').innerText = grandTotal.toFixed(2);
-}
+    function calculateTotal() {
+        const subtotal = parseFloat(document.getElementById('subtotalVal').innerText);
+        const shippingArea = parseFloat(document.getElementById('shippingArea').value);
 
-// Initial calculation on page load
-calculateTotal();
+        document.getElementById('shippingCharge').innerText = shippingArea.toFixed(2);
+
+        const grandTotal = subtotal + shippingArea;
+        document.getElementById('grandTotal').innerText = grandTotal.toFixed(2);
+    }
+
+    // Initial calculation on page load
+    calculateTotal();
 </script>
 
-</body>
-</html>
+<?php include 'includes/footer.php'; ?>

@@ -388,6 +388,7 @@
                                 updateCartBadge();
                                 overlay.classList.add('d-none');
                                 overlay.classList.remove('d-flex');
+                                location.reload();
                             }
                         });
                 });
