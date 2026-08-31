@@ -29,7 +29,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             if (in_array($ext, $allowed_ext)) {
                 $filename = time() . '_' . uniqid() . '.' . $ext;
-                $upload_dir = '../../../uploads/';
+                $upload_dir = '../../uploads/';
                 if (!is_dir($upload_dir)) { 
                     mkdir($upload_dir, 0777, true); 
                 }

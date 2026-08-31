@@ -49,7 +49,7 @@ include_once 'includes/header.php';
 
 
 <!-- Dynamic Counter Cards -->
-<div class="row g-3 mb-4 flex-shrink-0">
+<div class="row g-3 mb-4 pt-4 px-2 flex-shrink-0">
   <div class="col-md-3">
     <div class="card border-0 shadow-sm bg-primary text-white">
       <div class="card-body d-flex justify-content-between align-items-center">

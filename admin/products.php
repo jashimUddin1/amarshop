@@ -84,7 +84,24 @@ include_once 'includes/header.php';
                 <td><?= $row['discount_percent']; ?>%</td>
                 <td class="text-success fw-bold">৳<?= number_format($row['actual_price'] ?? 0, 2); ?></td>
                 <td><?= htmlspecialchars($row['size'] ?: 'N/A'); ?></td>
-                <td><?= htmlspecialchars($row['color'] ?: 'N/A'); ?></td>
+                <td>
+                  <?php
+                  if (!empty($row['color'])) {
+                    // কমা (,) দিয়ে কালারগুলোকে আলাদা করে অ্যারেতে রূপান্তর করা
+                    $colors = array_map('trim', explode(',', $row['color']));
+
+                    if (count($colors) > 2) {
+                      // প্রথম ২টি কালার নিয়ে কমা দিয়ে যুক্ত করা
+                      $short_color = implode(', ', array_slice($colors, 0, 2)) . '...';
+                      echo '<span title="' . htmlspecialchars($row['color']) . '">' . htmlspecialchars($short_color) . '</span>';
+                    } else {
+                      echo htmlspecialchars($row['color']);
+                    }
+                  } else {
+                    echo 'N/A';
+                  }
+                  ?>
+                </td>
                 <td>
                   <?php
                   $col_key = $row['collection_name'] ?? '';

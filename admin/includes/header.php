@@ -40,7 +40,7 @@ if (session_status() === PHP_SESSION_NONE) {
             <a class="nav-link <?= ($current_page ?? '') === 'products' ? 'active' : 'text-body'; ?>" href="products.php"><i class="bi bi-box-seam me-2"></i>Products</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link <?= ($current_page ?? '') === 'category' ? 'active' : 'text-body'; ?>" href="category.php"><i class="bi bi-folder-plus me-2"></i>Categories</a>
+            <a class="nav-link <?= ($current_page ?? '') === 'category' ? 'active' : 'text-body'; ?>" href="categories.php"><i class="bi bi-folder-plus me-2"></i>Categories</a>
           </li>
           <li class="nav-item">
             <a class="nav-link <?= ($current_page ?? '') === 'collection' ? 'active' : 'text-body'; ?>" href="collection.php"><i class="bi bi-tags me-2"></i>Collections</a>
