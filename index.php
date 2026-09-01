@@ -104,48 +104,34 @@ include('includes/header.php');
 </div>
 
 <?php
-$all_collections = [
-    [
-        'title'         => 'New Arrivals',
-        'slug'          => 'new_arrivals',
-        'products'      => $new_arrivals ?? [],
-        'badge'         => 'New',
-        'badge_bg'      => 'bg-danger',
-        'percentage_bg' => 'bg-dark'
-    ],
-    [
-        'title'         => 'Top Deals',
-        'slug'          => 'top_deals',
-        'products'      => $top_deals ?? [],
-        'badge'         => 'Hot Deal',
-        'badge_bg'      => 'bg-warning text-dark',
-        'percentage_bg' => 'bg-danger'
-    ],
-    [
-        'title'         => 'High Discount',
-        'slug'          => 'high_discount',
-        'products'      => $high_discount ?? [],
-        'badge'         => 'Offer',
-        'badge_bg'      => 'bg-primary',
-        'percentage_bg' => 'bg-danger'
-    ],
-    [
-        'title'         => 'Top Sales',
-        'slug'          => 'top_sales',
-        'products'      => $top_sales ?? [],
-        'badge'         => 'Best Seller',
-        'badge_bg'      => 'bg-success',
-        'percentage_bg' => 'bg-danger'
-    ],
-    [
-        'title'         => 'Top Rated',
-        'slug'          => 'top_rated',
-        'products'      => $top_rated ?? [],
-        'badge'         => 'Top Rated',
-        'badge_bg'      => 'bg-warning text-dark',
-        'percentage_bg' => 'bg-info text-dark'
-    ]
-];
+// ১. ডাটাবেজ থেকে সব Collections ফেচ করা
+$stmt = $pdo->query("SELECT * FROM collections ORDER BY id ASC");
+$db_collections = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+$all_collections = [];
+
+foreach ($db_collections as $col) {
+    $slug = $col['slug'];
+
+    /* 
+     * ডাটাবেজের 'products' টেবিল থেকে ডায়নামিকভাবে প্রোডাক্ট ফেচ করা।
+     * শর্ত: আপনার products টেবিলে 'collection_slug' বা 'collection_id' কলাম থাকলে 
+     * এটি যেকোনো আনলিমিটেড Custom Collection এর সাথে অটোমেটিক ম্যাচ করবে।
+    */
+    $p_stmt = $pdo->prepare("SELECT * FROM products WHERE collection_name = :slug ORDER BY id DESC LIMIT 12");
+    $p_stmt->execute([':slug' => $slug]);
+    $products = $p_stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // ২. মূল অ্যারে বিল্ড করা
+    $all_collections[] = [
+        'title'         => $col['title'],
+        'slug'          => $slug,
+        'products'      => $products, // ১০০% ডায়নামিক প্রোডাক্ট লিস্ট
+        'badge'         => $col['badge'] ?? '',
+        'badge_bg'      => $col['badge_bg'] ?? 'bg-danger',
+        'percentage_bg' => $col['percentage_bg'] ?? 'bg-dark'
+    ];
+}
 ?>
 
 <?php foreach ($all_collections as $collection): ?>

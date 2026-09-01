@@ -1,53 +1,37 @@
 <?php
-ob_start();
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
 require_once '../auth/config.php';
-
 header('Content-Type: application/json');
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $id             = trim($_POST['collection_id'] ?? '');
-    $collection_key = trim($_POST['collection_key'] ?? '');
-    $display_name   = trim($_POST['display_name'] ?? '');
+    $id            = (int)($_POST['collection_id'] ?? 0);
+    $title         = trim($_POST['title'] ?? '');
+    $slug          = trim($_POST['slug'] ?? '');
+    $badge         = trim($_POST['badge'] ?? '');
+    $badge_bg      = trim($_POST['badge_bg'] ?? 'bg-danger');
+    $percentage_bg = trim($_POST['percentage_bg'] ?? 'bg-dark');
 
-    if (empty($id) || empty($collection_key) || empty($display_name)) {
-        ob_end_clean();
-        echo json_encode(['status' => 'error', 'message' => 'All fields are required.']);
-        exit();
+    if ($id <= 0 || empty($title) || empty($slug)) {
+        echo json_encode(['status' => 'error', 'message' => 'Invalid data provided!']);
+        exit;
     }
 
     try {
-        // ডুপ্লিকেট কি (Key) চেক (বর্তমান ID বাদে)
-        $checkStmt = $pdo->prepare("SELECT id FROM collections WHERE LOWER(collection_key) = LOWER(:key) AND id != :id");
-        $checkStmt->execute([
-            ':key' => $collection_key,
-            ':id'  => $id
+        $stmt = $pdo->prepare("UPDATE collections SET title = :title, slug = :slug, badge = :badge, badge_bg = :badge_bg, percentage_bg = :percentage_bg WHERE id = :id");
+        $result = $stmt->execute([
+            ':title'          => $title,
+            ':slug'           => $slug,
+            ':badge'          => $badge,
+            ':badge_bg'       => $badge_bg,
+            ':percentage_bg'  => $percentage_bg,
+            ':id'             => $id
         ]);
 
-        if ($checkStmt->rowCount() > 0) {
-            ob_end_clean();
-            echo json_encode(['status' => 'error', 'message' => 'This Collection Key is already in use!']);
-            exit();
+        if ($result) {
+            echo json_encode(['status' => 'success', 'message' => 'Collection updated successfully!']);
+        } else {
+            echo json_encode(['status' => 'error', 'message' => 'Failed to update collection.']);
         }
-
-        // ডাটা আপডেট করা
-        $stmt = $pdo->prepare("UPDATE collections SET collection_key = :key, display_name = :name WHERE id = :id");
-        $stmt->execute([
-            ':key'  => $collection_key,
-            ':name' => $display_name,
-            ':id'   => $id
-        ]);
-
-        $_SESSION['success'] = "Collection updated successfully!";
-        
-        ob_end_clean(); // অতিরিক্ত কোনো স্পেস বা ফাইল ওয়ার্নিং থাকলে তা ক্লিন করবে
-        echo json_encode(['status' => 'success', 'message' => 'Collection updated successfully!']);
-        exit();
     } catch (PDOException $e) {
-        ob_end_clean();
-        echo json_encode(['status' => 'error', 'message' => 'Database Error: ' . $e->getMessage()]);
-        exit();
+        echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
     }
 }

@@ -42,8 +42,11 @@ include_once 'includes/header.php';
         <thead class="table-success position-sticky top-0 z-2">
           <tr>
             <th class="bg-success text-white">ID</th>
-            <th class="bg-success text-white">Collection Key</th>
-            <th class="bg-success text-white">Display Name</th>
+            <th class="bg-success text-white">Title</th>
+            <th class="bg-success text-white">Slug / Key</th>
+            <th class="bg-success text-white">Badge</th>
+            <th class="bg-success text-white">Badge BG</th>
+            <th class="bg-success text-white">Percentage BG</th>
             <th class="bg-success text-white text-end">Actions</th>
           </tr>
         </thead>
@@ -51,8 +54,11 @@ include_once 'includes/header.php';
           <?php foreach ($collections as $col): ?>
             <tr id="collection-row-<?= $col['id']; ?>">
               <td><?= $col['id']; ?></td>
-              <td><code><?= htmlspecialchars($col['collection_key']); ?></code></td>
-              <td class="fw-bold"><?= htmlspecialchars($col['display_name']); ?></td>
+              <td class="fw-bold"><?= htmlspecialchars($col['title'] ?? $col['display_name'] ?? ''); ?></td>
+              <td><code><?= htmlspecialchars($col['slug'] ?? $col['collection_key'] ?? ''); ?></code></td>
+              <td><span class="badge bg-secondary"><?= htmlspecialchars($col['badge'] ?? 'N/A'); ?></span></td>
+              <td><code><?= htmlspecialchars($col['badge_bg'] ?? 'bg-danger'); ?></code></td>
+              <td><code><?= htmlspecialchars($col['percentage_bg'] ?? 'bg-dark'); ?></code></td>
               <td class="text-end">
                 <!-- Edit Button -->
                 <button class="btn btn-sm btn-outline-warning me-1" data-bs-toggle="modal" data-bs-target="#editCollectionModal<?= $col['id']; ?>">
@@ -76,13 +82,44 @@ include_once 'includes/header.php';
                     </div>
                     <div class="modal-body">
                       <input type="hidden" name="collection_id" value="<?= $col['id']; ?>">
+                      
                       <div class="mb-3">
-                        <label class="form-label">Collection Key <span class="text-danger">*</span></label>
-                        <input type="text" name="collection_key" class="form-control" value="<?= htmlspecialchars($col['collection_key']); ?>" required placeholder="e.g. top_sales">
+                        <label class="form-label">Title <span class="text-danger">*</span></label>
+                        <input type="text" name="title" class="form-control" value="<?= htmlspecialchars($col['title'] ?? $col['display_name'] ?? ''); ?>" required placeholder="e.g. New Arrivals">
                       </div>
+
                       <div class="mb-3">
-                        <label class="form-label">Display Name <span class="text-danger">*</span></label>
-                        <input type="text" name="display_name" class="form-control" value="<?= htmlspecialchars($col['display_name']); ?>" required placeholder="e.g. Top Sales">
+                        <label class="form-label">Slug / Collection Key <span class="text-danger">*</span></label>
+                        <input type="text" name="slug" class="form-control" value="<?= htmlspecialchars($col['slug'] ?? $col['collection_key'] ?? ''); ?>" required placeholder="e.g. new_arrivals">
+                        <small class="text-muted">Unique identifier (use lowercase & underscores)</small>
+                      </div>
+
+                      <div class="mb-3">
+                        <label class="form-label">Badge Text</label>
+                        <input type="text" name="badge" class="form-control" value="<?= htmlspecialchars($col['badge'] ?? ''); ?>" placeholder="e.g. New / Hot / Sale">
+                      </div>
+
+                      <div class="row">
+                        <div class="col-md-6 mb-3">
+                          <label class="form-label">Badge Background</label>
+                          <select name="badge_bg" class="form-select">
+                            <option value="bg-danger" <?= ($col['badge_bg'] ?? '') === 'bg-danger' ? 'selected' : ''; ?>>Red (bg-danger)</option>
+                            <option value="bg-primary" <?= ($col['badge_bg'] ?? '') === 'bg-primary' ? 'selected' : ''; ?>>Blue (bg-primary)</option>
+                            <option value="bg-success" <?= ($col['badge_bg'] ?? '') === 'bg-success' ? 'selected' : ''; ?>>Green (bg-success)</option>
+                            <option value="bg-warning text-dark" <?= ($col['badge_bg'] ?? '') === 'bg-warning text-dark' ? 'selected' : ''; ?>>Yellow (bg-warning)</option>
+                            <option value="bg-dark" <?= ($col['badge_bg'] ?? '') === 'bg-dark' ? 'selected' : ''; ?>>Dark (bg-dark)</option>
+                          </select>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                          <label class="form-label">Percentage Background</label>
+                          <select name="percentage_bg" class="form-select">
+                            <option value="bg-dark" <?= ($col['percentage_bg'] ?? '') === 'bg-dark' ? 'selected' : ''; ?>>Dark (bg-dark)</option>
+                            <option value="bg-danger" <?= ($col['percentage_bg'] ?? '') === 'bg-danger' ? 'selected' : ''; ?>>Red (bg-danger)</option>
+                            <option value="bg-primary" <?= ($col['percentage_bg'] ?? '') === 'bg-primary' ? 'selected' : ''; ?>>Blue (bg-primary)</option>
+                            <option value="bg-success" <?= ($col['percentage_bg'] ?? '') === 'bg-success' ? 'selected' : ''; ?>>Green (bg-success)</option>
+                          </select>
+                        </div>
                       </div>
                     </div>
                     <div class="modal-footer">
@@ -111,13 +148,42 @@ include_once 'includes/header.php';
         </div>
         <div class="modal-body">
           <div class="mb-3">
-            <label class="form-label">Collection Key <span class="text-danger">*</span></label>
-            <input type="text" name="collection_key" class="form-control" required placeholder="e.g. new_arrivals">
+            <label class="form-label">Title <span class="text-danger">*</span></label>
+            <input type="text" name="title" class="form-control" required placeholder="e.g. New Arrivals">
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Slug / Collection Key <span class="text-danger">*</span></label>
+            <input type="text" name="slug" class="form-control" required placeholder="e.g. new_arrivals">
             <small class="text-muted">Unique key (use lowercase & underscores)</small>
           </div>
+
           <div class="mb-3">
-            <label class="form-label">Display Name <span class="text-danger">*</span></label>
-            <input type="text" name="display_name" class="form-control" required placeholder="e.g. New Arrivals">
+            <label class="form-label">Badge Text</label>
+            <input type="text" name="badge" class="form-control" placeholder="e.g. New / Hot / Sale">
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Badge Background</label>
+              <select name="badge_bg" class="form-select">
+                <option value="bg-danger" selected>Red (bg-danger)</option>
+                <option value="bg-primary">Blue (bg-primary)</option>
+                <option value="bg-success">Green (bg-success)</option>
+                <option value="bg-warning text-dark">Yellow (bg-warning)</option>
+                <option value="bg-dark">Dark (bg-dark)</option>
+              </select>
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Percentage Background</label>
+              <select name="percentage_bg" class="form-select">
+                <option value="bg-dark" selected>Dark (bg-dark)</option>
+                <option value="bg-danger">Red (bg-danger)</option>
+                <option value="bg-primary">Blue (bg-primary)</option>
+                <option value="bg-success">Green (bg-success)</option>
+              </select>
+            </div>
           </div>
         </div>
         <div class="modal-footer">
@@ -130,7 +196,6 @@ include_once 'includes/header.php';
 </div>
 
 <script>
-// Dynamic Alert Display Function
 function showAlert(message, type = 'success') {
   const container = document.getElementById('alertContainer');
   const alertBox = document.createElement('div');
@@ -156,12 +221,12 @@ function addCollection(event) {
     method: 'POST',
     body: formData
   })
-  .then(res => res.text()) // প্রথমে টেক্সট হিসেবে পড়া হচ্ছে যাতে Unexpected Token Error না দেয়
+  .then(res => res.text())
   .then(text => {
     try {
-      const data = JSON.parse(text); // JSON পার্স করা
+      const data = JSON.parse(text);
       if (data.status === 'success') {
-        location.reload(); // সফল হলে সাথে সাথে পেজ রিলোড হবে
+        location.reload();
       } else {
         showAlert(data.message, 'danger');
       }
@@ -186,12 +251,12 @@ function updateCollection(event, id) {
     method: 'POST',
     body: formData
   })
-  .then(res => res.text()) // টেক্সট আকারে রেসপন্স রিসিভ করা হচ্ছে
+  .then(res => res.text())
   .then(text => {
     try {
-      const data = JSON.parse(text); // JSON পার্স করা
+      const data = JSON.parse(text);
       if (data.status === 'success') {
-        location.reload(); // সফল হলে পেজ সাথে সাথে রিলোড হয়ে আপডেট দেখাবে
+        location.reload();
       } else {
         showAlert(data.message, 'danger');
       }

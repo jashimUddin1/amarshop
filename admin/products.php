@@ -13,14 +13,15 @@ $products = $products_stmt->fetchAll(PDO::FETCH_ASSOC);
 $categories_stmt = $pdo->query("SELECT * FROM categories ORDER BY name ASC");
 $categories = $categories_stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Collection Map
-$collection_map = [
-  'new_arrivals'  => 'New Arrivals',
-  'top_deals'     => 'Top Deals',
-  'high_discount' => 'High Discount Products',
-  'top_sales'     => 'Top Sales',
-  'top_rated'     => 'Top Rated Products'
-];
+// Fetch Collections Dynamically from Table
+$collections_stmt = $pdo->query("SELECT title, slug FROM collections ORDER BY id ASC");
+$collections = $collections_stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Create a Key-Value Map for Easy Lookup [slug => title]
+$collection_map = [];
+foreach ($collections as $col) {
+  $collection_map[$col['slug']] = $col['title'];
+}
 
 include_once 'includes/header.php';
 ?>
@@ -194,8 +195,8 @@ include_once 'includes/header.php';
                               <div class="col-md-4">
                                 <label class="form-label">Collection Name</label>
                                 <select name="collection_name" class="form-select">
-                                  <?php foreach ($collection_map as $key => $val): ?>
-                                    <option value="<?= $key; ?>" <?= ($key === $row['collection_name']) ? 'selected' : ''; ?>><?= $val; ?></option>
+                                  <?php foreach ($collection_map as $col => $val): ?>
+                                    <option value="<?= $col; ?>" <?= ($col === $row['collection_name']) ? 'selected' : ''; ?>><?= $val; ?></option>
                                   <?php endforeach; ?>
                                 </select>
                               </div>
@@ -375,11 +376,9 @@ include_once 'includes/header.php';
             <div class="col-md-4">
               <label class="form-label">Collection Name</label>
               <select name="collection_name" class="form-select">
-                <option value="new_arrivals">New Arrivals</option>
-                <option value="top_deals">Top Deals</option>
-                <option value="high_discount">High Discount Products</option>
-                <option value="top_sales">Top Sales</option>
-                <option value="top_rated">Top Rated Products</option>
+                <?php foreach ($collection_map as $col => $val): ?>
+                  <option value="<?= $col; ?>" ><?= $val; ?></option>
+                <?php endforeach; ?>
               </select>
             </div>
 
