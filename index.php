@@ -178,7 +178,7 @@ foreach ($db_collections as $col) {
                                             <?= htmlspecialchars($product['product_code'] ?? ''); ?>
                                         </p>
                                     </div>
-                                    <a href="product-details.php?id=<?= $product['id']; ?>" class="product-title text-decoration-none text-dark fw-bold d-block text-truncate">
+                                    <a href="product_details.php?id=<?= $product['id']; ?>" class="product-title text-decoration-none text-dark fw-bold d-block text-truncate">
                                         <?= htmlspecialchars($product['name']); ?>
                                     </a>
 
