@@ -26,7 +26,7 @@ if (isset($_SESSION['user_id'])) {
     $user_id = $_SESSION['user_id'];
     $cart_stmt = $pdo->prepare("SELECT product_id, size, quantity FROM cart WHERE user_id = :user_id");
     $cart_stmt->execute([':user_id' => $user_id]);
-    
+
     // product_id কে Key বানিয়ে ডাটা সাজিয়ে নেওয়া
     while ($row = $cart_stmt->fetch(PDO::FETCH_ASSOC)) {
         $cart_items[$row['product_id']] = $row;
@@ -103,6 +103,103 @@ include('includes/header.php');
     </button>
 </div>
 
+<!-- Product Category Grid -->
+<div class="container-fluid px-2 px-md-5 my-5">
+    <div class="container-fluid px-2 px-md-5 my-5">
+        <div class="text-center mb-5">
+            <h2 class="fw-bold text-dark">Top Categories</h2>
+            <p class="text-muted">Explore our wide range of products across different categories</p>
+            <div class="d-inline-block bg-success" style="width: 70px; height: 3px;"></div>
+        </div>
+
+        <div class="row row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-lg-6 g-3 g-md-4">
+            <div class="col">
+                <a href="#" class="text-decoration-none">
+                    <div class="category-card text-center h-100 p-2">
+                        <div class="category-img-container">
+                            <img src="https://via.placeholder.com/150x150/f8f9fa/374151?text=Men" class="img-fluid" alt="Men's Fashion">
+                        </div>
+                        <div class="card-body p-2 p-md-3">
+                            <p class="category-text mb-0">Men's Fashion</p>
+                            <small class="text-muted d-none d-sm-inline">240+ Items</small>
+                        </div>
+                    </div>
+                </a>
+            </div>
+
+            <div class="col">
+                <a href="#" class="text-decoration-none">
+                    <div class="category-card text-center h-100 p-2">
+                        <div class="category-img-container">
+                            <img src="https://via.placeholder.com/150x150/f8f9fa/374151?text=Women" class="img-fluid" alt="Women's Fashion">
+                        </div>
+                        <div class="card-body p-2 p-md-3">
+                            <p class="category-text mb-0">Women's Fashion</p>
+                            <small class="text-muted d-none d-sm-inline">310+ Items</small>
+                        </div>
+                    </div>
+                </a>
+            </div>
+
+            <div class="col">
+                <a href="#" class="text-decoration-none">
+                    <div class="category-card text-center h-100 p-2">
+                        <div class="category-img-container">
+                            <img src="https://via.placeholder.com/150x150/f8f9fa/374151?text=Gadgets" class="img-fluid" alt="Electronics">
+                        </div>
+                        <div class="card-body p-2 p-md-3">
+                            <p class="category-text mb-0">Electronics</p>
+                            <small class="text-muted d-none d-sm-inline">190+ Items</small>
+                        </div>
+                    </div>
+                </a>
+            </div>
+
+            <div class="col">
+                <a href="#" class="text-decoration-none">
+                    <div class="category-card text-center h-100 p-2">
+                        <div class="category-img-container">
+                            <img src="https://via.placeholder.com/150x150/f8f9fa/374151?text=Mobile" class="img-fluid" alt="Mobile & Accessories">
+                        </div>
+                        <div class="card-body p-2 p-md-3">
+                            <p class="category-text mb-0">Smartphones</p>
+                            <small class="text-muted d-none d-sm-inline">150+ Items</small>
+                        </div>
+                    </div>
+                </a>
+            </div>
+
+            <div class="col">
+                <a href="#" class="text-decoration-none">
+                    <div class="category-card text-center h-100 p-2">
+                        <div class="category-img-container">
+                            <img src="https://via.placeholder.com/150x150/f8f9fa/374151?text=Home" class="img-fluid" alt="Home & Life">
+                        </div>
+                        <div class="card-body p-2 p-md-3">
+                            <p class="category-text mb-0">Home Decor</p>
+                            <small class="text-muted d-none d-sm-inline">210+ Items</small>
+                        </div>
+                    </div>
+                </a>
+            </div>
+
+            <div class="col">
+                <a href="#" class="text-decoration-none">
+                    <div class="category-card text-center h-100 p-2">
+                        <div class="category-img-container">
+                            <img src="https://via.placeholder.com/150x150/f8f9fa/374151?text=Beauty" class="img-fluid" alt="Beauty & Care">
+                        </div>
+                        <div class="card-body p-2 p-md-3">
+                            <p class="category-text mb-0">Beauty & Care</p>
+                            <small class="text-muted d-none d-sm-inline">120+ Items</small>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
 <?php
 // ১. ডাটাবেজ থেকে সব Collections ফেচ করা
 $stmt = $pdo->query("SELECT * FROM collections ORDER BY id ASC");
@@ -153,6 +250,7 @@ foreach ($db_collections as $col) {
                     $discount_percent = $has_discount ? round((($sell_price - $actual_price) / $sell_price) * 100) : 0;
                     $rating        = (float)($product['rating'] ?? 0);
                     $total_reviews = (int)($product['total_reviews'] ?? 0);
+                    $stock         = (int)($product['stock'] ?? 0);
                     ?>
                     <div class="col">
                         <div class="product-card position-relative border rounded p-2 bg-white shadow-sm h-100">
@@ -192,41 +290,52 @@ foreach ($db_collections as $col) {
                                 </div>
 
                                 <div class="mt-2">
-                                    <div class="price-wrapper mb-2 d-flex align-items-center gap-2">
-                                        <span class="current-price fw-bold text-success fs-6">৳<?= number_format($actual_price, 2); ?></span>
-                                        <?php if ($has_discount): ?>
-                                            <span class="old-price text-muted text-decoration-line-through small">৳<?= number_format($sell_price, 2); ?></span>
-                                        <?php endif; ?>
+                                    <div class="row justify-content-between">
+                                        <div class="price-wrapper col-md-6 mb-2 d-flex align-items-center gap-2">
+                                            <span class="current-price fw-bold text-success fs-6">৳<?= number_format($actual_price, 2); ?></span>
+                                            <?php if ($has_discount): ?>
+                                                <span class="old-price text-muted text-decoration-line-through small">৳<?= number_format($sell_price, 2); ?></span>
+                                            <?php endif; ?>
+                                        </div>
+                                        <div class="col-md-6 text-end">
+                                            <?php if ($stock > 0): ?>
+                                                <span class="badge bg-success mb-2">In Stock</span>
+                                            <?php else: ?>
+                                                <span class="badge bg-danger mb-2">Out of Stock</span>
+                                            <?php endif; ?>
+                                        </div>
                                     </div>
 
-                                    <div class="d-flex justify-content-between gap-2 mb-2 mx-2">
-    <a href="product-details.php?id=<?= $product['id']; ?>" class="btn btn-outline-secondary w-50 btn-sm">
-        <span class="d-none d-md-inline"><i class="bi bi-eye me-1"></i></span> View
-    </a>
 
-    <?php if (isset($cart_items[$product['id']])): ?>
-        <?php 
-            $in_cart = $cart_items[$product['id']];
-            $cart_text = '';
-            
-            // সাইজ থাকলে সাইজ + পরিমাণ দেখাবে, না থাকলে শুধু পরিমাণ
-            if (!empty($in_cart['size'])) {
-                $cart_text = htmlspecialchars($in_cart['size']) . ' - ' . $in_cart['quantity'] . ' ps';
-            } else {
-                $cart_text = $in_cart['quantity'] . ' ps';
-            }
-        ?>
-        <!-- কার্টে যুক্ত থাকলে এই বাটন দেখাবে (ছবি অনুযায়ী) -->
-        <button type="button" class="btn btn-outline-success w-50 btn-sm open-options-btn fw-bold">
-            <?= $cart_text; ?>
-        </button>
-    <?php else: ?>
-        <!-- কার্টে না থাকলে ডিফল্ট বাটন দেখাবে -->
-        <button type="button" class="btn btn-outline-success w-50 btn-sm open-options-btn">
-            <span class="d-none d-md-inline"><i class="bi bi-cart-plus me-1"></i></span> Add <span class="d-none d-md-inline">to Cart</span>
-        </button>
-    <?php endif; ?>
-</div>
+
+                                    <div class="d-flex justify-content-between gap-2 mb-2 mx-2">
+                                        <a href="product-details.php?id=<?= $product['id']; ?>" class="btn btn-outline-secondary w-50 btn-sm">
+                                            <span class="d-none d-md-inline"><i class="bi bi-eye me-1"></i></span> View
+                                        </a>
+
+                                        <?php if (isset($cart_items[$product['id']])): ?>
+                                            <?php
+                                            $in_cart = $cart_items[$product['id']];
+                                            $cart_text = '';
+
+                                            // সাইজ থাকলে সাইজ + পরিমাণ দেখাবে, না থাকলে শুধু পরিমাণ
+                                            if (!empty($in_cart['size'])) {
+                                                $cart_text = htmlspecialchars($in_cart['size']) . ' - ' . $in_cart['quantity'] . ' ps';
+                                            } else {
+                                                $cart_text = $in_cart['quantity'] . ' ps';
+                                            }
+                                            ?>
+                                            <!-- কার্টে যুক্ত থাকলে এই বাটন দেখাবে (ছবি অনুযায়ী) -->
+                                            <button type="button" class="btn btn-outline-success w-50 btn-sm open-options-btn fw-bold">
+                                                <?= $cart_text; ?>
+                                            </button>
+                                        <?php else: ?>
+                                            <!-- কার্টে না থাকলে ডিফল্ট বাটন দেখাবে -->
+                                            <button type="button" class="btn btn-outline-success w-50 btn-sm open-options-btn">
+                                                <span class="d-none d-md-inline"><i class="bi bi-cart-plus me-1"></i></span> Add <span class="d-none d-md-inline">to Cart</span>
+                                            </button>
+                                        <?php endif; ?>
+                                    </div>
                                 </div>
                             </div>
 
@@ -282,7 +391,7 @@ foreach ($db_collections as $col) {
     </div>
 <?php endforeach; ?>
 
-<?php 
+<?php
 // Footer Include
-include('includes/footer.php'); 
+include('includes/footer.php');
 ?>

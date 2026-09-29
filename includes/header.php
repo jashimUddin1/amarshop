@@ -207,6 +207,70 @@ $is_logged_in = isset($_SESSION['user_id']) ? true : false;
     </header>
 </div>
 
+<!-- Navigation Menu Bar (NEWLY ADDED) -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-success border-top border-light border-opacity-10 py-1">
+        <div class="container px-2 px-md-3">
+            <!-- Mobile Offcanvas Toggle Button -->
+            <button class="navbar-toggler border-0 shadow-none py-1 px-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileMenu" aria-controls="mobileMenu">
+                <i class="bi bi-list fs-3 text-white"></i>
+                <span class="fs-6 ms-1 text-white align-middle">Menu</span>
+            </button>
+
+            <!-- All Categories Dropdown Button (Mobile & Desktop) -->
+            <div class="dropdown me-auto me-lg-3">
+                <button class="btn btn-dark btn-sm dropdown-toggle fw-bold d-flex align-items-center gap-1 py-1.5 px-3" type="button" id="categoryMenuButton" data-bs-toggle="dropdown" aria-expanded="false" style="background-color: #145ce6; border: none;">
+                    <i class="bi bi-grid-3x3-gap-fill me-1"></i> All Categories
+                </button>
+                <ul class="dropdown-menu shadow-lg border-0 mt-2" aria-labelledby="categoryMenuButton">
+                    <li><a class="dropdown-item py-2" href="#"><i class="bi bi-tag me-2 text-success"></i> Shirts</a></li>
+                    <li><a class="dropdown-item py-2" href="#"><i class="bi bi-tag me-2 text-success"></i> Katua</a></li>
+                    <li><a class="dropdown-item py-2" href="#"><i class="bi bi-tag me-2 text-success"></i> T-Shirts</a></li>
+                    <li><a class="dropdown-item py-2" href="#"><i class="bi bi-tag me-2 text-success"></i> Pants</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item py-2 fw-bold text-success" href="#">View All Categories <i class="bi bi-arrow-right"></i></a></li>
+                </ul>
+            </div>
+
+            <!-- Desktop Navigation Links -->
+            <div class="collapse navbar-collapse" id="desktopNavbar">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0 fw-semibold">
+                    <li class="nav-item">
+                        <a class="nav-link active text-white px-3" href="index.php"><i class="bi bi-house-door me-1"></i> Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-white-50 px-3 hover-white" href="#">Shop</a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle text-white-50 px-3" href="#" id="collectionsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            Collections
+                        </a>
+                        <ul class="dropdown-menu border-0 shadow mt-1">
+                            <li><a class="dropdown-item" href="#">New Arrivals</a></li>
+                            <li><a class="dropdown-item" href="#">Top Deals</a></li>
+                            <li><a class="dropdown-item" href="#">Trending Sales</a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-white-50 px-3" href="#">Offers <span class="badge bg-warning text-dark ms-1">HOT</span></a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-white-50 px-3" href="#">Contact Us</a>
+                    </li>
+                </ul>
+
+                <!-- Right Side Quick Info / Hotline -->
+                <div class="d-none d-xl-flex align-items-center text-white gap-2 small">
+                    <i class="bi bi-headset fs-5"></i>
+                    <div>
+                        <span class="d-block text-white-50 lh-1" style="font-size: 0.75rem;">Support</span>
+                        <span class="fw-bold">+880 1700-000000</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+ <!-- sticky-top end -->
+
 <!-- Mobile Drawer Offcanvas -->
 <div class="offcanvas offcanvas-start" tabindex="-1" id="mobileMenu" aria-labelledby="mobileMenuLabel" style="width: 280px;">
     <div class="offcanvas-header border-bottom">
