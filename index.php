@@ -207,16 +207,22 @@ $db_collections = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 $all_collections = [];
 
+// ইউআরএল থেকে ক্যাটাগরি ধরা
+$selected_category = $_GET['category'] ?? '';
+
 foreach ($db_collections as $col) {
     $slug = $col['slug'];
 
-    /* 
-     * ডাটাবেজের 'products' টেবিল থেকে ডায়নামিকভাবে প্রোডাক্ট ফেচ করা।
-     * শর্ত: আপনার products টেবিলে 'collection_slug' বা 'collection_id' কলাম থাকলে 
-     * এটি যেকোনো আনলিমিটেড Custom Collection এর সাথে অটোমেটিক ম্যাচ করবে।
-    */
-    $p_stmt = $pdo->prepare("SELECT * FROM products WHERE collection_name = :slug ORDER BY id DESC LIMIT 12");
-    $p_stmt->execute([':slug' => $slug]);
+    // ক্যাটাগরি সিলেক্ট করা থাকলে এবং স্টক ০-এর বেশি হওয়ার শর্তসহ কুয়েরি
+    if (!empty($selected_category)) {
+        $p_stmt = $pdo->prepare("SELECT * FROM products WHERE collection_name = :slug AND category_name = :category AND stock > 0 ORDER BY id DESC LIMIT 12");
+        $p_stmt->execute([':slug' => $slug, ':category' => $selected_category]);
+    } else {
+        // শুধু কালেকশন এবং স্টক ০-এর বেশি হওয়ার শর্তসহ কুয়েরি
+        $p_stmt = $pdo->prepare("SELECT * FROM products WHERE collection_name = :slug AND stock > 0 ORDER BY id DESC LIMIT 12");
+        $p_stmt->execute([':slug' => $slug]);
+    }
+    
     $products = $p_stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // ২. মূল অ্যারে বিল্ড করা
@@ -232,7 +238,8 @@ foreach ($db_collections as $col) {
 ?>
 
 <?php foreach ($all_collections as $collection): ?>
-    <div class="container-fluid px-2 px-md-5 my-5">
+    <!-- এই ডিভটিতে id="col-slug" যোগ করা হয়েছে -->
+    <div class="container-fluid px-2 px-md-5 my-5" id="col-<?= htmlspecialchars($collection['slug']); ?>">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2 class="fw-bold text-dark mb-0"><?= htmlspecialchars($collection['title']); ?></h2>
             <a href="collection.php?name=<?= urlencode($collection['slug']); ?>" class="btn btn-success text-decoration-none">
