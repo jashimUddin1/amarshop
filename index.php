@@ -38,8 +38,22 @@ $page_title = "Home";
 include('includes/header.php');
 ?>
 
+<!-- লাইভ সার্চ রেজাল্ট সেকশন (ডিফল্টভাবে হাইড থাকবে) -->
+<div id="liveSearchSection" class="container-fluid px-2 px-md-5 my-4" style="display: none;">
+    <div class="bg-white rounded-xl shadow-sm border p-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h3 class="fw-bold text-dark mb-0" id="searchResultTitle">Search Results</h3>
+            <button type="button" class="btn-close" onclick="clearLiveSearch()"></button>
+        </div>
+        <!-- প্রোডাক্টগুলো এখানে গ্রিড আকারে দেখাবে -->
+        <div id="searchResultGrid" class="row row-cols-2 row-cols-sm-2 row-cols-md-3 py-2 row-cols-lg-4 g-3 g-md-4">
+            <!-- জাভাস্ক্রিপ্ট দিয়ে এখানে প্রোডাক্ট কার্ডগুলো আসবে -->
+        </div>
+    </div>
+</div>
+
 <!-- Hero Slider -->
-<div id="heroCarousel" class="carousel slide carousel-fade shadow-sm my-3" data-bs-ride="carousel">
+<div id="heroCarousel" class="carousel slide carousel-fade shadow-sm my-3 hide-on-search" data-bs-ride="carousel">
     <div class="carousel-indicators">
         <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Slide 1"></button>
         <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="1" aria-label="Slide 2"></button>
@@ -104,7 +118,7 @@ include('includes/header.php');
 </div>
 
 <!-- Product Category Grid -->
-<div class="container-fluid px-2 px-md-5 my-5">
+<div class="container-fluid px-2 px-md-5 my-5 hide-on-search">
     <div class="container-fluid px-2 px-md-5 my-5">
         <div class="text-center mb-5">
             <h2 class="fw-bold text-dark">Top Categories</h2>
@@ -222,7 +236,7 @@ foreach ($db_collections as $col) {
         $p_stmt = $pdo->prepare("SELECT * FROM products WHERE collection_name = :slug AND stock > 0 ORDER BY id DESC LIMIT 12");
         $p_stmt->execute([':slug' => $slug]);
     }
-    
+
     $products = $p_stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // ২. মূল অ্যারে বিল্ড করা
@@ -239,7 +253,7 @@ foreach ($db_collections as $col) {
 
 <?php foreach ($all_collections as $collection): ?>
     <!-- এই ডিভটিতে id="col-slug" যোগ করা হয়েছে -->
-    <div class="container-fluid px-2 px-md-5 my-5" id="col-<?= htmlspecialchars($collection['slug']); ?>">
+    <div class="container-fluid hide-on-search px-2 px-md-5 my-5" id="col-<?= htmlspecialchars($collection['slug']); ?>">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2 class="fw-bold text-dark mb-0"><?= htmlspecialchars($collection['title']); ?></h2>
             <a href="collection.php?name=<?= urlencode($collection['slug']); ?>" class="btn btn-success text-decoration-none">
@@ -316,7 +330,7 @@ foreach ($db_collections as $col) {
 
 
                                     <div class="d-flex justify-content-between gap-2 mb-2 mx-2">
-                                        <a href="product-details.php?id=<?= $product['id']; ?>" class="btn btn-outline-secondary w-50 btn-sm">
+                                        <a href="product_details.php?product_id=<?= $product['id']; ?>" class="btn btn-outline-secondary w-50 btn-sm">
                                             <span class="d-none d-md-inline"><i class="bi bi-eye me-1"></i></span> View
                                         </a>
 
@@ -397,6 +411,158 @@ foreach ($db_collections as $col) {
         </div>
     </div>
 <?php endforeach; ?>
+
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchInput = document.getElementById('liveSearchInput');
+        const searchSection = document.getElementById('liveSearchSection');
+        const resultGrid = document.getElementById('searchResultGrid');
+        const resultTitle = document.getElementById('searchResultTitle');
+
+        if (!searchInput) return;
+
+        let timeout = null;
+        searchInput.addEventListener('input', function() {
+            clearTimeout(timeout);
+            let query = this.value.trim();
+
+            if (query.length === 0) {
+                clearLiveSearch();
+                return;
+            }
+
+            timeout = setTimeout(() => {
+                fetchProducts(query, '', '');
+            }, 300);
+        });
+
+        window.fetchProducts = function(search = '', category = '', collection = '') {
+            let url = `search_api.php?search=${encodeURIComponent(search)}&category=${encodeURIComponent(category)}&collection=${encodeURIComponent(collection)}`;
+
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        displaySearchResults(data.products, search);
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+        }
+
+        function displaySearchResults(products, searchQuery) {
+            // স্লাইডার, ক্যাটাগরি গ্রিড এবং অন্যান্য কালেকশন সেকশনগুলো লুকিয়ে ফেলা
+            document.querySelectorAll('.hide-on-search').forEach(el => el.style.display = 'none');
+
+            searchSection.style.display = 'block';
+            resultTitle.textContent = searchQuery ? `Search Results for "${searchQuery}"` : 'Search Results';
+
+            if (products.length === 0) {
+                resultGrid.innerHTML = `<div class="col-12 text-center py-4"><p class="text-muted fs-5 mb-0">কোনো প্রোডাক্ট পাওয়া যায়নি (Nothing found).</p></div>`;
+                return;
+            }
+
+            let html = '';
+            products.forEach(product => {
+                let actualPrice = parseFloat(product.actual_price || product.sell_price || 0);
+                let sellPrice = parseFloat(product.sell_price || 0);
+                let hasDiscount = (sellPrice > actualPrice && sellPrice > 0);
+                let discountPercent = hasDiscount ? Math.round(((sellPrice - actualPrice) / sellPrice) * 100) : 0;
+                let imgSrc = product.main_img ? `uploads/${product.main_img}` : 'assets/uploads/placeholder.jpg';
+                let stock = parseInt(product.stock || 0);
+
+                let sizeHtml = '';
+                if (product.size) {
+                    let sizes = product.size.split(',').map(s => s.trim()).filter(s => s !== '');
+                    if (sizes.length > 0) {
+                        sizeHtml = `
+                            <div class="my-2">
+                                <label class="d-block text-secondary fw-semibold small mb-1" style="font-size: 0.75rem;">Size:</label>
+                                <div class="d-flex gap-1 justify-content-start flex-wrap">
+                                    ${sizes.map((sz, idx) => `
+                                        <button type="button" class="btn btn-sm btn-outline-success size-btn px-2 py-0 fw-bold ${idx === 0 ? 'active' : ''}">
+                                            ${sz}
+                                        </button>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        `;
+                    }
+                }
+
+                html += `
+                    <div class="col">
+                        <div class="product-card position-relative border rounded p-2 bg-white shadow-sm h-100">
+                            <div class="product-img-container text-center mb-2 position-relative">
+                                ${discountPercent > 0 ? `<span class="product-badge bg-danger text-white position-absolute top-0 end-0 px-2 py-1 rounded small fw-bold">${discountPercent}%</span>` : ''}
+                                <img src="${imgSrc}" class="img-fluid rounded" alt="${product.name}">
+                            </div>
+                            <div class="product-card-body d-flex flex-column justify-content-between">
+                                <div>
+                                    <div class="d-flex justify-content-between">
+                                        <p class="product-category text-muted small mb-1 text-capitalize">${product.category_name || 'General'}</p>
+                                        <p class="product-category text-muted small mb-1">${product.product_code || ''}</p>
+                                    </div>
+                                    <a href="product_details.php?id=${product.id}" class="product-title text-decoration-none text-dark fw-bold d-block text-truncate">
+                                        ${product.name}
+                                    </a>
+                                </div>
+                                <div class="mt-2">
+                                    <div class="row justify-content-between align-items-center">
+                                        <div class="price-wrapper col-md-6 mb-2 d-flex align-items-center gap-2">
+                                            <span class="current-price fw-bold text-success fs-6">৳${actualPrice.toFixed(2)}</span>
+                                            ${hasDiscount ? `<span class="old-price text-muted text-decoration-line-through small">৳${sellPrice.toFixed(2)}</span>` : ''}
+                                        </div>
+                                        <div class="col-md-6 text-end">
+                                            ${stock > 0 ? `<span class="badge bg-success mb-2">In Stock</span>` : `<span class="badge bg-danger mb-2">Out of Stock</span>`}
+                                        </div>
+                                    </div>
+                                    <div class="d-flex justify-content-between gap-2 mb-2 mx-2">
+                                        <a href="product_details.php?product_id=${product.id}" class="btn btn-outline-secondary w-50 btn-sm">
+                                            <i class="bi bi-eye me-1"></i> View
+                                        </a>
+                                        <button type="button" class="btn btn-outline-success w-50 btn-sm open-options-btn" ${stock <= 0 ? 'disabled' : ''}>
+                                            <i class="bi bi-cart-plus me-1"></i> Add
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Options Overlay Popup -->
+                            <div class="card-options-overlay position-absolute bottom-0 end-0 mwt bg-white rounded p-3 shadow d-none flex-column justify-content-between cart_popup" style="z-index: 10;">
+                                <div class="d-flex justify-content-between align-items-center pb-1 border-bottom">
+                                    <span class="fw-bold text-dark small">Select Options</span>
+                                    <button type="button" class="btn-close close-options-btn" style="font-size: 0.7rem;"></button>
+                                </div>
+                                ${sizeHtml}
+                                <div class="mb-2">
+                                    <label class="d-block text-secondary fw-semibold small mb-1" style="font-size: 0.75rem;">Quantity (Max 6):</label>
+                                    <div class="d-flex gap-1">
+                                        <button type="button" class="btn btn-sm btn-light border px-2 py-0 minus-btn fw-bold">-</button>
+                                        <input type="text" class="form-control form-control-sm text-center p-0 qty-input fw-bold" value="1" readonly style="width: 35px; height: 28px; font-size: 0.8rem;">
+                                        <button type="button" class="btn btn-sm btn-light border px-2 py-0 plus-btn fw-bold">+</button>
+                                    </div>
+                                </div>
+                                <button type="button" class="btn btn-success btn-sm w-100 fw-semibold final-add-cart-btn" data-product-id="${product.id}" data-product-code="${product.product_code || ''}">
+                                    Add to Cart
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            resultGrid.innerHTML = html;
+        }
+
+        window.clearLiveSearch = function() {
+            searchSection.style.display = 'none';
+            resultGrid.innerHTML = '';
+            if (searchInput) searchInput.value = '';
+            // আগের মতো সব সেকশনগুলো আবার ফিরিয়ে আনা
+            document.querySelectorAll('.hide-on-search').forEach(el => el.style.display = '');
+        }
+    });
+</script>
 
 <?php
 // Footer Include

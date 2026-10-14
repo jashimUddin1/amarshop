@@ -400,6 +400,7 @@ if (!empty($selected_collection) && !empty($nav_collections)) {
             font-size: 0.85rem;
             border-top: 1px solid rgba(255, 255, 255, 0.05);
         }
+ 
 
         /* Media Queries */
         @media (max-width: 768px) {
@@ -516,12 +517,13 @@ if (!empty($selected_collection) && !empty($nav_collections)) {
                         </a>
                     </div>
 
+
                     <!-- Search Bar -->
                     <div class="search-area">
-                        <form>
+                        <form id="searchForm" onsubmit="return false;">
                             <div class="input-group-custom">
-                                <input type="text" class="form-control-custom" placeholder="Search...">
-                                <button class="btn btn-success btn-custom" type="submit">
+                                <input type="text" name="search" id="liveSearchInput" class="form-control-custom" placeholder="Search products...">
+                                <button class="btn btn-success btn-custom" type="button">
                                     <i class="bi bi-search d-inline d-md-none"></i>
                                     <span class="d-none d-md-inline">Search</span>
                                 </button>
