@@ -4,8 +4,8 @@ require_once 'auth/config.php';
 $page_title = "Manage Categories";
 $current_page = "category";
 
-$categories_stmt = $pdo->query("SELECT * FROM categories ORDER BY id DESC");
-$categories = $categories_stmt->fetchAll(PDO::FETCH_ASSOC);
+$categories_stmt =$pdo->query("SELECT * FROM categories ORDER BY id ASC");
+$categories =$categories_stmt->fetchAll(PDO::FETCH_ASSOC);
 
 include_once 'includes/header.php';
 ?>
@@ -17,19 +17,17 @@ include_once 'includes/header.php';
   </button>
 </div>
 
-<!-- Dynamic Alert Display (Session Alert Fix) -->
+<!-- Dynamic Alert Display -->
 <?php if (isset($_SESSION['success'])): ?>
   <div class="alert alert-success alert-dismissible fade show mx-2" role="alert">
-    <?= $_SESSION['success'];
-    unset($_SESSION['success']); ?>
+    <?= $_SESSION['success']; unset($_SESSION['success']); ?>
     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
   </div>
 <?php endif; ?>
 
 <?php if (isset($_SESSION['error'])): ?>
   <div class="alert alert-danger alert-dismissible fade show mx-2" role="alert">
-    <?= $_SESSION['error'];
-    unset($_SESSION['error']); ?>
+    <?= $_SESSION['error']; unset($_SESSION['error']); ?>
     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
   </div>
 <?php endif; ?>
@@ -41,21 +39,31 @@ include_once 'includes/header.php';
         <thead class="table-success position-sticky top-0 z-2">
           <tr>
             <th class="bg-success text-white">ID</th>
+            <th class="bg-success text-white">Photo</th>
             <th class="bg-success text-white">Category Name</th>
+            <th class="bg-success text-white">Sub Category / Info</th>
             <th class="bg-success text-white text-end">Actions</th>
           </tr>
         </thead>
         <tbody>
-          <?php foreach ($categories as $cat): ?>
+          <?php foreach ($categories as$cat): ?>
             <tr id="category-row-<?= $cat['id']; ?>">
               <td><?= $cat['id']; ?></td>
+              <td>
+                <?php if (!empty($cat['category_photo'])): ?>
+                  <img src="../uploads/categories/<?= htmlspecialchars($cat['category_photo']); ?>" alt="Photo" style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;">
+                <?php else: ?>
+                  <span class="text-muted small">No Image</span>
+                <?php endif; ?>
+              </td>
               <td class="fw-bold"><?= htmlspecialchars($cat['name']); ?></td>
+              <td><?= htmlspecialchars($cat['sub_category'] ?? 'N/A'); ?></td>
               <td class="text-end">
                 <!-- Edit Button -->
                 <button class="btn btn-sm btn-outline-warning me-1" data-bs-toggle="modal" data-bs-target="#editCategoryModal<?= $cat['id']; ?>">
                   <i class="bi bi-pencil-square"></i> Edit
                 </button>
-                <!-- Ajax Delete Button -->
+                <!-- Delete Button -->
                 <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteCategory(<?= $cat['id']; ?>)">
                   <i class="bi bi-trash"></i> Delete
                 </button>
@@ -66,7 +74,7 @@ include_once 'includes/header.php';
             <div class="modal fade" id="editCategoryModal<?= $cat['id']; ?>" tabindex="-1">
               <div class="modal-dialog">
                 <div class="modal-content text-start">
-                  <form id="editCategoryForm<?= $cat['id']; ?>" onsubmit="updateCategory(event, <?= $cat['id']; ?>)">
+                  <form id="editCategoryForm<?= $cat['id']; ?>" onsubmit="updateCategory(event, <?= $cat['id']; ?>)" enctype="multipart/form-data">
                     <div class="modal-header">
                       <h5 class="modal-title">Edit Category</h5>
                       <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -75,7 +83,15 @@ include_once 'includes/header.php';
                       <input type="hidden" name="category_id" value="<?= $cat['id']; ?>">
                       <div class="mb-3">
                         <label class="form-label">Category Name <span class="text-danger">*</span></label>
-                        <input type="text" name="category_name" id="cat_name_<?= $cat['id']; ?>" class="form-control" value="<?= htmlspecialchars($cat['name']); ?>" required>
+                        <input type="text" name="category_name" class="form-control" value="<?= htmlspecialchars($cat['name']); ?>" required>
+                      </div>
+                      <div class="mb-3">
+                        <label class="form-label">Sub Category / Info</label>
+                        <input type="text" name="sub_category" class="form-control" value="<?= htmlspecialchars($cat['sub_category'] ?? ''); ?>">
+                      </div>
+                      <div class="mb-3">
+                        <label class="form-label">Category Photo</label>
+                        <input type="file" name="category_photo" class="form-control" accept="image/*">
                       </div>
                     </div>
                     <div class="modal-footer">
@@ -98,7 +114,7 @@ include_once 'includes/header.php';
 <div class="modal fade" id="addCategoryModal" tabindex="-1">
   <div class="modal-dialog">
     <div class="modal-content">
-      <form id="addCategoryForm" onsubmit="handleAjaxSubmit(event, 'core/category_add.php', '#addCategoryModal')">
+      <form id="addCategoryForm" onsubmit="handleAjaxSubmit(event, 'core/category_add.php', '#addCategoryModal')" enctype="multipart/form-data">
         <div class="modal-header">
           <h5 class="modal-title">Add Category</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -107,6 +123,14 @@ include_once 'includes/header.php';
           <div class="mb-3">
             <label class="form-label">Category Name <span class="text-danger">*</span></label>
             <input type="text" name="category_name" class="form-control" required placeholder="e.g. Electronics">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Sub Category / Info</label>
+            <input type="text" name="sub_category" class="form-control" placeholder="e.g. 240+ Items">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Category Photo</label>
+            <input type="file" name="category_photo" class="form-control" accept="image/*">
           </div>
         </div>
         <div class="modal-footer">
@@ -118,7 +142,7 @@ include_once 'includes/header.php';
   </div>
 </div>
 
-<!-- Delete Script -->
+<!-- Scripts -->
 <script>
  function deleteCategory(id) {
     if (confirm('Are you sure you want to delete this category?')) {
@@ -126,10 +150,7 @@ include_once 'includes/header.php';
             .then(res => res.json())
             .then(data => {
                 if (data.status === 'success') {
-                    // ১. টেবিল থেকে রো মুছে ফেলা
                     document.getElementById(`category-row-${id}`).remove();
-
-                    // ২. পেজ রিলোড ছাড়া সরাসরি স্ক্রিনে অ্যালার্ট মেসেজ দেখানো
                     showAlert('Category deleted successfully!', 'success');
                 } else {
                     showAlert(data.message || 'Failed to delete category', 'danger');
@@ -139,7 +160,6 @@ include_once 'includes/header.php';
     }
 }
 
-// স্ক্রিনে লাইভ অ্যালার্ট দেখানোর ফাংশন
 function showAlert(message, type) {
     const alertBox = document.createElement('div');
     alertBox.className = `alert alert-${type} alert-dismissible fade show mx-2 my-2`;
@@ -147,20 +167,13 @@ function showAlert(message, type) {
         ${message}
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     `;
-
-    // কার্ডের বা কনটেইনারের একদম উপরে মেসেজ বসানো
     const container = document.querySelector('.d-flex.justify-content-between');
     container.parentNode.insertBefore(alertBox, container.nextSibling);
-
-    // ৩ সেকেন্ড পর স্বয়ংক্রিয়ভাবে মুছে যাবে
-    setTimeout(() => {
-        alertBox.remove();
-    }, 3000);
+    setTimeout(() => { alertBox.remove(); }, 3000);
 }
 
 function updateCategory(event, id) {
     event.preventDefault();
-
     const form = document.getElementById(`editCategoryForm${id}`);
     const formData = new FormData(form);
 
@@ -172,9 +185,9 @@ function updateCategory(event, id) {
     .then(data => {
         if (data.status === 'success') {
             alert(data.message);
-            location.reload(); // সফল হলে পেজ রিলোড হবে
+            location.reload();
         } else {
-            alert(data.message); // ভুল থাকলে (যেমন: Duplicate Name) অ্যালার্ট দেবে
+            alert(data.message);
         }
     })
     .catch(error => {

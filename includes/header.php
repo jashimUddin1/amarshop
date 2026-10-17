@@ -12,7 +12,7 @@ $nav_categories = [];
 $nav_collections = [];
 if (isset($pdo)) {
     try {
-        $cat_stmt = $pdo->query("SELECT name FROM categories ORDER BY name ASC LIMIT 6");
+        $cat_stmt = $pdo->query("SELECT name FROM categories ORDER BY id ASC LIMIT 6");
         $nav_categories = $cat_stmt->fetchAll(PDO::FETCH_ASSOC);
 
         // Database থেকে Collections dynamic vabe fetch kora

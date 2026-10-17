@@ -4,6 +4,7 @@ header('Content-Type: application/json');
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $category_name = trim($_POST['category_name'] ?? '');
+    $sub_category  = trim($_POST['sub_category'] ?? '');
 
     if (empty($category_name)) {
         echo json_encode(['status' => 'error', 'message' => 'Category name is required.']);
@@ -20,9 +21,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit();
         }
 
-        // ২. নতুন ক্যাটাগরি যুক্ত করা
-        $stmt = $pdo->prepare("INSERT INTO categories (name) VALUES (:name)");
-        $stmt->execute([':name' => $category_name]);
+        // ২. ছবি আপলোড প্রসেস করা
+        $photo_name = null;
+        if (isset($_FILES['category_photo']) && $_FILES['category_photo']['error'] === UPLOAD_ERR_OK) {
+            $upload_dir = '../../uploads/categories/';
+            
+            // ফোল্ডার না থাকলে তৈরি করা
+            if (!is_dir($upload_dir)) {
+                mkdir($upload_dir, 0777, true);
+            }
+
+            $file_ext = strtolower(pathinfo($_FILES['category_photo']['name'], PATHINFO_EXTENSION));
+            $allowed_ext = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+
+            if (!in_array($file_ext, $allowed_ext)) {
+                echo json_encode(['status' => 'error', 'message' => 'Invalid image format! Only JPG, JPEG, PNG, WEBP & GIF are allowed.']);
+                exit();
+            }
+
+            // ইউনিক নাম তৈরি করা
+            $photo_name = 'cat_' . time() . '_' . rand(1000, 9999) . '.' . $file_ext;
+            $target_path = $upload_dir . $photo_name;
+
+            if (!move_uploaded_file($_FILES['category_photo']['tmp_name'], $target_path)) {
+                echo json_encode(['status' => 'error', 'message' => 'Failed to upload category photo.']);
+                exit();
+            }
+        }
+
+        // ৩. নতুন ক্যাটাগরি ডাটাবেজে যুক্ত করা
+        $stmt = $pdo->prepare("INSERT INTO categories (name, sub_category, category_photo) VALUES (:name, :sub_category, :photo)");
+        $stmt->execute([
+            ':name'         => $category_name,
+            ':sub_category'  => $sub_category,
+            ':photo'        => $photo_name
+        ]);
 
         $_SESSION['success'] = "Category added successfully!";
         echo json_encode(['status' => 'success', 'message' => 'Category added successfully!']);

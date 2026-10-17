@@ -117,99 +117,64 @@ include('includes/header.php');
     </button>
 </div>
 
+<?php
+// ডাটাবেজ থেকে ক্যাটাগরিগুলো ফেচ করা
+try {
+    $cat_grid_stmt = $pdo->query("SELECT * FROM categories ORDER BY id ASC");
+    $all_db_categories = $cat_grid_stmt->fetchAll(PDO::FETCH_ASSOC);
+    $total_categories = count($all_db_categories);
+    
+    // হোমপেজে দেখানোর জন্য প্রথম ৬টি ক্যাটাগরি নেওয়া
+    $db_top_categories = array_slice($all_db_categories, 0, 6);
+} catch (PDOException $e) {
+    $db_top_categories = [];
+    $total_categories = 0;
+}
+?>
+
 <!-- Product Category Grid -->
 <div class="container-fluid px-2 px-md-5 my-5 hide-on-search">
     <div class="container-fluid px-2 px-md-5 my-5">
-        <div class="text-center mb-5">
-            <h2 class="fw-bold text-dark">Top Categories</h2>
-            <p class="text-muted">Explore our wide range of products across different categories</p>
-            <div class="d-inline-block bg-success" style="width: 70px; height: 3px;"></div>
+        <div class="d-flex justify-content-between align-items-center mb-5">
+            <div>
+                <h2 class="fw-bold text-dark mb-1">Top Categories</h2>
+                <div class="bg-success mt-2" style="width: 70px; height: 3px;"></div>
+            </div>
+            <?php if ($total_categories > 6): ?>
+                <a href="category_products.php" class="btn btn-outline-success fw-bold px-4 py-2">
+                    View All
+                </a>
+            <?php endif; ?>
         </div>
 
         <div class="row row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-lg-6 g-3 g-md-4">
-            <div class="col">
-                <a href="#" class="text-decoration-none">
-                    <div class="category-card text-center h-100 p-2">
-                        <div class="category-img-container">
-                            <img src="https://via.placeholder.com/150x150/f8f9fa/374151?text=Men" class="img-fluid" alt="Men's Fashion">
-                        </div>
-                        <div class="card-body p-2 p-md-3">
-                            <p class="category-text mb-0">Men's Fashion</p>
-                            <small class="text-muted d-none d-sm-inline">240+ Items</small>
-                        </div>
-                    </div>
-                </a>
-            </div>
+            <?php if (!empty($db_top_categories)): ?>
+                <?php foreach ($db_top_categories as $cat_item): ?>
+                    <?php 
+                        $count_stmt = $pdo->prepare("SELECT COUNT(*) FROM products WHERE category_name = :cat_name");
+                        $count_stmt->execute([':cat_name' => $cat_item['name']]);
+                        $product_count = $count_stmt->fetchColumn();
 
-            <div class="col">
-                <a href="#" class="text-decoration-none">
-                    <div class="category-card text-center h-100 p-2">
-                        <div class="category-img-container">
-                            <img src="https://via.placeholder.com/150x150/f8f9fa/374151?text=Women" class="img-fluid" alt="Women's Fashion">
-                        </div>
-                        <div class="card-body p-2 p-md-3">
-                            <p class="category-text mb-0">Women's Fashion</p>
-                            <small class="text-muted d-none d-sm-inline">310+ Items</small>
-                        </div>
+                        $cat_img = !empty($cat_item['category_photo']) ? 'uploads/categories/' . $cat_item['category_photo'] : 'https://via.placeholder.com/150x150/f8f9fa/374151?text=' . urlencode($cat_item['name']);
+                    ?>
+                    <div class="col">
+                        <a href="category_products.php?category=<?= urlencode($cat_item['name']); ?>" class="text-decoration-none">
+                            <div class="category-card text-center h-100 p-2 border rounded bg-white shadow-sm">
+                                <div class="category-img-container ratio ratio-1x1 mb-2">
+                                    <img src="<?= htmlspecialchars($cat_img); ?>" class="img-fluid rounded object-fit-cover" alt="<?= htmlspecialchars($cat_item['name']); ?>">
+                                </div>
+                                <div class="card-body p-1">
+                                    <span class="category-text mb-0 text-success fw-bold text-truncate d-block"><?= htmlspecialchars($cat_item['name']); ?></span>
+                                </div>
+                            </div>
+                        </a>
                     </div>
-                </a>
-            </div>
-
-            <div class="col">
-                <a href="#" class="text-decoration-none">
-                    <div class="category-card text-center h-100 p-2">
-                        <div class="category-img-container">
-                            <img src="https://via.placeholder.com/150x150/f8f9fa/374151?text=Gadgets" class="img-fluid" alt="Electronics">
-                        </div>
-                        <div class="card-body p-2 p-md-3">
-                            <p class="category-text mb-0">Electronics</p>
-                            <small class="text-muted d-none d-sm-inline">190+ Items</small>
-                        </div>
-                    </div>
-                </a>
-            </div>
-
-            <div class="col">
-                <a href="#" class="text-decoration-none">
-                    <div class="category-card text-center h-100 p-2">
-                        <div class="category-img-container">
-                            <img src="https://via.placeholder.com/150x150/f8f9fa/374151?text=Mobile" class="img-fluid" alt="Mobile & Accessories">
-                        </div>
-                        <div class="card-body p-2 p-md-3">
-                            <p class="category-text mb-0">Smartphones</p>
-                            <small class="text-muted d-none d-sm-inline">150+ Items</small>
-                        </div>
-                    </div>
-                </a>
-            </div>
-
-            <div class="col">
-                <a href="#" class="text-decoration-none">
-                    <div class="category-card text-center h-100 p-2">
-                        <div class="category-img-container">
-                            <img src="https://via.placeholder.com/150x150/f8f9fa/374151?text=Home" class="img-fluid" alt="Home & Life">
-                        </div>
-                        <div class="card-body p-2 p-md-3">
-                            <p class="category-text mb-0">Home Decor</p>
-                            <small class="text-muted d-none d-sm-inline">210+ Items</small>
-                        </div>
-                    </div>
-                </a>
-            </div>
-
-            <div class="col">
-                <a href="#" class="text-decoration-none">
-                    <div class="category-card text-center h-100 p-2">
-                        <div class="category-img-container">
-                            <img src="https://via.placeholder.com/150x150/f8f9fa/374151?text=Beauty" class="img-fluid" alt="Beauty & Care">
-                        </div>
-                        <div class="card-body p-2 p-md-3">
-                            <p class="category-text mb-0">Beauty & Care</p>
-                            <small class="text-muted d-none d-sm-inline">120+ Items</small>
-                        </div>
-                    </div>
-                </a>
-            </div>
+                <?php endforeach; ?>
+            <?php else: ?>
+                <div class="col-12 text-center">
+                    <p class="text-muted">No categories found.</p>
+                </div>
+            <?php endif; ?>
         </div>
     </div>
 </div>
