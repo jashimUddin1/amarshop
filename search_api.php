@@ -30,6 +30,22 @@ try {
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);
     $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    if (isset($_SESSION['user_id']) && !empty($products)) {
+        $cart_stmt = $pdo->prepare("SELECT product_id, size, quantity FROM cart WHERE user_id = :user_id");
+        $cart_stmt->execute([':user_id' => $_SESSION['user_id']]);
+        $cart_items = [];
+        while ($cart_item = $cart_stmt->fetch(PDO::FETCH_ASSOC)) {
+            $cart_items[(int)$cart_item['product_id']] = $cart_item;
+        }
+
+        foreach ($products as &$product) {
+            $cart_item = $cart_items[(int)$product['id']] ?? null;
+            $product['cart_size'] = $cart_item['size'] ?? null;
+            $product['cart_quantity'] = isset($cart_item['quantity']) ? (int)$cart_item['quantity'] : null;
+        }
+        unset($product);
+    }
     
     echo json_encode([
         'status' => 'success',

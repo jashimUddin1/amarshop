@@ -309,93 +309,114 @@
                 cartOffcanvasEl.addEventListener('show.bs.offcanvas', loadCartDetails);
             }
 
-            document.querySelectorAll('.open-options-btn').forEach(button => {
-                button.addEventListener('click', function(e) {
-                    e.stopPropagation();
+            document.addEventListener('click', function(e) {
+                const target = e.target instanceof Element ? e.target : null;
+                if (!target) return;
+
+                const openButton = target.closest('.open-options-btn');
+                if (openButton) {
                     e.preventDefault();
+                    e.stopPropagation();
 
                     if (!isLoggedIn) {
                         window.location.href = 'auth/login.php?status=warning&message=' + encodeURIComponent('Login first then add to cart');
                         return;
                     }
 
-                    const overlay = this.closest('.position-relative').querySelector('.card-options-overlay');
+                    const card = openButton.closest('.position-relative');
+                    const overlay = card ? card.querySelector('.card-options-overlay') : null;
+                    if (!overlay) return;
+
                     document.querySelectorAll('.card-options-overlay').forEach(el => {
                         el.classList.add('d-none');
                         el.classList.remove('d-flex');
                     });
-
                     overlay.classList.remove('d-none');
                     overlay.classList.add('d-flex');
-                });
-            });
-
-            document.querySelectorAll('.close-options-btn').forEach(button => {
-                button.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    const overlay = this.closest('.card-options-overlay');
-                    overlay.classList.add('d-none');
-                    overlay.classList.remove('d-flex');
-                });
-            });
-
-            document.querySelectorAll('.card-options-overlay').forEach(overlay => {
-                const sizeBtns = overlay.querySelectorAll('.size-btn');
-                sizeBtns.forEach(btn => {
-                    btn.addEventListener('click', function() {
-                        sizeBtns.forEach(b => b.classList.remove('active'));
-                        this.classList.add('active');
-                    });
-                });
-
-                const minusBtn = overlay.querySelector('.minus-btn');
-                const plusBtn = overlay.querySelector('.plus-btn');
-                const qtyInput = overlay.querySelector('.qty-input');
-
-                if (minusBtn && plusBtn && qtyInput) {
-                    minusBtn.addEventListener('click', () => {
-                        let val = parseInt(qtyInput.value);
-                        if (val > 1) qtyInput.value = val - 1;
-                    });
-
-                    plusBtn.addEventListener('click', () => {
-                        let val = parseInt(qtyInput.value);
-                        if (val < 6) qtyInput.value = val + 1;
-                    });
+                    return;
                 }
-            });
 
-            document.querySelectorAll('.final-add-cart-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const overlay = this.closest('.card-options-overlay');
-                    const productId = this.getAttribute('data-product-id');
-                    const productCode = this.getAttribute('data-product-code') || '';
-                    const selectedSizeBtn = overlay.querySelector('.size-btn.active');
-                    const size = selectedSizeBtn ? selectedSizeBtn.innerText.trim() : '';
-                    const quantity = overlay.querySelector('.qty-input').value;
+                const closeButton = target.closest('.close-options-btn');
+                if (closeButton) {
+                    const overlay = closeButton.closest('.card-options-overlay');
+                    if (overlay) {
+                        overlay.classList.add('d-none');
+                        overlay.classList.remove('d-flex');
+                    }
+                    return;
+                }
 
+                const sizeButton = target.closest('.size-btn');
+                if (sizeButton) {
+                    const overlay = sizeButton.closest('.card-options-overlay');
+                    if (overlay) {
+                        overlay.querySelectorAll('.size-btn').forEach(button => button.classList.remove('active'));
+                        sizeButton.classList.add('active');
+                    }
+                    return;
+                }
+
+                const quantityButton = target.closest('.minus-btn, .plus-btn');
+                if (quantityButton) {
+                    const overlay = quantityButton.closest('.card-options-overlay');
+                    const quantityInput = overlay ? overlay.querySelector('.qty-input') : null;
+                    if (quantityInput) {
+                        const quantity = parseInt(quantityInput.value, 10) || 1;
+                        quantityInput.value = quantityButton.classList.contains('plus-btn')
+                            ? Math.min(6, quantity + 1)
+                            : Math.max(1, quantity - 1);
+                    }
+                    return;
+                }
+
+                const addButton = target.closest('.final-add-cart-btn');
+                if (addButton) {
+                    const overlay = addButton.closest('.card-options-overlay');
+                    const selectedSizeButton = overlay ? overlay.querySelector('.size-btn.active') : null;
+                    const quantityInput = overlay ? overlay.querySelector('.qty-input') : null;
+                    if (!overlay || !quantityInput) return;
+
+                    const size = selectedSizeButton ? selectedSizeButton.innerText.trim() : '';
+                    const quantity = quantityInput.value;
                     const formData = new FormData();
-                    formData.append('product_id', productId);
-                    formData.append('product_code', productCode);
+                    formData.append('product_id', addButton.getAttribute('data-product-id'));
+                    formData.append('product_code', addButton.getAttribute('data-product-code') || '');
                     formData.append('size', size);
                     formData.append('quantity', quantity);
 
+                    addButton.disabled = true;
                     fetch('core/add_to_cart.php', { method: 'POST', body: formData })
                         .then(response => response.json())
                         .then(data => {
                             alert(data.message);
                             if (data.status === 'success') {
                                 updateCartBadge();
+                                const card = overlay.closest('.position-relative');
+                                if (!card || !card.closest('#searchResultGrid')) {
+                                    location.reload();
+                                    return;
+                                }
+
+                                const cardButton = card ? card.querySelector('.open-options-btn') : null;
+                                if (cardButton) {
+                                    cardButton.textContent = `${size ? size + ' - ' : ''}${quantity} ps`;
+                                    cardButton.classList.add('fw-bold');
+                                }
                                 overlay.classList.add('d-none');
                                 overlay.classList.remove('d-flex');
-                                location.reload();
                             }
+                        })
+                        .catch(error => {
+                            console.error('Error adding product to cart:', error);
+                            alert('Could not add the product to your cart. Please try again.');
+                        })
+                        .finally(() => {
+                            addButton.disabled = false;
                         });
-                });
-            });
+                    return;
+                }
 
-            document.addEventListener('click', function(e) {
-                if (!e.target.closest('.card-options-overlay') && !e.target.closest('.open-options-btn')) {
+                if (!target.closest('.card-options-overlay')) {
                     document.querySelectorAll('.card-options-overlay').forEach(el => {
                         el.classList.add('d-none');
                         el.classList.remove('d-flex');

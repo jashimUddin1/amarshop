@@ -102,16 +102,19 @@ include 'includes/header.php';
                     <div class="mb-3 overflow-auto" style="max-height: 250px;">
                         <?php foreach ($cart_items as $item):
                             $item_total = $item['price'] * $item['quantity'];
+                            $product_label = !empty($item['product_code'])
+                                ? $item['product_code'] . ' - ' . $item['name']
+                                : $item['name'];
                         ?>
-                            <div class="d-flex align-items-center justify-content-between border-bottom py-2 me-2">
-                                <div class="d-flex align-items-center">
-                                    <img src="uploads/<?= $item['main_img']; ?>" class="rounded border me-2" style="width: 45px; height: 45px; object-fit: contain;">
-                                    <div>
-                                        <h6 class="mb-0 text-truncate" style="max-width: 140px; font-size: 0.85rem;"><?= htmlspecialchars($item['name']); ?></h6>
+                            <div class="d-flex align-items-start justify-content-between border-bottom py-2 me-2">
+                                <div class="d-flex align-items-start flex-grow-1 me-2" style="min-width: 0;">
+                                    <img src="uploads/<?= $item['main_img']; ?>" class="rounded border me-2 flex-shrink-0" style="width: 45px; height: 45px; object-fit: contain;">
+                                    <div style="min-width: 0; flex: 1;">
+                                        <h6 class="mb-0" style="font-size: 0.85rem; white-space: normal; overflow-wrap: anywhere;"><?= htmlspecialchars($product_label); ?></h6>
                                         <small class="text-muted">Size: <?= htmlspecialchars($item['size'] ?: 'N/A'); ?> | Qty: <?= $item['quantity']; ?> * <?= $item['price'] ?></small>
                                     </div>
                                 </div>
-                                <span class="fw-bold text-success" style="font-size: 0.85rem;">৳<?= number_format($item_total, 2); ?></span>
+                                <span class="fw-bold text-success text-nowrap flex-shrink-0" style="font-size: 0.85rem;">৳<?= number_format($item_total, 2); ?></span>
                             </div>
                         <?php endforeach; ?>
                     </div>

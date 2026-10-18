@@ -427,14 +427,27 @@ foreach ($db_collections as $col) {
                 return;
             }
 
+            const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, character => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            })[character]);
+
             let html = '';
             products.forEach(product => {
                 let actualPrice = parseFloat(product.actual_price || product.sell_price || 0);
                 let sellPrice = parseFloat(product.sell_price || 0);
                 let hasDiscount = (sellPrice > actualPrice && sellPrice > 0);
                 let discountPercent = hasDiscount ? Math.round(((sellPrice - actualPrice) / sellPrice) * 100) : 0;
-                let imgSrc = product.main_img ? `uploads/${product.main_img}` : 'assets/uploads/placeholder.jpg';
+                let imgSrc = product.main_img ? `uploads/${escapeHtml(product.main_img)}` : 'assets/uploads/placeholder.jpg';
                 let stock = parseInt(product.stock || 0);
+                let cartQuantity = parseInt(product.cart_quantity || 0);
+                let isInCart = cartQuantity > 0;
+                let cartText = product.cart_size
+                    ? `${escapeHtml(product.cart_size)} - ${cartQuantity} ps`
+                    : `${cartQuantity} ps`;
 
                 let sizeHtml = '';
                 if (product.size) {
@@ -446,7 +459,7 @@ foreach ($db_collections as $col) {
                                 <div class="d-flex gap-1 justify-content-start flex-wrap">
                                     ${sizes.map((sz, idx) => `
                                         <button type="button" class="btn btn-sm btn-outline-success size-btn px-2 py-0 fw-bold ${idx === 0 ? 'active' : ''}">
-                                            ${sz}
+                                            ${escapeHtml(sz)}
                                         </button>
                                     `).join('')}
                                 </div>
@@ -460,16 +473,16 @@ foreach ($db_collections as $col) {
                         <div class="product-card position-relative border rounded p-2 bg-white shadow-sm h-100">
                             <div class="product-img-container text-center mb-2 position-relative">
                                 ${discountPercent > 0 ? `<span class="product-badge bg-danger text-white position-absolute top-0 end-0 px-2 py-1 rounded small fw-bold">${discountPercent}%</span>` : ''}
-                                <img src="${imgSrc}" class="img-fluid rounded" alt="${product.name}">
+                                <img src="${imgSrc}" class="img-fluid rounded" alt="${escapeHtml(product.name)}">
                             </div>
                             <div class="product-card-body d-flex flex-column justify-content-between">
                                 <div>
                                     <div class="d-flex justify-content-between">
-                                        <p class="product-category text-muted small mb-1 text-capitalize">${product.category_name || 'General'}</p>
-                                        <p class="product-category text-muted small mb-1">${product.product_code || ''}</p>
+                                        <p class="product-category text-muted small mb-1 text-capitalize">${escapeHtml(product.category_name || 'General')}</p>
+                                        <p class="product-category text-muted small mb-1">${escapeHtml(product.product_code || '')}</p>
                                     </div>
-                                    <a href="product_details.php?id=${product.id}" class="product-title text-decoration-none text-dark fw-bold d-block text-truncate">
-                                        ${product.name}
+                                    <a href="product_details.php?id=${encodeURIComponent(product.id)}" class="product-title text-decoration-none text-dark fw-bold d-block text-truncate">
+                                        ${escapeHtml(product.name)}
                                     </a>
                                 </div>
                                 <div class="mt-2">
@@ -483,11 +496,11 @@ foreach ($db_collections as $col) {
                                         </div>
                                     </div>
                                     <div class="d-flex justify-content-between gap-2 mb-2 mx-2">
-                                        <a href="product_details.php?product_id=${product.id}" class="btn btn-outline-secondary w-50 btn-sm">
+                                        <a href="product_details.php?product_id=${encodeURIComponent(product.id)}" class="btn btn-outline-secondary w-50 btn-sm">
                                             <i class="bi bi-eye me-1"></i> View
                                         </a>
-                                        <button type="button" class="btn btn-outline-success w-50 btn-sm open-options-btn" ${stock <= 0 ? 'disabled' : ''}>
-                                            <i class="bi bi-cart-plus me-1"></i> Add
+                                        <button type="button" class="btn btn-outline-success w-50 btn-sm open-options-btn ${isInCart ? 'fw-bold' : ''}" ${stock <= 0 ? 'disabled' : ''}>
+                                            ${isInCart ? cartText : '<span class="d-none d-md-inline"><i class="bi bi-cart-plus me-1"></i></span> Add <span class="d-none d-md-inline">to Cart</span>'}
                                         </button>
                                     </div>
                                 </div>
@@ -508,7 +521,7 @@ foreach ($db_collections as $col) {
                                         <button type="button" class="btn btn-sm btn-light border px-2 py-0 plus-btn fw-bold">+</button>
                                     </div>
                                 </div>
-                                <button type="button" class="btn btn-success btn-sm w-100 fw-semibold final-add-cart-btn" data-product-id="${product.id}" data-product-code="${product.product_code || ''}">
+                                <button type="button" class="btn btn-success btn-sm w-100 fw-semibold final-add-cart-btn" data-product-id="${escapeHtml(product.id)}" data-product-code="${escapeHtml(product.product_code || '')}">
                                     Add to Cart
                                 </button>
                             </div>
