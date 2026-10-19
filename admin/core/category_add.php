@@ -21,16 +21,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit();
         }
 
-        // ২. ছবি আপলোড প্রসেস করা
-        $photo_name = null;
-        if (isset($_FILES['category_photo']) && $_FILES['category_photo']['error'] === UPLOAD_ERR_OK) {
-            $upload_dir = '../../uploads/categories/';
-            
-            // ফোল্ডার না থাকলে তৈরি করা
-            if (!is_dir($upload_dir)) {
-                mkdir($upload_dir, 0777, true);
-            }
+        // ২. ছবি আপলোড প্রসেস করা; ছবি না দিলে default avatar ব্যবহার করা
+        $upload_dir = '../../uploads/categories/';
+        $default_photo = 'default-avatar.svg';
+        if (!is_dir($upload_dir) && !mkdir($upload_dir, 0777, true) && !is_dir($upload_dir)) {
+            echo json_encode(['status' => 'error', 'message' => 'Could not create the category image folder.']);
+            exit();
+        }
+        if (!is_file($upload_dir . $default_photo)) {
+            echo json_encode(['status' => 'error', 'message' => 'The default category avatar is missing.']);
+            exit();
+        }
 
+        $photo_name = $default_photo;
+        if (isset($_FILES['category_photo']) && $_FILES['category_photo']['error'] !== UPLOAD_ERR_NO_FILE) {
+            if ($_FILES['category_photo']['error'] !== UPLOAD_ERR_OK) {
+                echo json_encode(['status' => 'error', 'message' => 'Category photo upload failed.']);
+                exit();
+            }
             $file_ext = strtolower(pathinfo($_FILES['category_photo']['name'], PATHINFO_EXTENSION));
             $allowed_ext = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
 
@@ -39,7 +47,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 exit();
             }
 
-            // ইউনিক নাম তৈরি করা
             $photo_name = 'cat_' . time() . '_' . rand(1000, 9999) . '.' . $file_ext;
             $target_path = $upload_dir . $photo_name;
 

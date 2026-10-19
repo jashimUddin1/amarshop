@@ -1,26 +1,6 @@
 <?php
 require_once('auth/config.php');
 
-// $pdo এবং $collection_name এর টাইপ (PDO এবং string) যুক্ত করা হয়েছে
-function get_products_by_collection(PDO $pdo, string $collection_name, int $limit = 12): array
-{
-    try {
-        $stmt = $pdo->prepare("SELECT * FROM products WHERE collection_name = :collection ORDER BY id DESC LIMIT :limit");
-        $stmt->bindValue(':collection', $collection_name, PDO::PARAM_STR);
-        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
-        $stmt->execute();
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    } catch (PDOException $e) {
-        return [];
-    }
-}
-
-$new_arrivals  = get_products_by_collection($pdo, 'new_arrivals');
-$top_deals     = get_products_by_collection($pdo, 'top_deals');
-$high_discount = get_products_by_collection($pdo, 'high_discount');
-$top_sales     = get_products_by_collection($pdo, 'top_sales');
-$top_rated     = get_products_by_collection($pdo, 'top_rated');
-
 $cart_items = [];
 if (isset($_SESSION['user_id'])) {
     $user_id = $_SESSION['user_id'];
@@ -71,7 +51,7 @@ include('includes/header.php');
                         </div>
                         <h1 class="display-4 fw-bold text-dark lh-sm mb-3">The Great Fashion <br class="d-none d-lg-block">Collection 2026</h1>
                         <p class="text-secondary mb-4">Up To 40% Off Final Sale Items. <br>Caught in the Moment!</p>
-                        <a href="#" class="btn btn-success btn-lg px-4 py-2.5 fs-6 shadow-sm border-0 d-inline-flex align-items-center gap-2" style="background-color: var(--brand); border-radius: 4px;">
+                        <a href="collection.php?name=new_arrivals" class="btn btn-success btn-lg px-4 py-2.5 fs-6 shadow-sm border-0 d-inline-flex align-items-center gap-2" style="background-color: var(--brand); border-radius: 4px;">
                             Show Collection <i class="bi bi-arrow-right"></i>
                         </a>
                     </div>
@@ -96,7 +76,7 @@ include('includes/header.php');
                         </div>
                         <h1 class="display-4 fw-bold text-dark lh-sm mb-3">Exclusive Premium <br class="d-none d-lg-block">Gadgets Pack</h1>
                         <p class="text-secondary mb-4">Up To 50% Off On Modern Tech Accessories. <br>Grab It Before It's Gone!</p>
-                        <a href="#" class="btn btn-success btn-lg px-4 py-2.5 fs-6 shadow-sm border-0 d-inline-flex align-items-center gap-2" style="background-color: var(--brand); border-radius: 4px;">
+                        <a href="collection.php?name=top_sales" class="btn btn-success btn-lg px-4 py-2.5 fs-6 shadow-sm border-0 d-inline-flex align-items-center gap-2" style="background-color: var(--brand); border-radius: 4px;">
                             Shop Collection
                         </a>
                     </div>
@@ -123,7 +103,7 @@ try {
     $cat_grid_stmt = $pdo->query("SELECT * FROM categories ORDER BY id ASC");
     $all_db_categories = $cat_grid_stmt->fetchAll(PDO::FETCH_ASSOC);
     $total_categories = count($all_db_categories);
-    
+
     // হোমপেজে দেখানোর জন্য প্রথম ৬টি ক্যাটাগরি নেওয়া
     $db_top_categories = array_slice($all_db_categories, 0, 6);
 } catch (PDOException $e) {
@@ -150,12 +130,12 @@ try {
         <div class="row row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-lg-6 g-3 g-md-4">
             <?php if (!empty($db_top_categories)): ?>
                 <?php foreach ($db_top_categories as $cat_item): ?>
-                    <?php 
-                        $count_stmt = $pdo->prepare("SELECT COUNT(*) FROM products WHERE category_name = :cat_name");
-                        $count_stmt->execute([':cat_name' => $cat_item['name']]);
-                        $product_count = $count_stmt->fetchColumn();
+                    <?php
+                    $count_stmt = $pdo->prepare("SELECT COUNT(*) FROM products WHERE category_name = :cat_name");
+                    $count_stmt->execute([':cat_name' => $cat_item['name']]);
+                    $product_count = $count_stmt->fetchColumn();
 
-                        $cat_img = !empty($cat_item['category_photo']) ? 'uploads/categories/' . $cat_item['category_photo'] : 'https://via.placeholder.com/150x150/f8f9fa/374151?text=' . urlencode($cat_item['name']);
+                    $cat_img = 'uploads/categories/' . ($cat_item['category_photo'] ?: 'default-avatar.svg');
                     ?>
                     <div class="col">
                         <a href="category_products.php?category=<?= urlencode($cat_item['name']); ?>" class="text-decoration-none">
@@ -262,7 +242,7 @@ foreach ($db_collections as $col) {
                                             <?= htmlspecialchars($product['product_code'] ?? ''); ?>
                                         </p>
                                     </div>
-                                    <a href="product_details.php?id=<?= $product['id']; ?>" class="product-title text-decoration-none text-dark fw-bold d-block text-truncate">
+                                    <a href="product_details.php?product_id=<?= $product['id']; ?>" class="product-title text-decoration-none text-dark fw-bold d-block text-truncate">
                                         <?= htmlspecialchars($product['name']); ?>
                                     </a>
 
@@ -388,8 +368,21 @@ foreach ($db_collections as $col) {
         if (!searchInput) return;
 
         let timeout = null;
+        let searchRequestId = 0;
+        document.getElementById('searchForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            clearTimeout(timeout);
+            const query = searchInput.value.trim();
+            if (query) {
+                fetchProducts(query, '', '');
+            } else {
+                clearLiveSearch();
+            }
+        });
+
         searchInput.addEventListener('input', function() {
             clearTimeout(timeout);
+            searchRequestId++;
             let query = this.value.trim();
 
             if (query.length === 0) {
@@ -403,16 +396,33 @@ foreach ($db_collections as $col) {
         });
 
         window.fetchProducts = function(search = '', category = '', collection = '') {
+            const requestId = ++searchRequestId;
             let url = `search_api.php?search=${encodeURIComponent(search)}&category=${encodeURIComponent(category)}&collection=${encodeURIComponent(collection)}`;
 
             fetch(url)
-                .then(response => response.json())
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`Search request failed with status ${response.status}`);
+                    }
+                    return response.json();
+                })
                 .then(data => {
-                    if (data.status === 'success') {
+                    if (requestId !== searchRequestId) return;
+
+                    if (data.status === 'success' && Array.isArray(data.products)) {
                         displaySearchResults(data.products, search);
+                    } else {
+                        throw new Error('Search response did not contain a valid product list.');
                     }
                 })
-                .catch(error => console.error('Error:', error));
+                .catch(error => {
+                    if (requestId !== searchRequestId) return;
+                    console.error('Error fetching search results:', error);
+                    document.querySelectorAll('.hide-on-search').forEach(el => el.style.display = 'none');
+                    searchSection.style.display = 'block';
+                    resultTitle.textContent = 'Search Results';
+                    resultGrid.innerHTML = `<div class="col-12 text-center py-4"><p class="text-danger fs-5 mb-0">Search failed. Please try again.</p></div>`;
+                });
         }
 
         function displaySearchResults(products, searchQuery) {
@@ -445,9 +455,9 @@ foreach ($db_collections as $col) {
                 let stock = parseInt(product.stock || 0);
                 let cartQuantity = parseInt(product.cart_quantity || 0);
                 let isInCart = cartQuantity > 0;
-                let cartText = product.cart_size
-                    ? `${escapeHtml(product.cart_size)} - ${cartQuantity} ps`
-                    : `${cartQuantity} ps`;
+                let cartText = product.cart_size ?
+                    `${escapeHtml(product.cart_size)} - ${cartQuantity} ps` :
+                    `${cartQuantity} ps`;
 
                 let sizeHtml = '';
                 if (product.size) {
@@ -481,7 +491,7 @@ foreach ($db_collections as $col) {
                                         <p class="product-category text-muted small mb-1 text-capitalize">${escapeHtml(product.category_name || 'General')}</p>
                                         <p class="product-category text-muted small mb-1">${escapeHtml(product.product_code || '')}</p>
                                     </div>
-                                    <a href="product_details.php?id=${encodeURIComponent(product.id)}" class="product-title text-decoration-none text-dark fw-bold d-block text-truncate">
+                                    <a href="product_details.php?product_id=${encodeURIComponent(product.id)}" class="product-title text-decoration-none text-dark fw-bold d-block text-truncate">
                                         ${escapeHtml(product.name)}
                                     </a>
                                 </div>
@@ -533,11 +543,19 @@ foreach ($db_collections as $col) {
         }
 
         window.clearLiveSearch = function() {
+            clearTimeout(timeout);
+            searchRequestId++;
             searchSection.style.display = 'none';
             resultGrid.innerHTML = '';
             if (searchInput) searchInput.value = '';
             // আগের মতো সব সেকশনগুলো আবার ফিরিয়ে আনা
             document.querySelectorAll('.hide-on-search').forEach(el => el.style.display = '');
+        }
+
+        const initialSearch = new window.URLSearchParams(window.location.search).get('search');
+        if (initialSearch && initialSearch.trim()) {
+            searchInput.value = initialSearch;
+            fetchProducts(initialSearch.trim(), '', '');
         }
     });
 </script>

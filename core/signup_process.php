@@ -15,27 +15,63 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $password         = $_POST['password'] ?? '';
     $confirm_password = $_POST['confirm_password'] ?? '';
 
-    if (empty($customar_name) || empty($phone) || empty($email) || empty($password) || empty($confirm_password)) {
-        $_SESSION['status']  = 'warning';
-        $_SESSION['message'] = 'Please fill in all required fields!';
-        header('Location: ' . base_url('auth/signup.php'));
-        exit;
+    $errors = [];
+    if ($customar_name === '') {
+        $errors['customar_name'] = 'Please enter your full name.';
+    }
+    if ($phone === '') {
+        $errors['phone'] = 'Please enter your phone number.';
+    } elseif (preg_match('/^[0-9+\s().-]+$/', $phone) !== 1 || strlen(preg_replace('/\D/', '', $phone)) < 8) {
+        $errors['phone'] = 'Phone number must contain at least 8 digits.';
+    }
+    if ($email === '') {
+        $errors['email'] = 'Please enter your email address.';
+    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $errors['email'] = 'Please enter a valid email address.';
+    }
+    if ($password === '') {
+        $errors['password'] = 'Please enter a password.';
+    } elseif (strlen($password) < 5) {
+        $errors['password'] = 'Password must be at least 5 characters long.';
+    }
+    if ($confirm_password === '') {
+        $errors['confirm_password'] = 'Please confirm your password.';
+    } elseif ($password !== $confirm_password) {
+        $errors['confirm_password'] = 'Passwords do not match.';
     }
 
-    if ($password !== $confirm_password) {
-        $_SESSION['status']  = 'danger';
-        $_SESSION['message'] = 'Passwords do not match!';
+    if ($errors) {
+        $_SESSION['signup_errors'] = $errors;
+        $_SESSION['signup_old'] = [
+            'customar_name' => $customar_name,
+            'phone' => $phone,
+            'email' => $email,
+        ];
         header('Location: ' . base_url('auth/signup.php'));
         exit;
     }
 
     try {
-        $check_stmt = $pdo->prepare("SELECT id FROM users WHERE email = :email OR phone = :phone LIMIT 1");
+        $check_stmt = $pdo->prepare("SELECT email, phone FROM users WHERE email = :email OR phone = :phone");
         $check_stmt->execute([':email' => $email, ':phone' => $phone]);
+        $errors = [];
 
-        if ($check_stmt->rowCount() > 0) {
-            $_SESSION['status']  = 'warning';
-            $_SESSION['message'] = 'Email or Phone number is already registered!';
+        foreach ($check_stmt->fetchAll(PDO::FETCH_ASSOC) as $existing_user) {
+            if (strcasecmp($existing_user['email'], $email) === 0) {
+                $errors['email'] = 'This email address is already registered.';
+            }
+            if ($existing_user['phone'] === $phone) {
+                $errors['phone'] = 'This phone number is already registered.';
+            }
+        }
+
+        if ($errors) {
+            $_SESSION['signup_errors'] = $errors;
+            $_SESSION['signup_old'] = [
+                'customar_name' => $customar_name,
+                'phone' => $phone,
+                'email' => $email,
+            ];
             header('Location: ' . base_url('auth/signup.php'));
             exit;
         }
@@ -117,7 +153,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     } catch (Exception $e) {
         $_SESSION['status']  = 'danger';
-        $_SESSION['message'] = 'Error: ' . $e->getMessage();
+        $_SESSION['message'] = 'We could not complete your registration. Please try again.';
         header('Location: ' . base_url('auth/signup.php'));
         exit;
     }

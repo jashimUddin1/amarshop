@@ -26,9 +26,10 @@ foreach ($collections as $col) {
 include_once 'includes/header.php';
 ?>
 
-<div class="d-flex justify-content-between align-items-center p-3 flex-shrink-0">
-  <h2 class="h3 mb-0">Product Management</h2>
-  <div class="d-flex gap-2">
+<div class="p-3 flex-shrink-0">
+  <h2 class="h3 mb-3 text-center">Product Management</h2>
+  <div class="d-flex justify-content-between align-items-center gap-3 flex-wrap">
+    <input type="search" id="productSearchInput" class="form-control" style="width: min(16rem, 100%);" placeholder="Search products..." aria-label="Search products" oninput="searchProductTable()">
     <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addProductModal">
       <i class="bi bi-plus-circle me-1"></i> Add Product
     </button>
@@ -73,7 +74,24 @@ include_once 'includes/header.php';
         <tbody>
           <?php if (!empty($products)): ?>
             <?php foreach ($products as $row): ?>
-              <tr id="product-row-<?= $row['id']; ?>">
+              <?php
+              $col_key = $row['collection_name'] ?? '';
+              $full_name = $collection_map[$col_key] ?? ($col_key ?: 'N/A');
+              $search_text = implode(' ', [
+                $row['product_code'] ?? '',
+                $row['name'] ?? '',
+                $row['category_name'] ?? '',
+                $row['size'] ?? '',
+                $row['color'] ?? '',
+                $full_name,
+                $row['purchase_price'] ?? '',
+                $row['sell_price'] ?? '',
+                $row['discount_percent'] ?? '',
+                $row['actual_price'] ?? '',
+                $row['stock'] ?? '',
+              ]);
+              ?>
+              <tr id="product-row-<?= $row['id']; ?>" data-search="<?= htmlspecialchars($search_text, ENT_QUOTES); ?>">
                 <td>
                   <img src="../uploads/<?= ($row['main_img'] ?: 'placeholder.jpg'); ?>" class="rounded object-fit-cover" style="width: 45px; height: 45px;" alt="Product">
                 </td>
@@ -105,8 +123,6 @@ include_once 'includes/header.php';
                 </td>
                 <td>
                   <?php
-                  $col_key = $row['collection_name'] ?? '';
-                  $full_name = $collection_map[$col_key] ?? ($col_key ?: 'N/A');
                   $first_word = strtok($full_name, ' ');
                   echo htmlspecialchars($first_word);
                   ?>
@@ -303,10 +319,12 @@ include_once 'includes/header.php';
                       </div>
                     </div>
                   </div>
-
                 </td>
               </tr>
             <?php endforeach; ?>
+            <tr id="productSearchEmpty" class="d-none">
+              <td colspan="13" class="text-center text-muted py-4">No matching products found.</td>
+            </tr>
           <?php else: ?>
             <tr>
               <td colspan="13" class="text-center py-4 text-muted">No products found.</td>
@@ -318,6 +336,25 @@ include_once 'includes/header.php';
   </div>
 </div>
 
+<script>
+  function searchProductTable() {
+    const input = document.getElementById('productSearchInput');
+    const productRows = document.querySelectorAll('tr[id^="product-row-"]');
+    const emptyState = document.getElementById('productSearchEmpty');
+    const query = input.value.trim().toLocaleLowerCase();
+    let visibleCount = 0;
+
+    productRows.forEach(row => {
+      const matches = (row.dataset.search || '').toLocaleLowerCase().includes(query);
+      row.style.display = matches ? '' : 'none';
+      if (matches) visibleCount++;
+    });
+
+    if (emptyState) {
+      emptyState.classList.toggle('d-none', visibleCount > 0 || productRows.length === 0);
+    }
+  }
+</script>
 
 <!-- Add Product Modal -->
 <div class="modal fade" id="addProductModal" tabindex="-1">

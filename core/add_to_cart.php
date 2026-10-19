@@ -14,8 +14,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $size         = isset($_POST['size']) ? trim($_POST['size']) : null;
     $quantity     = isset($_POST['quantity']) ? (int)$_POST['quantity'] : 1;
 
-    if ($product_id <= 0 || $quantity <= 0) {
-        echo json_encode(['status' => 'error', 'message' => 'Invalid product or quantity.']);
+    if ($product_id <= 0 || $quantity <= 0 || $quantity > 6) {
+        echo json_encode(['status' => 'error', 'message' => 'Invalid product or quantity. Quantity must be between 1 and 6.']);
         exit;
     }
 

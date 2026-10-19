@@ -10,11 +10,14 @@ $categories =$categories_stmt->fetchAll(PDO::FETCH_ASSOC);
 include_once 'includes/header.php';
 ?>
 
-<div class="d-flex justify-content-between align-items-center my-4 px-2 flex-shrink-0">
-  <h2 class="h3 mb-0">Category Management</h2>
-  <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addCategoryModal">
-    Add Category
-  </button>
+<div class="my-4 px-2 flex-shrink-0">
+  <h2 class="h3 mb-3 text-center">Category Management</h2>
+  <div class="d-flex justify-content-between align-items-center gap-3 flex-wrap">
+    <input type="search" id="categorySearchInput" class="form-control" style="width: min(16rem, 100%);" placeholder="Search categories..." aria-label="Search categories" oninput="searchCategoryTable()">
+    <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addCategoryModal">
+      Add Category
+    </button>
+  </div>
 </div>
 
 <!-- Dynamic Alert Display -->
@@ -46,15 +49,13 @@ include_once 'includes/header.php';
           </tr>
         </thead>
         <tbody>
-          <?php foreach ($categories as$cat): ?>
-            <tr id="category-row-<?= $cat['id']; ?>">
+          <?php if (!empty($categories)): ?>
+          <?php foreach ($categories as $cat): ?>
+            <?php $search_text = implode(' ', [$cat['id'], $cat['name'] ?? '', $cat['sub_category'] ?? '']); ?>
+            <tr id="category-row-<?= $cat['id']; ?>" data-search="<?= htmlspecialchars($search_text, ENT_QUOTES); ?>">
               <td><?= $cat['id']; ?></td>
               <td>
-                <?php if (!empty($cat['category_photo'])): ?>
-                  <img src="../uploads/categories/<?= htmlspecialchars($cat['category_photo']); ?>" alt="Photo" style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;">
-                <?php else: ?>
-                  <span class="text-muted small">No Image</span>
-                <?php endif; ?>
+                <img src="../uploads/categories/<?= htmlspecialchars($cat['category_photo'] ?: 'default-avatar.svg'); ?>" alt="<?= htmlspecialchars($cat['name']); ?> category" style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;">
               </td>
               <td class="fw-bold"><?= htmlspecialchars($cat['name']); ?></td>
               <td><?= htmlspecialchars($cat['sub_category'] ?? 'N/A'); ?></td>
@@ -91,7 +92,8 @@ include_once 'includes/header.php';
                       </div>
                       <div class="mb-3">
                         <label class="form-label">Category Photo</label>
-                        <input type="file" name="category_photo" class="form-control" accept="image/*">
+                        <input type="file" name="category_photo" class="form-control" accept=".jpg,.jpeg,.png,.webp,.gif">
+                        <img src="../uploads/categories/<?= htmlspecialchars($cat['category_photo'] ?: 'default-avatar.svg'); ?>" alt="Current category photo" class="mt-2 rounded" style="width: 64px; height: 64px; object-fit: cover;">
                       </div>
                     </div>
                     <div class="modal-footer">
@@ -104,6 +106,14 @@ include_once 'includes/header.php';
             </div>
 
           <?php endforeach; ?>
+          <tr id="categorySearchEmpty" class="d-none">
+            <td colspan="5" class="text-center text-muted py-4">No matching categories found.</td>
+          </tr>
+          <?php else: ?>
+            <tr>
+              <td colspan="5" class="text-center text-muted py-4">No categories found.</td>
+            </tr>
+          <?php endif; ?>
         </tbody>
       </table>
     </div>
@@ -129,8 +139,10 @@ include_once 'includes/header.php';
             <input type="text" name="sub_category" class="form-control" placeholder="e.g. 240+ Items">
           </div>
           <div class="mb-3">
-            <label class="form-label">Category Photo</label>
-            <input type="file" name="category_photo" class="form-control" accept="image/*">
+            <label for="newCategoryPhoto" class="form-label">Category Photo (Optional)</label>
+            <input type="file" id="newCategoryPhoto" name="category_photo" class="form-control" accept=".jpg,.jpeg,.png,.webp,.gif" onchange="previewCategoryPhoto(this)">
+            <small class="form-text text-muted">JPG, PNG, WEBP, or GIF. No photo selected? The default avatar will be used.</small>
+            <img id="newCategoryPhotoPreview" src="../uploads/categories/default-avatar.svg" alt="Default category avatar preview" class="mt-2 rounded" style="width: 80px; height: 80px; object-fit: cover;">
           </div>
         </div>
         <div class="modal-footer">
@@ -194,6 +206,34 @@ function updateCategory(event, id) {
         console.error('Error:', error);
         alert('Something went wrong!');
     });
+}
+</script>
+<script>
+function previewCategoryPhoto(input) {
+    const preview = document.getElementById('newCategoryPhotoPreview');
+    if (input.files && input.files[0]) {
+        preview.src = URL.createObjectURL(input.files[0]);
+    } else {
+        preview.src = '../uploads/categories/default-avatar.svg';
+    }
+}
+
+function searchCategoryTable() {
+    const input = document.getElementById('categorySearchInput');
+    const categoryRows = document.querySelectorAll('tr[id^="category-row-"]');
+    const emptyState = document.getElementById('categorySearchEmpty');
+    const query = input.value.trim().toLocaleLowerCase();
+    let visibleCount = 0;
+
+    categoryRows.forEach(row => {
+        const matches = (row.dataset.search || '').toLocaleLowerCase().includes(query);
+        row.style.display = matches ? '' : 'none';
+        if (matches) visibleCount++;
+    });
+
+    if (emptyState) {
+        emptyState.classList.toggle('d-none', visibleCount > 0 || categoryRows.length === 0);
+    }
 }
 </script>
 

@@ -39,6 +39,17 @@ include 'includes/header.php';
 ?>
 
 
+<section id="checkoutSearchSection" class="container-fluid px-2 px-md-5 my-4" style="display: none;">
+    <div class="bg-white rounded shadow-sm border p-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h3 class="fw-bold text-dark mb-0" id="checkoutSearchTitle">Search Results</h3>
+            <button type="button" class="btn-close" aria-label="Close search results" onclick="clearCheckoutSearch()"></button>
+        </div>
+        <div id="checkoutSearchGrid" class="row row-cols-2 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-3 g-md-4"></div>
+    </div>
+</section>
+
+<div id="checkoutContent">
 <div class="container">
     <div class="d-flex justify-content-between">
         <h3 class="fw-bold mb-2 mt-4"><i class="bi bi-credit-card text-success me-2"></i>Checkout</h3>
@@ -140,6 +151,7 @@ include 'includes/header.php';
         </div>
     </form>
 </div>
+</div>
 
 <script>
     function calculateTotal() {
@@ -154,6 +166,184 @@ include 'includes/header.php';
 
     // Initial calculation on page load
     calculateTotal();
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchInput = document.getElementById('liveSearchInput');
+        const searchForm = document.getElementById('searchForm');
+        const checkoutContent = document.getElementById('checkoutContent');
+        const searchSection = document.getElementById('checkoutSearchSection');
+        const resultGrid = document.getElementById('checkoutSearchGrid');
+        const resultTitle = document.getElementById('checkoutSearchTitle');
+
+        if (!searchInput || !searchForm) return;
+
+        let timeout = null;
+        let requestId = 0;
+
+        function escapeHtml(value) {
+            return String(value ?? '').replace(/[&<>"']/g, character => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            })[character]);
+        }
+
+        function showSearchResults(products, query) {
+            checkoutContent.style.display = 'none';
+            searchSection.style.display = 'block';
+            resultTitle.textContent = query ? `Search Results for "${query}"` : 'Search Results';
+
+            if (products.length === 0) {
+                resultGrid.innerHTML = '<div class="col-12 text-center py-4"><p class="text-muted fs-5 mb-0">কোনো প্রোডাক্ট পাওয়া যায়নি (Nothing found).</p></div>';
+                return;
+            }
+
+            resultGrid.innerHTML = products.map(product => {
+                const id = escapeHtml(product.id);
+                const name = escapeHtml(product.name);
+                const code = escapeHtml(product.product_code || '');
+                const category = escapeHtml(product.category_name || 'General');
+                const image = product.main_img
+                    ? `uploads/${escapeHtml(product.main_img)}`
+                    : 'assets/uploads/placeholder.jpg';
+                const price = Number.parseFloat(product.actual_price || product.sell_price || 0);
+                const sellPrice = Number.parseFloat(product.sell_price || 0);
+                const stock = Number.parseInt(product.stock || 0, 10);
+                const quantityInCart = Number.parseInt(product.cart_quantity || 0, 10);
+                const discounted = sellPrice > price && sellPrice > 0;
+                const discount = discounted ? Math.round(((sellPrice - price) / sellPrice) * 100) : 0;
+                const sizes = String(product.size || '').split(',').map(size => size.trim()).filter(Boolean);
+                const sizeOptions = sizes.length
+                    ? `<div class="my-2">
+                            <label class="d-block text-secondary fw-semibold small mb-1">Size:</label>
+                            <div class="d-flex gap-1 flex-wrap">
+                                ${sizes.map((size, index) => `<button type="button" class="btn btn-sm btn-outline-success size-btn px-2 py-0 fw-bold ${index === 0 ? 'active' : ''}">${escapeHtml(size)}</button>`).join('')}
+                            </div>
+                       </div>`
+                    : '';
+                const cartLabel = product.cart_size
+                    ? `${escapeHtml(product.cart_size)} - ${quantityInCart} ps`
+                    : `${quantityInCart} ps`;
+
+                return `<div class="col">
+                    <div class="product-card position-relative border rounded p-2 bg-white shadow-sm h-100">
+                        <div class="product-img-container text-center mb-2 position-relative">
+                            ${discount > 0 ? `<span class="product-badge bg-danger text-white position-absolute top-0 end-0 px-2 py-1 rounded small fw-bold">${discount}%</span>` : ''}
+                            <img src="${image}" class="img-fluid rounded" alt="${name}">
+                        </div>
+                        <div class="d-flex flex-column justify-content-between">
+                            <div>
+                                <div class="d-flex justify-content-between">
+                                    <p class="text-muted small mb-1">${category}</p>
+                                    <p class="text-muted small mb-1">${code}</p>
+                                </div>
+                                <a href="product_details.php?product_id=${encodeURIComponent(product.id)}" class="text-decoration-none text-dark fw-bold d-block text-truncate">${name}</a>
+                            </div>
+                            <div class="mt-2">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <div>
+                                        <span class="fw-bold text-success">৳${price.toFixed(2)}</span>
+                                        ${discounted ? `<small class="text-muted text-decoration-line-through ms-1">৳${sellPrice.toFixed(2)}</small>` : ''}
+                                    </div>
+                                    <span class="badge ${stock > 0 ? 'bg-success' : 'bg-danger'}">${stock > 0 ? 'In Stock' : 'Out of Stock'}</span>
+                                </div>
+                                <div class="d-flex gap-2 mb-2">
+                                    <a href="product_details.php?product_id=${encodeURIComponent(product.id)}" class="btn btn-outline-secondary btn-sm w-50">View</a>
+                                    <button type="button" class="btn btn-outline-success btn-sm w-50 open-options-btn ${quantityInCart > 0 ? 'fw-bold' : ''}" ${stock <= 0 ? 'disabled' : ''}>
+                                        ${quantityInCart > 0 ? cartLabel : 'Add to Cart'}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-options-overlay position-absolute bottom-0 end-0 bg-white rounded p-3 shadow d-none flex-column justify-content-between" style="z-index: 10; width: 100%;">
+                            <div class="d-flex justify-content-between align-items-center pb-1 border-bottom">
+                                <span class="fw-bold text-dark small">Select Options</span>
+                                <button type="button" class="btn-close close-options-btn" aria-label="Close" style="font-size: 0.7rem;"></button>
+                            </div>
+                            ${sizeOptions}
+                            <div class="mb-2">
+                                <label class="d-block text-secondary fw-semibold small mb-1">Quantity (Max 6):</label>
+                                <div class="d-flex gap-1">
+                                    <button type="button" class="btn btn-sm btn-light border px-2 py-0 minus-btn fw-bold">-</button>
+                                    <input type="text" class="form-control form-control-sm text-center p-0 qty-input fw-bold" value="1" readonly style="width: 35px; height: 28px;">
+                                    <button type="button" class="btn btn-sm btn-light border px-2 py-0 plus-btn fw-bold">+</button>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-success btn-sm w-100 fw-semibold final-add-cart-btn" data-product-id="${id}" data-product-code="${code}">Add to Cart</button>
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        function fetchCheckoutProducts(query) {
+            const currentRequestId = ++requestId;
+            checkoutContent.style.display = 'none';
+            searchSection.style.display = 'block';
+            resultTitle.textContent = 'Searching...';
+            resultGrid.innerHTML = '<div class="col-12 text-center py-4"><div class="spinner-border text-success" role="status"><span class="visually-hidden">Searching...</span></div></div>';
+
+            fetch(`search_api.php?search=${encodeURIComponent(query)}&category=&collection=`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`Search request failed with status ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (currentRequestId !== requestId) return;
+                    if (data.status !== 'success' || !Array.isArray(data.products)) {
+                        throw new Error('Search response did not contain a valid product list.');
+                    }
+                    showSearchResults(data.products, query);
+                })
+                .catch(error => {
+                    if (currentRequestId !== requestId) return;
+                    console.error('Error fetching checkout search results:', error);
+                    resultTitle.textContent = 'Search Results';
+                    resultGrid.innerHTML = '<div class="col-12 text-center py-4"><p class="text-danger fs-5 mb-0">Search failed. Please try again.</p></div>';
+                });
+        }
+
+        searchForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+            clearTimeout(timeout);
+            const query = searchInput.value.trim();
+            if (query) {
+                fetchCheckoutProducts(query);
+            } else {
+                window.clearCheckoutSearch();
+            }
+        });
+
+        searchInput.addEventListener('input', function() {
+            clearTimeout(timeout);
+            requestId++;
+            const query = this.value.trim();
+            if (!query) {
+                window.clearCheckoutSearch();
+                return;
+            }
+            timeout = setTimeout(() => fetchCheckoutProducts(query), 300);
+        });
+
+        window.clearCheckoutSearch = function() {
+            clearTimeout(timeout);
+            requestId++;
+            searchSection.style.display = 'none';
+            resultGrid.innerHTML = '';
+            checkoutContent.style.display = '';
+            searchInput.value = '';
+        };
+
+        const initialSearch = new URLSearchParams(window.location.search).get('search');
+        if (initialSearch && initialSearch.trim()) {
+            searchInput.value = initialSearch;
+            fetchCheckoutProducts(initialSearch.trim());
+        }
+    });
 </script>
 
 <?php include 'includes/footer.php'; ?>

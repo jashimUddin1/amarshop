@@ -53,7 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             if (move_uploaded_file($_FILES['category_photo']['tmp_name'], $target_path)) {
                 // পুরনো ছবি সার্ভার ফোল্ডার থেকে ডিলিট করে দেওয়া
-                if (!empty($photo_name) && file_exists($upload_dir . $photo_name)) {
+                if (!empty($photo_name) && $photo_name !== 'default-avatar.svg' && file_exists($upload_dir . $photo_name)) {
                     unlink($upload_dir . $photo_name);
                 }
                 $photo_name = $new_photo_name;

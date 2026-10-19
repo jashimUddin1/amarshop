@@ -166,6 +166,16 @@
         /* global FormData */
         const isLoggedIn = <?= json_encode($is_logged_in ?? false); ?>;
 
+        function escapeHtml(value) {
+            return String(value ?? '').replace(/[&<>"']/g, character => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            })[character]);
+        }
+
         function updateCartBadge() {
             fetch('core/get_cart_count.php')
                 .then(res => res.json())
@@ -199,38 +209,43 @@
 
                     let html = '';
                     data.items.forEach(item => {
-                        const itemTotal = (item.price * item.quantity).toFixed(2);
+                        const cartId = Number.parseInt(item.cart_id, 10) || 0;
+                        const quantity = Number.parseInt(item.quantity, 10) || 0;
+                        const price = Number(item.price) || 0;
+                        const itemTotal = (price * quantity).toFixed(2);
+                        const productName = escapeHtml(item.name);
                         let sizeSelectHtml = '';
                         if (item.available_sizes) {
                             const sizes = item.available_sizes.split(',').map(s => s.trim());
-                            sizeSelectHtml = `<select class="form-select form-select-sm py-0 ps-2 pe-4" style="font-size: 0.75rem; width: auto;" onchange="updateCartSize(${item.cart_id}, this.value)">`;
+                            sizeSelectHtml = `<select class="form-select form-select-sm py-0 ps-2 pe-4" style="font-size: 0.75rem; width: auto;" onchange="updateCartSize(${cartId}, this.value)">`;
                             sizes.forEach(sz => {
                                 const selected = (sz === item.selected_size) ? 'selected' : '';
-                                sizeSelectHtml += `<option value="${sz}" ${selected}>Size: ${sz}</option>`;
+                                const safeSize = escapeHtml(sz);
+                                sizeSelectHtml += `<option value="${safeSize}" ${selected}>Size: ${safeSize}</option>`;
                             });
                             sizeSelectHtml += `</select>`;
                         }
 
                         html += `
                         <div class="d-flex align-items-center justify-content-between border-bottom py-3">
-                            <img src="uploads/${item.main_img}" class="rounded border" style="width: 65px; height: 65px; object-fit: contain;">
+                            <img src="uploads/${escapeHtml(item.main_img)}" class="rounded border" style="width: 65px; height: 65px; object-fit: contain;">
                             <div class="flex-grow-1 px-3">
-                                <h6 class="mb-1 text-truncate fw-semibold" style="max-width: 170px; font-size: 0.85rem;" title="${item.name}">${item.name}</h6>
+                                <h6 class="mb-1 text-truncate fw-semibold" style="max-width: 170px; font-size: 0.85rem;" title="${productName}">${productName}</h6>
                                 <div class="d-flex align-items-center gap-2 my-1">
                                     ${sizeSelectHtml}
                                     <div class="input-group input-group-sm" style="width: 75px;">
-                                        <button class="btn btn-outline-secondary px-2 py-0" type="button" onclick="updateCartQuantity(${item.cart_id}, 'decrease')">-</button>
-                                        <input type="text" class="form-control text-center p-0 fw-bold" value="${item.quantity}" readonly style="font-size: 0.75rem;">
-                                        <button class="btn btn-outline-secondary px-2 py-0" type="button" onclick="updateCartQuantity(${item.cart_id}, 'increase')">+</button>
+                                        <button class="btn btn-outline-secondary px-2 py-0" type="button" onclick="updateCartQuantity(${cartId}, 'decrease')">-</button>
+                                        <input type="text" class="form-control text-center p-0 fw-bold" value="${quantity}" readonly style="font-size: 0.75rem;">
+                                        <button class="btn btn-outline-secondary px-2 py-0" type="button" onclick="updateCartQuantity(${cartId}, 'increase')">+</button>
                                     </div>
                                 </div>
                                 <div class="mt-1" style="font-size: 0.8rem;">
                                     <span class="fw-bold text-success">Total: ৳${itemTotal}</span>
-                                    <small class="text-muted ms-1">(৳${item.price} × ${item.quantity})</small>
+                                    <small class="text-muted ms-1">(৳${price} × ${quantity})</small>
                                 </div>
                             </div>
                             <div>
-                                <button type="button" class="btn btn-sm text-danger p-1" onclick="removeCartItem(${item.cart_id})" title="Remove Item">
+                                <button type="button" class="btn btn-sm text-danger p-1" onclick="removeCartItem(${cartId})" title="Remove Item">
                                     <i class="bi bi-trash fs-5"></i>
                                 </button>
                             </div>
@@ -249,7 +264,17 @@
 
             fetch('core/update_cart.php', { method: 'POST', body: formData })
                 .then(res => res.json())
-                .then(res => { if (res.status === 'success') loadCartDetails(); });
+                .then(res => {
+                    if (res.status === 'success') {
+                        loadCartDetails();
+                    } else {
+                        showCartAlert(res.message || 'Could not update quantity.', 'warning');
+                    }
+                })
+                .catch(err => {
+                    console.error('Error updating cart quantity:', err);
+                    showCartAlert('Could not update quantity. Please try again.', 'warning');
+                });
         }
 
         function updateCartSize(cartId, newSize) {
@@ -258,17 +283,28 @@
             formData.append('action', 'update_size');
             formData.append('size', newSize);
 
-            fetch('update_cart.php', { method: 'POST', body: formData })
+            fetch('core/update_cart.php', { method: 'POST', body: formData })
                 .then(res => res.json())
-                .then(res => { if (res.status === 'success') loadCartDetails(); });
+                .then(res => {
+                    if (res.status === 'success') {
+                        loadCartDetails();
+                    } else {
+                        showCartAlert(res.message || 'Could not update product size.', 'warning');
+                    }
+                })
+                .catch(err => {
+                    console.error('Error updating cart size:', err);
+                    showCartAlert('Could not update product size. Please try again.', 'warning');
+                });
         }
 
         function showCartAlert(message, type = 'success') {
             const alertBox = document.getElementById('cartAlertMessage');
             if (alertBox) {
+                const alertType = ['success', 'danger', 'warning', 'info'].includes(type) ? type : 'info';
                 alertBox.innerHTML = `
-                <div class="alert alert-${type} alert-dismissible fade show py-2 px-3 mb-3 text-center" style="font-size: 0.85rem;" role="alert">
-                    <i class="bi bi-check-circle-fill me-1"></i> ${message}
+                <div class="alert alert-${alertType} alert-dismissible fade show py-2 px-3 mb-3 text-center" style="font-size: 0.85rem;" role="alert">
+                    <i class="bi bi-check-circle-fill me-1"></i> ${escapeHtml(message)}
                     <button type="button" class="btn-close py-2 px-3" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>`;
                 setTimeout(() => {

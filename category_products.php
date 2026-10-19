@@ -6,6 +6,7 @@ $category_name = isset($_GET['category']) ? trim($_GET['category']) : '';
 
 $products = [];
 $all_categories = [];
+$cart_items = [];
 
 try {
     if (!empty($category_name)) {
@@ -13,6 +14,14 @@ try {
         $stmt = $pdo->prepare("SELECT * FROM products WHERE category_name = :category ORDER BY id ASC");
         $stmt->execute(['category' => $category_name]);
         $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        if (isset($_SESSION['user_id']) && !empty($products)) {
+            $cart_stmt = $pdo->prepare("SELECT product_id, size, quantity FROM cart WHERE user_id = :user_id");
+            $cart_stmt->execute([':user_id' => $_SESSION['user_id']]);
+            while ($cart_item = $cart_stmt->fetch(PDO::FETCH_ASSOC)) {
+                $cart_items[$cart_item['product_id']] = $cart_item;
+            }
+        }
     } else {
         // ক্যাটাগরি না থাকলে সমস্ত ক্যাটাগরি ফেচ করা
         $cat_stmt = $pdo->query("SELECT * FROM categories ORDER BY id ASC");
@@ -21,34 +30,24 @@ try {
 } catch (PDOException $e) {
     die("Error fetching data: " . $e->getMessage());
 }
+
+$page_title = !empty($category_name) ? $category_name . ' - Products' : 'All Categories';
+include 'includes/header.php';
 ?>
-<!doctype html>
-<html lang="en">
 
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title><?= !empty($category_name) ? htmlspecialchars($category_name) . ' - Products' : 'All Categories - Amarshop'; ?></title>
-
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
-
-    <style>
-        body { background: #f8f9fa; }
-        .product-card, .category-card {
-            border: 1px solid #dee2e6;
-            border-radius: 10px;
-            background: #fff;
-            transition: 0.3s;
-        }
-        .product-card:hover, .category-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 15px rgba(0,0,0,0.1);
-        }
-    </style>
-</head>
-
-<body>
+<style>
+    body { background: #f8f9fa; }
+    .product-card, .category-card {
+        border: 1px solid #dee2e6;
+        border-radius: 10px;
+        background: #fff;
+        transition: 0.3s;
+    }
+    .product-card:hover, .category-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+    }
+</style>
 
     <div class="container my-4">
         <!-- Navigation Header -->
@@ -75,22 +74,111 @@ try {
         <?php if (!empty($category_name)): ?>
             <!-- Product Grid (যখন নির্দিষ্ট ক্যাটাগরি থাকবে) -->
             <?php if (!empty($products)): ?>
-                <div class="row row-cols-2 row-cols-md-4 g-4">
+                <div class="row row-cols-2 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-3 g-md-4">
                     <?php foreach ($products as $prod): ?>
+                        <?php
+                        $sell_price = (float)($prod['sell_price'] ?? 0);
+                        $actual_price = (float)($prod['actual_price'] ?? $sell_price);
+                        $has_discount = $sell_price > $actual_price && $sell_price > 0;
+                        $discount_percent = $has_discount ? round((($sell_price - $actual_price) / $sell_price) * 100) : 0;
+                        $stock = (int)($prod['stock'] ?? 0);
+                        ?>
                         <div class="col">
-                            <div class="product-card p-3 text-center h-100 d-flex flex-column justify-content-between">
-                                <div>
-                                    <img src="uploads/<?= htmlspecialchars($prod['main_img']); ?>" class="img-fluid rounded mb-3" style="height: 200px; object-fit: cover;" alt="<?= htmlspecialchars($prod['name']); ?>">
-                                    <h5 class="fs-6 text-truncate"><?= htmlspecialchars($prod['name']); ?></h5>
-                                    <p class="text-success fw-bold fs-5 mb-2">৳<?= number_format($prod['sell_price'], 2); ?></p>
+                            <div class="product-card position-relative border rounded p-2 bg-white shadow-sm h-100">
+                                <div class="product-img-container text-center mb-2 position-relative">
+                                    <?php if ($discount_percent > 0): ?>
+                                        <span class="product-badge bg-danger text-white position-absolute top-0 end-0 px-2 py-1 rounded small fw-bold">
+                                            <?= $discount_percent; ?>%
+                                        </span>
+                                    <?php endif; ?>
+                                    <img src="<?= base_url('uploads/' . ($prod['main_img'] ?: 'placeholder.jpg')); ?>" class="img-fluid rounded" alt="<?= htmlspecialchars($prod['name']); ?>">
                                 </div>
-                                
-                                <div class="d-flex gap-2 mt-2">
-                                    <a href="product_details.php?product_id=<?= $prod['id']; ?>" class="btn btn-sm btn-outline-success flex-grow-1" title="View Details">
-                                        <i class="bi bi-eye me-1"></i> View
-                                    </a>
-                                    <button class="btn btn-sm btn-success flex-grow-1" <?= ((int)$prod['stock'] <= 0) ? 'disabled' : ''; ?> title="Add to Cart">
-                                        <i class="bi bi-cart-plus me-1"></i> Cart
+
+                                <div class="product-card-body d-flex flex-column justify-content-between">
+                                    <div>
+                                        <div class="d-flex justify-content-between">
+                                            <p class="product-category text-muted small mb-1 d-none d-md-block text-capitalize">
+                                                <?= htmlspecialchars($prod['category_name'] ?? 'General'); ?>
+                                            </p>
+                                            <p class="product-category text-muted small mb-1 d-none d-md-block text-capitalize">
+                                                <?= htmlspecialchars($prod['product_code'] ?? ''); ?>
+                                            </p>
+                                        </div>
+                                        <a href="product_details.php?product_id=<?= (int)$prod['id']; ?>" class="product-title text-decoration-none text-dark fw-bold d-block text-truncate">
+                                            <?= htmlspecialchars($prod['name']); ?>
+                                        </a>
+                                    </div>
+
+                                    <div class="mt-2">
+                                        <div class="row justify-content-between">
+                                            <div class="price-wrapper col-md-6 mb-2 d-flex align-items-center gap-2">
+                                                <span class="current-price fw-bold text-success fs-6">৳<?= number_format($actual_price, 2); ?></span>
+                                                <?php if ($has_discount): ?>
+                                                    <span class="old-price text-muted text-decoration-line-through small">৳<?= number_format($sell_price, 2); ?></span>
+                                                <?php endif; ?>
+                                            </div>
+                                            <div class="col-md-6 text-end">
+                                                <?php if ($stock > 0): ?>
+                                                    <span class="badge bg-success mb-2">In Stock</span>
+                                                <?php else: ?>
+                                                    <span class="badge bg-danger mb-2">Out of Stock</span>
+                                                <?php endif; ?>
+                                            </div>
+                                        </div>
+
+                                        <div class="d-flex justify-content-between gap-2 mb-2 mx-2">
+                                            <a href="product_details.php?product_id=<?= (int)$prod['id']; ?>" class="btn btn-outline-secondary w-50 btn-sm">
+                                                <span class="d-none d-md-inline"><i class="bi bi-eye me-1"></i></span> View
+                                            </a>
+                                            <?php if (isset($cart_items[$prod['id']])): ?>
+                                                <?php
+                                                $in_cart = $cart_items[$prod['id']];
+                                                $cart_text = !empty($in_cart['size'])
+                                                    ? htmlspecialchars($in_cart['size']) . ' - ' . (int)$in_cart['quantity'] . ' ps'
+                                                    : (int)$in_cart['quantity'] . ' ps';
+                                                ?>
+                                                <button type="button" class="btn btn-outline-success w-50 btn-sm open-options-btn fw-bold" <?= $stock <= 0 ? 'disabled' : ''; ?>>
+                                                    <?= $cart_text; ?>
+                                                </button>
+                                            <?php else: ?>
+                                                <button type="button" class="btn btn-outline-success w-50 btn-sm open-options-btn" <?= $stock <= 0 ? 'disabled' : ''; ?>>
+                                                    <span class="d-none d-md-inline"><i class="bi bi-cart-plus me-1"></i></span> Add <span class="d-none d-md-inline">to Cart</span>
+                                                </button>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="card-options-overlay position-absolute bottom-0 end-0 mwt bg-white rounded p-3 shadow d-none flex-column justify-content-between cart_popup" style="z-index: 10;">
+                                    <div class="d-flex justify-content-between align-items-center pb-1 border-bottom">
+                                        <span class="fw-bold text-dark small">Select Options</span>
+                                        <button type="button" class="btn-close close-options-btn" style="font-size: 0.7rem;"></button>
+                                    </div>
+
+                                    <?php if (!empty($prod['size'])): ?>
+                                        <div class="my-2">
+                                            <label class="d-block text-secondary fw-semibold small mb-1" style="font-size: 0.75rem;">Size:</label>
+                                            <div class="d-flex gap-1 justify-content-start flex-wrap">
+                                                <?php foreach (array_values(array_filter(array_map('trim', explode(',', $prod['size'])))) as $index => $size): ?>
+                                                    <button type="button" class="btn btn-sm btn-outline-success size-btn px-2 py-0 fw-bold <?= $index === 0 ? 'active' : ''; ?>">
+                                                        <?= htmlspecialchars($size); ?>
+                                                    </button>
+                                                <?php endforeach; ?>
+                                            </div>
+                                        </div>
+                                    <?php endif; ?>
+
+                                    <div class="mb-2">
+                                        <label class="d-block text-secondary fw-semibold small mb-1" style="font-size: 0.75rem;">Quantity (Max 6):</label>
+                                        <div class="d-flex gap-1">
+                                            <button type="button" class="btn btn-sm btn-light border px-2 py-0 minus-btn fw-bold">-</button>
+                                            <input type="text" class="form-control form-control-sm text-center p-0 qty-input fw-bold" value="1" readonly style="width: 35px; height: 28px; font-size: 0.8rem;">
+                                            <button type="button" class="btn btn-sm btn-light border px-2 py-0 plus-btn fw-bold">+</button>
+                                        </div>
+                                    </div>
+
+                                    <button type="button" class="btn btn-success btn-sm w-100 fw-semibold final-add-cart-btn" data-product-id="<?= (int)$prod['id']; ?>" data-product-code="<?= htmlspecialchars($prod['product_code'] ?? ''); ?>">
+                                        Add to Cart
                                     </button>
                                 </div>
                             </div>
@@ -109,7 +197,7 @@ try {
                 <div class="row row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-lg-6 g-4">
                     <?php foreach ($all_categories as $cat): ?>
                         <?php 
-                            $cat_img = !empty($cat['category_photo']) ? 'uploads/categories/' . $cat['category_photo'] : 'https://via.placeholder.com/150x150/f8f9fa/374151?text=' . urlencode($cat['name']);
+                            $cat_img = 'uploads/categories/' . ($cat['category_photo'] ?: 'default-avatar.svg');
                         ?>
                         <div class="col">
                             <a href="category_products.php?category=<?= urlencode($cat['name']); ?>" class="text-decoration-none">
@@ -133,5 +221,4 @@ try {
         <?php endif; ?>
     </div>
 
-</body>
-</html>
+<?php include 'includes/footer.php'; ?>

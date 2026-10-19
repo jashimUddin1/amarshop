@@ -30,9 +30,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if ($action === 'increase') {
-            $new_qty = $item['quantity'] + 1;
-            $update = $pdo->prepare("UPDATE cart SET quantity = :qty WHERE id = :id");
-            $update->execute([':qty' => $new_qty, ':id' => $cart_id]);
+            if ((int)$item['quantity'] >= 6) {
+                echo json_encode(['status' => 'error', 'message' => 'Maximum quantity is 6.']);
+                exit;
+            }
+
+            $update = $pdo->prepare("
+                UPDATE cart
+                SET quantity = quantity + 1
+                WHERE id = :id AND user_id = :user_id AND quantity < 6
+            ");
+            $update->execute([':id' => $cart_id, ':user_id' => $user_id]);
+            if ($update->rowCount() === 0) {
+                echo json_encode(['status' => 'error', 'message' => 'Maximum quantity is 6.']);
+                exit;
+            }
         } 
         elseif ($action === 'decrease') {
             if ($item['quantity'] > 1) {

@@ -33,123 +33,111 @@ if (!empty($product['category_name'])) {
 // 3. Size String থেকে Array তে রূপান্তর করা (যেমন: "M, L, XL" -> ['M', 'L', 'XL'])
 $sizes = [];
 if (!empty($product['size'])) {
-    $sizes = array_map('trim', explode(',', $product['size']));
+    $sizes = array_filter(array_map('trim', explode(',', $product['size'])));
 }
+$page_title = $product['name'];
+include 'includes/header.php';
 ?>
-<!doctype html>
-<html lang="en">
+<style>
+    :root {
+        --brand: #198754;
+        --brand-dark: #157347;
+        --text: #1f2937;
+        --muted: #6c757d;
+        --border: #dee2e6;
+        --bg: #f8f9fa;
+    }
 
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title><?= htmlspecialchars($product['name']); ?> - AmarShop</title>
+    body {
+        font-family: Arial, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+    }
 
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    .breadcrumb-item a {
+        color: var(--muted);
+        text-decoration: none;
+    }
 
-    <style>
-        :root {
-            --brand: #198754;
-            --brand-dark: #157347;
-            --text: #1f2937;
-            --muted: #6c757d;
-            --border: #dee2e6;
-            --bg: #f8f9fa;
-        }
+    .main-img-box {
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 20px;
+        text-align: center;
+    }
 
-        body {
-            font-family: Arial, sans-serif;
-            background: var(--bg);
-            color: var(--text);
-        }
+    .main-img-box img {
+        max-height: 400px;
+        object-fit: contain;
+        width: 100%;
+    }
 
-        .breadcrumb-item a {
-            color: var(--muted);
-            text-decoration: none;
-        }
+    .thumb-img {
+        width: 65px;
+        height: 65px;
+        object-fit: cover;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        cursor: pointer;
+        transition: 0.2s;
+        background: #fff;
+    }
 
-        .main-img-box {
-            background: #fff;
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 20px;
-            text-align: center;
-        }
+    .thumb-img:hover, .thumb-img.active {
+        border-color: var(--brand);
+        transform: scale(1.05);
+    }
 
-        .main-img-box img {
-            max-height: 400px;
-            object-fit: contain;
-            width: 100%;
-        }
+    .product-details {
+        background: #fff;
+        padding: 30px;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+    }
 
-        .thumb-img {
-            width: 65px;
-            height: 65px;
-            object-fit: cover;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            cursor: pointer;
-            transition: 0.2s;
-            background: #fff;
-        }
+    .product-title {
+        font-size: 1.6rem;
+        font-weight: 700;
+    }
 
-        .thumb-img:hover, .thumb-img.active {
-            border-color: var(--brand);
-            transform: scale(1.05);
-        }
+    .price-area .current-price {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: var(--brand);
+    }
 
-        .product-details {
-            background: #fff;
-            padding: 30px;
-            border-radius: 10px;
-            border: 1px solid var(--border);
-        }
+    .price-area .old-price {
+        font-size: 1.2rem;
+        color: var(--muted);
+        text-decoration: line-through;
+        margin-left: 10px;
+    }
 
-        .product-title {
-            font-size: 1.6rem;
-            font-weight: 700;
-        }
+    .btn-check:checked + .btn-outline-success {
+        background-color: var(--brand);
+        color: white;
+    }
 
-        .price-area .current-price {
-            font-size: 1.8rem;
-            font-weight: 700;
-            color: var(--brand);
-        }
+    .qty-input {
+        width: 50px;
+        text-align: center;
+        border: 1px solid var(--border);
+    }
 
-        .price-area .old-price {
-            font-size: 1.2rem;
-            color: var(--muted);
-            text-decoration: line-through;
-            margin-left: 10px;
-        }
+    .product-card {
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: #fff;
+        overflow: hidden;
+        transition: 0.3s;
+    }
 
-        .btn-check:checked + .btn-outline-success {
-            background-color: var(--brand);
-            color: white;
-        }
-
-        .qty-input {
-            width: 50px;
-            text-align: center;
-            border: 1px solid var(--border);
-        }
-
-        .product-card {
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            background: #fff;
-            overflow: hidden;
-            transition: 0.3s;
-        }
-
-        .product-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
-        }
-    </style>
-</head>
-
-<body>
+    .product-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
+    }
+</style>
 
     <!-- 1. Breadcrumb + Back Button + Product Code -->
     <div class="container my-3">
@@ -245,22 +233,23 @@ if (!empty($product['size'])) {
                     <div class="mb-4">
                         <label class="fw-bold mb-2 d-block">Quantity (Max 6):</label>
                         <div class="d-flex align-items-center gap-2">
-                            <button class="btn btn-outline-secondary" onclick="updateQty(-1)">-</button>
+                            <button type="button" class="btn btn-outline-secondary" onclick="updateQty(-1)">-</button>
                             <input type="text" id="qtyInput" value="1" class="form-control qty-input" readonly>
-                            <button class="btn btn-outline-secondary" onclick="updateQty(1)">+</button>
+                            <button type="button" class="btn btn-outline-secondary" onclick="updateQty(1)">+</button>
                         </div>
                         <small id="qtyMsg" class="text-danger d-none mt-1">সর্বোচ্চ ৬ টি অর্ডার করতে পারবেন।</small>
                     </div>
 
                     <!-- Action Buttons -->
                     <div class="d-flex flex-wrap gap-2 mb-4">
-                        <button class="btn btn-success btn-lg flex-grow-1" <?= ((int)$product['stock'] <= 0) ? 'disabled' : ''; ?>>
+                        <button type="button" id="addToCartBtn" class="btn btn-success btn-lg flex-grow-1" <?= ((int)$product['stock'] <= 0) ? 'disabled' : ''; ?>>
                             <i class="bi bi-cart-plus me-2"></i>Add to Cart
                         </button>
-                        <button class="btn btn-dark btn-lg flex-grow-1" <?= ((int)$product['stock'] <= 0) ? 'disabled' : ''; ?>>
+                        <button type="button" id="buyNowBtn" class="btn btn-dark btn-lg flex-grow-1" <?= ((int)$product['stock'] <= 0) ? 'disabled' : ''; ?>>
                             <i class="bi bi-lightning-fill me-1"></i>Buy Now
                         </button>
                     </div>
+                    <div id="cartActionMessage" class="d-none" role="status"></div>
 
                     <!-- Meta Information -->
                     <div class="border-top pt-3 fs-7 text-muted">
@@ -300,7 +289,6 @@ if (!empty($product['size'])) {
     </section>
     <?php endif; ?>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         // Image Switcher
         function changeImage(element) {
@@ -325,6 +313,63 @@ if (!empty($product['size'])) {
                 qtyMsg.classList.remove('d-none');
             }
         }
+
+        const productPageIsLoggedIn = <?= json_encode($is_logged_in); ?>;
+        const addToCartButton = document.getElementById('addToCartBtn');
+        const buyNowButton = document.getElementById('buyNowBtn');
+        const cartActionMessage = document.getElementById('cartActionMessage');
+
+        async function addProductToCart(buyNow) {
+            if (!productPageIsLoggedIn) {
+                window.location.href = 'auth/login.php?status=warning&message=' + encodeURIComponent('Login first then add to cart');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('product_id', <?= (int)$product['id']; ?>);
+            formData.append('product_code', <?= json_encode($product['product_code'] ?? '', JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>);
+            formData.append('size', document.querySelector('input[name="size"]:checked')?.value || '');
+            formData.append('quantity', document.getElementById('qtyInput').value);
+
+            addToCartButton.disabled = true;
+            buyNowButton.disabled = true;
+            cartActionMessage.className = 'd-none';
+
+            try {
+                const response = await fetch('core/add_to_cart.php', { method: 'POST', body: formData });
+                if (!response.ok) {
+                    throw new Error(`Add-to-cart request failed with status ${response.status}`);
+                }
+
+                const data = await response.json();
+                if (data.status === 'success') {
+                    if (typeof updateCartBadge === 'function') {
+                        updateCartBadge();
+                    }
+                    if (buyNow) {
+                        window.location.href = 'checkout.php';
+                        return;
+                    }
+                    cartActionMessage.className = 'alert alert-success py-2';
+                    cartActionMessage.textContent = data.message;
+                } else if (data.status === 'info' && buyNow) {
+                    window.location.href = 'checkout.php';
+                    return;
+                } else {
+                    cartActionMessage.className = 'alert alert-warning py-2';
+                    cartActionMessage.textContent = data.message || 'Could not add the product to your cart.';
+                }
+            } catch (error) {
+                console.error('Error adding product to cart:', error);
+                cartActionMessage.className = 'alert alert-danger py-2';
+                cartActionMessage.textContent = 'Could not add the product to your cart. Please try again.';
+            } finally {
+                addToCartButton.disabled = false;
+                buyNowButton.disabled = false;
+            }
+        }
+
+        addToCartButton.addEventListener('click', () => addProductToCart(false));
+        buyNowButton.addEventListener('click', () => addProductToCart(true));
     </script>
-</body>
-</html>
+<?php include 'includes/footer.php'; ?>

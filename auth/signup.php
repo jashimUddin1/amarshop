@@ -2,6 +2,9 @@
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
+$field_errors = $_SESSION['signup_errors'] ?? [];
+$old_input = $_SESSION['signup_old'] ?? [];
+unset($_SESSION['signup_errors'], $_SESSION['signup_old']);
 ?>
 <!doctype html>
 <html lang="en">
@@ -89,15 +92,16 @@ if (session_status() === PHP_SESSION_NONE) {
                 <?php endif; ?>
 
                 <!-- রেজিস্ট্রেশন ফর্ম -->
-                <form action="../core/signup_process.php" method="POST" id="signupForm">
+                <form action="../core/signup_process.php" method="POST" id="signupForm" novalidate>
 
                     <!-- Full Name -->
                     <div class="mb-3">
                         <label class="form-label text-secondary small fw-bold">Full Name</label>
                         <div class="input-group">
                             <span class="input-group-text"><i class="bi bi-person"></i></span>
-                            <input type="text" name="customar_name" class="form-control" placeholder="Enter your full name" required>
+                            <input type="text" name="customar_name" class="form-control <?= isset($field_errors['customar_name']) ? 'is-invalid' : ''; ?>" placeholder="Enter your full name" value="<?= htmlspecialchars($old_input['customar_name'] ?? ''); ?>" required>
                         </div>
+                        <div class="invalid-feedback <?= isset($field_errors['customar_name']) ? 'd-block' : ''; ?>" data-error-for="customar_name"><?= htmlspecialchars($field_errors['customar_name'] ?? 'Please enter your full name.'); ?></div>
                     </div>
 
                     <!-- Phone Number -->
@@ -105,8 +109,9 @@ if (session_status() === PHP_SESSION_NONE) {
                         <label class="form-label text-secondary small fw-bold">Phone Number</label>
                         <div class="input-group">
                             <span class="input-group-text"><i class="bi bi-telephone"></i></span>
-                            <input type="tel" name="phone" class="form-control" placeholder="017XXXXXXXX" required>
+                            <input type="tel" name="phone" class="form-control <?= isset($field_errors['phone']) ? 'is-invalid' : ''; ?>" placeholder="017XXXXXXXX" value="<?= htmlspecialchars($old_input['phone'] ?? ''); ?>" inputmode="tel" required>
                         </div>
+                        <div class="invalid-feedback <?= isset($field_errors['phone']) ? 'd-block' : ''; ?>" data-error-for="phone"><?= htmlspecialchars($field_errors['phone'] ?? 'Phone number must contain at least 8 digits.'); ?></div>
                     </div>
 
                     <!-- Email Address -->
@@ -114,8 +119,9 @@ if (session_status() === PHP_SESSION_NONE) {
                         <label class="form-label text-secondary small fw-bold">Email Address</label>
                         <div class="input-group">
                             <span class="input-group-text"><i class="bi bi-envelope"></i></span>
-                            <input type="email" name="email" class="form-control" placeholder="example@gmail.com" required>
+                            <input type="email" name="email" class="form-control <?= isset($field_errors['email']) ? 'is-invalid' : ''; ?>" placeholder="example@gmail.com" value="<?= htmlspecialchars($old_input['email'] ?? ''); ?>" required>
                         </div>
+                        <div class="invalid-feedback <?= isset($field_errors['email']) ? 'd-block' : ''; ?>" data-error-for="email"><?= htmlspecialchars($field_errors['email'] ?? 'Please enter a valid email address.'); ?></div>
                     </div>
 
                     <!-- Password -->
@@ -123,11 +129,12 @@ if (session_status() === PHP_SESSION_NONE) {
                         <label class="form-label text-secondary small fw-bold">Password</label>
                         <div class="input-group">
                             <span class="input-group-text"><i class="bi bi-lock"></i></span>
-                            <input type="password" name="password" id="password" class="form-control" placeholder="••••••••" required>
+                            <input type="password" name="password" id="password" class="form-control <?= isset($field_errors['password']) ? 'is-invalid' : ''; ?>" placeholder="••••••••" minlength="5" required>
                             <button class="btn btn-outline-secondary" type="button" id="togglePassword">
                                 <i class="bi bi-eye-slash" id="eyeIcon1"></i>
                             </button>
                         </div>
+                        <div class="invalid-feedback <?= isset($field_errors['password']) ? 'd-block' : ''; ?>" data-error-for="password"><?= htmlspecialchars($field_errors['password'] ?? 'Password must be at least 5 characters long.'); ?></div>
                     </div>
 
                     <!-- Confirm Password -->
@@ -135,14 +142,12 @@ if (session_status() === PHP_SESSION_NONE) {
                         <label class="form-label text-secondary small fw-bold">Confirm Password</label>
                         <div class="input-group">
                             <span class="input-group-text"><i class="bi bi-shield-lock"></i></span>
-                            <input type="password" name="confirm_password" id="confirmPassword" class="form-control" placeholder="••••••••" required>
+                            <input type="password" name="confirm_password" id="confirmPassword" class="form-control <?= isset($field_errors['confirm_password']) ? 'is-invalid' : ''; ?>" placeholder="••••••••" required>
                             <button class="btn btn-outline-secondary" type="button" id="toggleConfirmPassword">
                                 <i class="bi bi-eye-slash" id="eyeIcon2"></i>
                             </button>
                         </div>
-                        <div id="passwordError" class="text-danger small mt-1 d-none">
-                            Passwords do not match!
-                        </div>
+                        <div id="passwordError" class="invalid-feedback <?= isset($field_errors['confirm_password']) ? 'd-block' : ''; ?>" data-error-for="confirm_password"><?= htmlspecialchars($field_errors['confirm_password'] ?? 'Passwords do not match.'); ?></div>
                     </div>
 
                     <!-- Submit Button -->
@@ -188,18 +193,44 @@ if (session_status() === PHP_SESSION_NONE) {
 
             // ২. পাসওয়ার্ড মিলছে কিনা চেক করা (Form Submit Validation)
             const form = document.getElementById('signupForm');
+            const nameInput = form.elements.namedItem('customar_name');
+            const phoneInput = form.elements.namedItem('phone');
+            const emailInput = form.elements.namedItem('email');
             const pass = document.getElementById('password');
             const confirmPass = document.getElementById('confirmPassword');
-            const errorDiv = document.getElementById('passwordError');
+
+            function setFieldError(input, message) {
+                const feedback = document.querySelector(`[data-error-for="${input.name}"]`);
+                input.classList.toggle('is-invalid', Boolean(message));
+                if (feedback) {
+                    feedback.textContent = message;
+                    feedback.classList.toggle('d-block', Boolean(message));
+                }
+            }
+
+            [nameInput, phoneInput, emailInput, pass, confirmPass].forEach(input => {
+                input.addEventListener('input', function() {
+                    setFieldError(input, '');
+                });
+            });
 
             form.addEventListener('submit', function(e) {
-                if (pass.value !== confirmPass.value) {
+                const phoneDigits = phoneInput.value.replace(/\D/g, '');
+                const errors = [
+                    [nameInput, nameInput.value.trim() ? '' : 'Please enter your full name.'],
+                    [phoneInput, phoneDigits.length >= 8 && /^[0-9+\s().-]+$/.test(phoneInput.value) ? '' : 'Phone number must contain at least 8 digits.'],
+                    [emailInput, emailInput.validity.valid ? '' : 'Please enter a valid email address.'],
+                    [pass, pass.value.length >= 5 ? '' : 'Password must be at least 5 characters long.'],
+                    [confirmPass, confirmPass.value === pass.value && confirmPass.value !== '' ? '' : (confirmPass.value === '' ? 'Please confirm your password.' : 'Passwords do not match.')]
+                ];
+                let hasErrors = false;
+                errors.forEach(([input, message]) => {
+                    setFieldError(input, message);
+                    if (message) hasErrors = true;
+                });
+
+                if (hasErrors) {
                     e.preventDefault();
-                    errorDiv.classList.remove('d-none');
-                    confirmPass.classList.add('is-invalid');
-                } else {
-                    errorDiv.classList.add('d-none');
-                    confirmPass.classList.remove('is-invalid');
                 }
             });
         });

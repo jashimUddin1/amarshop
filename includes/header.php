@@ -25,7 +25,7 @@ if (isset($pdo)) {
 }
 
 // Function to build query string preserving existing parameters
-function build_query_url($param_name, $param_value)
+function build_query_url(string $param_name, string $param_value): string
 {
     $params = $_GET;
     if ($param_value === '') {
@@ -520,10 +520,10 @@ if (!empty($selected_collection) && !empty($nav_collections)) {
 
                     <!-- Search Bar -->
                     <div class="search-area">
-                        <form id="searchForm" onsubmit="return false;">
+                        <form id="searchForm" action="index.php" method="get">
                             <div class="input-group-custom">
                                 <input type="text" name="search" id="liveSearchInput" class="form-control-custom" placeholder="Search products...">
-                                <button class="btn btn-success btn-custom" type="button">
+                                <button class="btn btn-success btn-custom" type="submit">
                                     <i class="bi bi-search d-inline d-md-none"></i>
                                     <span class="d-none d-md-inline">Search</span>
                                 </button>
