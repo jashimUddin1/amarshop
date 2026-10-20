@@ -1,6 +1,6 @@
 <?php
 require_once 'config.php';
-
+require_admin();
 
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {

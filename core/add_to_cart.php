@@ -10,7 +10,6 @@ if (!isset($_SESSION['user_id'])) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $user_id      = $_SESSION['user_id'];
     $product_id   = isset($_POST['product_id']) ? (int)$_POST['product_id'] : 0;
-    $product_code = isset($_POST['product_code']) ? trim($_POST['product_code']) : '';
     $size         = isset($_POST['size']) ? trim($_POST['size']) : null;
     $quantity     = isset($_POST['quantity']) ? (int)$_POST['quantity'] : 1;
 
@@ -20,6 +19,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     try {
+        $product_stmt = $pdo->prepare("SELECT product_code, stock FROM products WHERE id = :product_id LIMIT 1");
+        $product_stmt->execute([':product_id' => $product_id]);
+        $product = $product_stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$product || (int)$product['stock'] < $quantity) {
+            echo json_encode(['status' => 'error', 'message' => 'Requested quantity is not available in stock.']);
+            exit;
+        }
+
+        $product_code = (string)$product['product_code'];
+
         // একই product_code কার্টে ইতিমধ্যে আছে কি না চেক করা
         $stmt = $pdo->prepare("SELECT id FROM cart WHERE user_id = :user_id AND product_code = :product_code");
         $stmt->execute([':user_id' => $user_id, ':product_code' => $product_code]);

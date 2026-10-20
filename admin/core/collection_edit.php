@@ -1,5 +1,6 @@
 <?php
 require_once '../auth/config.php';
+require_admin();
 header('Content-Type: application/json');
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {

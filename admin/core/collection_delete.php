@@ -3,6 +3,7 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 require_once '../auth/config.php';
+require_admin();
 header('Content-Type: application/json');
 
 if (isset($_GET['id'])) {

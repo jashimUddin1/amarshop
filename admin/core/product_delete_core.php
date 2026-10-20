@@ -2,7 +2,8 @@
 // admin/products/core/product_delete_core.php
 header('Content-Type: application/json');
 
-require_once '../auth/config.php'; 
+require_once '../auth/config.php';
+require_admin();
 
 $response = ['status' => 'error', 'message' => 'Something went wrong!'];
 

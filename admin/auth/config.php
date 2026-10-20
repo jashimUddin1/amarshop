@@ -1,6 +1,16 @@
 <?php
 // config.php
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_name('AMARSHOP_ADMIN_SESSION');
+    session_set_cookie_params([
+        'lifetime' => 0,
+        'path' => '/amarshop/admin',
+        'secure' => !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off',
+        'httponly' => true,
+        'samesite' => 'Lax',
+    ]);
+    session_start();
+}
 
 /* ================= TIMEZONE ================= */
 date_default_timezone_set('Asia/Dhaka');
@@ -26,9 +36,27 @@ function base_url(string $path = ''): string {
 }
 
 /* ================= AUTH GUARD ================= */
-function require_login() {
+function require_admin(): void {
+    global $pdo;
+
     if (empty($_SESSION['user_id'])) {
         header("Location: " . base_url('auth/login.php'));
         exit;
     }
+
+    $stmt = $pdo->prepare("SELECT customar_name, email, role FROM users WHERE id = :id LIMIT 1");
+    $stmt->execute([':id' => $_SESSION['user_id']]);
+    $admin = $stmt->fetch(PDO::FETCH_ASSOC);
+    $role = strtolower((string)($admin['role'] ?? ''));
+
+    if (!in_array($role, ['admin', 'manager'], true)) {
+        $_SESSION = [];
+        session_destroy();
+        http_response_code(403);
+        exit('Access denied.');
+    }
+
+    $_SESSION['user_role'] = $role;
+    $_SESSION['user_name'] = $admin['customar_name'];
+    $_SESSION['email'] = $admin['email'];
 }

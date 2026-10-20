@@ -20,7 +20,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     try {
         // কার্ট আইটেম চেক করা
-        $stmt = $pdo->prepare("SELECT quantity FROM cart WHERE id = :id AND user_id = :user_id");
+        $stmt = $pdo->prepare("
+            SELECT c.quantity, p.stock
+            FROM cart c
+            JOIN products p ON p.id = c.product_id
+            WHERE c.id = :id AND c.user_id = :user_id
+        ");
         $stmt->execute([':id' => $cart_id, ':user_id' => $user_id]);
         $item = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -30,17 +35,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if ($action === 'increase') {
-            if ((int)$item['quantity'] >= 6) {
-                echo json_encode(['status' => 'error', 'message' => 'Maximum quantity is 6.']);
+            if ((int)$item['quantity'] >= 6 || (int)$item['quantity'] >= (int)$item['stock']) {
+                echo json_encode(['status' => 'error', 'message' => 'Maximum quantity or available stock reached.']);
                 exit;
             }
 
             $update = $pdo->prepare("
                 UPDATE cart
                 SET quantity = quantity + 1
-                WHERE id = :id AND user_id = :user_id AND quantity < 6
+                WHERE id = :id AND user_id = :user_id AND quantity < 6 AND quantity < :stock
             ");
-            $update->execute([':id' => $cart_id, ':user_id' => $user_id]);
+            $update->execute([':id' => $cart_id, ':user_id' => $user_id, ':stock' => (int)$item['stock']]);
             if ($update->rowCount() === 0) {
                 echo json_encode(['status' => 'error', 'message' => 'Maximum quantity is 6.']);
                 exit;

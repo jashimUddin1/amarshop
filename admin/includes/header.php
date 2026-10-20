@@ -13,18 +13,97 @@ if (session_status() === PHP_SESSION_NONE) {
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+  <style>
+    .admin-topbar {
+      min-height: 80px;
+      display: flex;
+      background: var(--bs-body-bg);
+    }
+
+    .admin-brand {
+      width: 16.666667%;
+      min-width: 250px;
+      display: flex;
+      align-items: center;
+      padding: 0 1.25rem;
+      color: #fff;
+      background: #111827;
+      text-decoration: none;
+      font-size: 1.25rem;
+    }
+
+    .admin-toolbar {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      padding: 0 1.25rem;
+    }
+
+    .admin-page-title {
+      color: var(--bs-body-color);
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+
+    .admin-account-button {
+      color: var(--bs-body-color);
+    }
+
+    .admin-account-button:hover,
+    .admin-account-button:focus {
+      color: var(--bs-primary);
+    }
+
+    @media (max-width: 991.98px) {
+      .admin-brand {
+        width: auto;
+        min-width: 0;
+        padding: 0 0.75rem;
+        font-size: 1rem;
+      }
+
+      .admin-toolbar {
+        padding: 0 0.5rem;
+      }
+
+      .admin-page-title {
+        display: none;
+      }
+    }
+  </style>
 </head>
 
 <body class="vh-100 overflow-hidden d-flex flex-column">
 
-  <nav class="navbar navbar-expand-lg bg-body border-bottom sticky-top px-3 z-3 flex-shrink-0">
-    <button class="btn d-lg-none me-2" data-bs-toggle="offcanvas" data-bs-target="#sidebar">
-      <i class="bi bi-list fs-3"></i>
-    </button>
-    <a class="navbar-brand fw-bold" href="index.php">AmarShop Admin</a>
-    <div class="ms-auto d-flex align-items-center gap-3">
-      <span class="fw-semibold"><?= htmlspecialchars($_SESSION['user_name'] ?? 'Admin'); ?></span>
-      <button class="btn btn-outline-secondary" id="themeToggle"><i class="bi bi-moon"></i></button>
+  <nav class="admin-topbar border-bottom sticky-top z-3 flex-shrink-0">
+    <a class="admin-brand fw-bold" href="index.php">AmarShop Admin</a>
+    <div class="admin-toolbar">
+      <button class="btn d-lg-none me-2" type="button" data-bs-toggle="collapse" data-bs-target="#adminMobileMenu" aria-label="Toggle navigation">
+        <i class="bi bi-list fs-3"></i>
+      </button>
+      <span class="admin-page-title"><?= htmlspecialchars(($current_page ?? '') === 'dashboard' ? 'Home' : ($page_title ?? 'Admin Panel')); ?></span>
+      <div class="ms-auto d-flex align-items-center gap-3">
+        <div class="dropdown">
+          <button class="btn btn-secondary position-relative" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Notifications">
+            <i class="bi bi-bell-fill text-warning"></i>
+          </button>
+          <div class="dropdown-menu dropdown-menu-end p-3" style="min-width: 220px;">
+            <div class="fw-semibold mb-2">Notifications</div>
+            <a class="dropdown-item px-0" href="sales.php"><i class="bi bi-cart-check me-2"></i>Review recent orders</a>
+          </div>
+        </div>
+        <a class="btn btn-link text-decoration-none fw-semibold admin-account-button" href="profile.php">
+          <?= htmlspecialchars($_SESSION['user_name'] ?? 'Admin'); ?>
+        </a>
+        <div class="dropdown">
+          <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Admin account options"></button>
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li><a class="dropdown-item text-danger" href="auth/logout.php"><i class="bi bi-box-arrow-right me-2"></i>Log out</a></li>
+          </ul>
+        </div>
+        <button class="btn btn-outline-secondary" id="themeToggle" type="button" aria-label="Toggle theme"><i class="bi bi-moon"></i></button>
+      </div>
     </div>
   </nav>
 
@@ -54,7 +133,22 @@ if (session_status() === PHP_SESSION_NONE) {
           <li class="nav-item">
             <a class="nav-link <?= ($current_page ?? '') === 'setting' ? 'active' : 'text-body'; ?>" href="setting.php"><i class="bi bi-gear me-2"></i>Settings</a>
           </li>
+          <li class="nav-item">
+            <a class="nav-link <?= ($current_page ?? '') === 'profile' ? 'active' : 'text-body'; ?>" href="profile.php"><i class="bi bi-person-circle me-2"></i>My Profile</a>
+          </li>
         </ul>
       </aside>
 
       <main class="col-lg-10 h-100 d-flex flex-column overflow-hidden">
+        <div class="collapse d-lg-none" id="adminMobileMenu">
+          <div class="nav nav-pills flex-column gap-1 p-2 border-bottom">
+            <a class="nav-link" href="index.php">Dashboard</a>
+            <a class="nav-link" href="products.php">Products</a>
+            <a class="nav-link" href="categories.php">Categories</a>
+            <a class="nav-link" href="collection.php">Collections</a>
+            <a class="nav-link" href="sales.php">Sales</a>
+            <a class="nav-link" href="users.php">Users</a>
+            <a class="nav-link" href="setting.php">Settings</a>
+            <a class="nav-link" href="profile.php">My Profile</a>
+          </div>
+        </div>

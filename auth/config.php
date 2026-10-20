@@ -37,7 +37,7 @@ function require_login() {
 define('SMTP_HOST', 'smtp.gmail.com');
 define('SMTP_PORT', 587);
 define('SMTP_USER', 'developermdjasim@gmail.com');       // আপনার Gmail ইমেইল
-define('SMTP_PASS', 'zdtq wxte duca xabi');          // Google App Password (১৬ ডিজিটের)
+define('SMTP_PASS', getenv('AMARSHOP_SMTP_PASS') ?: '');
 define('SMTP_FROM', 'amarshop@gmail.com');
 define('SMTP_NAME', 'AmarShop');
 

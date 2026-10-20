@@ -1,5 +1,6 @@
 <?php
 require_once '../auth/config.php';
+require_admin();
 
 if (!isset($_GET['id'])) {
     echo '<div class="alert alert-danger mb-0">Invalid Request</div>';

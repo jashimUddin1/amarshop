@@ -51,6 +51,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
+    if (SMTP_PASS === '') {
+        error_log('Signup blocked because AMARSHOP_SMTP_PASS is not configured.');
+        $_SESSION['status'] = 'danger';
+        $_SESSION['message'] = 'Account verification email is temporarily unavailable. Please try again later.';
+        header('Location: ' . base_url('auth/signup.php'));
+        exit;
+    }
+
     try {
         $check_stmt = $pdo->prepare("SELECT email, phone FROM users WHERE email = :email OR phone = :phone");
         $check_stmt->execute([':email' => $email, ':phone' => $phone]);

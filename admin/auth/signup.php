@@ -1,3 +1,7 @@
+<?php
+require_once 'config.php';
+require_admin();
+?>
 <!DOCTYPE html>
 <html lang="bn">
 <head>

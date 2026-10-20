@@ -1,5 +1,6 @@
 <?php
 require_once 'auth/config.php';
+require_admin();
 
 $page_title = "Manage Products";
 $current_page = "products";

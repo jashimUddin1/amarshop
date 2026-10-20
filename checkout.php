@@ -91,8 +91,8 @@ include 'includes/header.php';
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Delivery Area *</label>
                         <select name="shipping_area" id="shippingArea" class="form-select" required onchange="calculateTotal()">
-                            <option value="60">Inside Dhaka (৳60)</option>
-                            <option value="120">Outside Dhaka (৳120)</option>
+                            <option value="inside_dhaka">Inside Dhaka (৳60)</option>
+                            <option value="outside_dhaka">Outside Dhaka (৳120)</option>
                         </select>
                     </div>
 
@@ -156,7 +156,7 @@ include 'includes/header.php';
 <script>
     function calculateTotal() {
         const subtotal = parseFloat(document.getElementById('subtotalVal').innerText);
-        const shippingArea = parseFloat(document.getElementById('shippingArea').value);
+        const shippingArea = document.getElementById('shippingArea').value === 'outside_dhaka' ? 120 : 60;
 
         document.getElementById('shippingCharge').innerText = shippingArea.toFixed(2);
 
