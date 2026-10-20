@@ -2,8 +2,37 @@
     </div>
   </div>
 
+  <div class="modal fade" id="productImagePreview" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content bg-dark border-0">
+        <div class="modal-header border-0 py-2">
+          <h5 class="modal-title text-white" id="productImagePreviewTitle"></h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body text-center p-2 p-md-3">
+          <img id="productImagePreviewContent" class="img-fluid" alt="" style="max-height: 80vh; object-fit: contain;">
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
+    document.addEventListener('click', function (event) {
+      const target = event.target instanceof Element ? event.target.closest('.product-image-preview') : null;
+      if (!target) return;
+
+      const preview = document.getElementById('productImagePreview');
+      const previewImage = document.getElementById('productImagePreviewContent');
+      const previewTitle = document.getElementById('productImagePreviewTitle');
+      if (!preview || !previewImage || !previewTitle) return;
+
+      previewImage.src = target.currentSrc || target.src;
+      previewImage.alt = target.alt || 'Product image';
+      previewTitle.textContent = target.alt || 'Product image';
+      bootstrap.Modal.getOrCreateInstance(preview).show();
+    });
+
     // Theme Toggle Logic
     const html = document.documentElement;
     const btn = document.getElementById("themeToggle");

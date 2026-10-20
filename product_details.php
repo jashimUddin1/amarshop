@@ -167,7 +167,7 @@ include 'includes/header.php';
             <!-- Left Side: Dynamic Gallery -->
             <div class="col-lg-6">
                 <div class="main-img-box mb-3">
-                    <img id="featuredImg" src="uploads/<?= htmlspecialchars($product['main_img']); ?>" class="img-fluid" alt="<?= htmlspecialchars($product['name']); ?>">
+                    <img id="featuredImg" src="uploads/<?= htmlspecialchars($product['main_img']); ?>" class="img-fluid product-image-preview" style="cursor: zoom-in;" alt="<?= htmlspecialchars($product['name']); ?>">
                 </div>
 
                 <!-- 2. Dynamic Thumbnails (Main + Side Images) -->
@@ -277,7 +277,7 @@ include 'includes/header.php';
             <div class="col">
                 <div class="product-card p-2 text-center h-100 d-flex flex-column justify-content-between">
                     <div>
-                        <img src="uploads/<?= htmlspecialchars($rel_prod['main_img']); ?>" class="img-fluid rounded mb-2" style="height: 180px; object-fit: cover;" alt="<?= htmlspecialchars($rel_prod['name']); ?>">
+                        <img src="uploads/<?= htmlspecialchars($rel_prod['main_img']); ?>" class="img-fluid rounded mb-2 product-image-preview" style="height: 180px; object-fit: cover; cursor: zoom-in;" alt="<?= htmlspecialchars($rel_prod['name']); ?>">
                         <h6 class="text-truncate"><?= htmlspecialchars($rel_prod['name']); ?></h6>
                         <p class="text-success fw-bold mb-1">৳<?= number_format($rel_prod['sell_price'], 2); ?></p>
                     </div>

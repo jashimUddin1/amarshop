@@ -119,7 +119,7 @@ include 'includes/header.php';
                         ?>
                             <div class="d-flex align-items-start justify-content-between border-bottom py-2 me-2">
                                 <div class="d-flex align-items-start flex-grow-1 me-2" style="min-width: 0;">
-                                    <img src="uploads/<?= $item['main_img']; ?>" class="rounded border me-2 flex-shrink-0" style="width: 45px; height: 45px; object-fit: contain;">
+                                    <img src="uploads/<?= htmlspecialchars($item['main_img']); ?>" class="rounded border me-2 flex-shrink-0 product-image-preview" style="width: 45px; height: 45px; object-fit: contain; cursor: zoom-in;" alt="<?= htmlspecialchars($item['name']); ?>">
                                     <div style="min-width: 0; flex: 1;">
                                         <h6 class="mb-0" style="font-size: 0.85rem; white-space: normal; overflow-wrap: anywhere;"><?= htmlspecialchars($product_label); ?></h6>
                                         <small class="text-muted">Size: <?= htmlspecialchars($item['size'] ?: 'N/A'); ?> | Qty: <?= $item['quantity']; ?> * <?= $item['price'] ?></small>
@@ -231,7 +231,7 @@ include 'includes/header.php';
                     <div class="product-card position-relative border rounded p-2 bg-white shadow-sm h-100">
                         <div class="product-img-container text-center mb-2 position-relative">
                             ${discount > 0 ? `<span class="product-badge bg-danger text-white position-absolute top-0 end-0 px-2 py-1 rounded small fw-bold">${discount}%</span>` : ''}
-                            <img src="${image}" class="img-fluid rounded" alt="${name}">
+                            <img src="${image}" class="img-fluid rounded product-image-preview" style="cursor: zoom-in;" alt="${name}">
                         </div>
                         <div class="d-flex flex-column justify-content-between">
                             <div>

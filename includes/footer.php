@@ -159,6 +159,20 @@
     <?php endif; ?>
 
     <!-- Bootstrap 5 JS Bundle CDN -->
+    <div class="modal fade" id="productImagePreview" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content bg-dark border-0">
+                <div class="modal-header border-0 py-2">
+                    <h5 class="modal-title text-white" id="productImagePreviewTitle"></h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center p-2 p-md-3">
+                    <img id="productImagePreviewContent" class="img-fluid" alt="" style="max-height: 80vh; object-fit: contain;">
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
     <!-- Global Scripts -->
@@ -228,7 +242,7 @@
 
                         html += `
                         <div class="d-flex align-items-center justify-content-between border-bottom py-3">
-                            <img src="uploads/${escapeHtml(item.main_img)}" class="rounded border" style="width: 65px; height: 65px; object-fit: contain;">
+                            <img src="uploads/${escapeHtml(item.main_img)}" class="rounded border product-image-preview" style="width: 65px; height: 65px; object-fit: contain; cursor: zoom-in;" alt="${productName}">
                             <div class="flex-grow-1 px-3">
                                 <h6 class="mb-1 text-truncate fw-semibold" style="max-width: 170px; font-size: 0.85rem;" title="${productName}">${productName}</h6>
                                 <div class="d-flex align-items-center gap-2 my-1">
@@ -339,6 +353,21 @@
 
         document.addEventListener('DOMContentLoaded', function() {
             updateCartBadge();
+
+            document.addEventListener('click', function(event) {
+                const target = event.target instanceof Element ? event.target.closest('.product-image-preview') : null;
+                if (!target) return;
+
+                const preview = document.getElementById('productImagePreview');
+                const previewImage = document.getElementById('productImagePreviewContent');
+                const previewTitle = document.getElementById('productImagePreviewTitle');
+                if (!preview || !previewImage || !previewTitle) return;
+
+                previewImage.src = target.currentSrc || target.src;
+                previewImage.alt = target.alt || 'Product image';
+                previewTitle.textContent = target.alt || 'Product image';
+                bootstrap.Modal.getOrCreateInstance(preview).show();
+            });
 
             const cartOffcanvasEl = document.getElementById('cartOffcanvas');
             if (cartOffcanvasEl) {

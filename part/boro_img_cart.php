@@ -48,7 +48,7 @@
                                         </span>
                                     <?php endif; ?>
 
-                                    <img src="<?= base_url('uploads/' . ($product['main_img'] ?: 'placeholder.jpg')); ?>" class="img-fluid rounded" alt="<?= htmlspecialchars($product['name']); ?>">
+                                    <img src="<?= base_url('uploads/' . ($product['main_img'] ?: 'placeholder.jpg')); ?>" class="img-fluid rounded product-image-preview" style="cursor: zoom-in;" alt="<?= htmlspecialchars($product['name']); ?>">
                                 </div>
 
                                 <!-- Product Details -->

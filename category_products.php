@@ -91,7 +91,7 @@ include 'includes/header.php';
                                             <?= $discount_percent; ?>%
                                         </span>
                                     <?php endif; ?>
-                                    <img src="<?= base_url('uploads/' . ($prod['main_img'] ?: 'placeholder.jpg')); ?>" class="img-fluid rounded" alt="<?= htmlspecialchars($prod['name']); ?>">
+                                    <img src="<?= base_url('uploads/' . ($prod['main_img'] ?: 'placeholder.jpg')); ?>" class="img-fluid rounded product-image-preview" style="cursor: zoom-in;" alt="<?= htmlspecialchars($prod['name']); ?>">
                                 </div>
 
                                 <div class="product-card-body d-flex flex-column justify-content-between">

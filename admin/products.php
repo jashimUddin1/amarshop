@@ -94,7 +94,7 @@ include_once 'includes/header.php';
               ?>
               <tr id="product-row-<?= $row['id']; ?>" data-search="<?= htmlspecialchars($search_text, ENT_QUOTES); ?>">
                 <td>
-                  <img src="../uploads/<?= ($row['main_img'] ?: 'placeholder.jpg'); ?>" class="rounded object-fit-cover" style="width: 45px; height: 45px;" alt="Product">
+                  <img src="../uploads/<?= htmlspecialchars($row['main_img'] ?: 'placeholder.jpg'); ?>" class="rounded object-fit-cover product-image-preview" style="width: 45px; height: 45px; cursor: zoom-in;" alt="<?= htmlspecialchars($row['name']); ?>">
                 </td>
                 <td><span class="badge bg-secondary"><?= htmlspecialchars($row['product_code']); ?></span></td>
                 <td class="fw-bold"><?= htmlspecialchars($row['name']); ?></td>
@@ -227,7 +227,7 @@ include_once 'includes/header.php';
                                 <label class="form-label">Main Image</label>
                                 <div class="d-flex align-items-center gap-2">
                                   <?php if (!empty($row['main_img'])): ?>
-                                    <img src="../uploads/<?= $row['main_img']; ?>" class="img-thumbnail flex-shrink-0 object-fit-cover" style="width: 45px; height: 45px;">
+                                    <img src="../uploads/<?= htmlspecialchars($row['main_img']); ?>" class="img-thumbnail flex-shrink-0 object-fit-cover product-image-preview" style="width: 45px; height: 45px; cursor: zoom-in;" alt="<?= htmlspecialchars($row['name']); ?>">
                                   <?php endif; ?>
                                   <input type="file" name="main_img" class="form-control" accept="image/*">
                                 </div>
@@ -237,7 +237,7 @@ include_once 'includes/header.php';
                                 <label class="form-label">Side Image 1</label>
                                 <div class="d-flex align-items-center gap-2">
                                   <?php if (!empty($row['side_img1'])): ?>
-                                    <img src="../uploads/<?= $row['side_img1']; ?>" class="img-thumbnail flex-shrink-0 object-fit-cover" style="width: 45px; height: 45px;">
+                                    <img src="../uploads/<?= htmlspecialchars($row['side_img1']); ?>" class="img-thumbnail flex-shrink-0 object-fit-cover product-image-preview" style="width: 45px; height: 45px; cursor: zoom-in;" alt="<?= htmlspecialchars($row['name']); ?> - image 1">
                                   <?php endif; ?>
                                   <input type="file" name="side_img1" class="form-control" accept="image/*">
                                 </div>
@@ -248,7 +248,7 @@ include_once 'includes/header.php';
                                 <label class="form-label">Side Image 2</label>
                                 <div class="d-flex align-items-center gap-2">
                                   <?php if (!empty($row['side_img2'])): ?>
-                                    <img src="../uploads/<?= $row['side_img2']; ?>" class="img-thumbnail flex-shrink-0 object-fit-cover" style="width: 38px; height: 38px;">
+                                    <img src="../uploads/<?= htmlspecialchars($row['side_img2']); ?>" class="img-thumbnail flex-shrink-0 object-fit-cover product-image-preview" style="width: 38px; height: 38px; cursor: zoom-in;" alt="<?= htmlspecialchars($row['name']); ?> - image 2">
                                   <?php endif; ?>
                                   <input type="file" name="side_img2" class="form-control" accept="image/*">
                                 </div>
@@ -259,7 +259,7 @@ include_once 'includes/header.php';
                                 <label class="form-label">Side Image 3</label>
                                 <div class="d-flex align-items-center gap-2">
                                   <?php if (!empty($row['side_img3'])): ?>
-                                    <img src="../uploads/<?= $row['side_img3']; ?>" class="img-thumbnail flex-shrink-0 object-fit-cover" style="width: 38px; height: 38px;">
+                                    <img src="../uploads/<?= htmlspecialchars($row['side_img3']); ?>" class="img-thumbnail flex-shrink-0 object-fit-cover product-image-preview" style="width: 38px; height: 38px; cursor: zoom-in;" alt="<?= htmlspecialchars($row['name']); ?> - image 3">
                                   <?php endif; ?>
                                   <input type="file" name="side_img3" class="form-control" accept="image/*">
                                 </div>
@@ -270,7 +270,7 @@ include_once 'includes/header.php';
                                 <label class="form-label">Side Image 4</label>
                                 <div class="d-flex align-items-center gap-2">
                                   <?php if (!empty($row['side_img4'])): ?>
-                                    <img src="../uploads/<?= $row['side_img4']; ?>" class="img-thumbnail flex-shrink-0 object-fit-cover" style="width: 38px; height: 38px;">
+                                    <img src="../uploads/<?= htmlspecialchars($row['side_img4']); ?>" class="img-thumbnail flex-shrink-0 object-fit-cover product-image-preview" style="width: 38px; height: 38px; cursor: zoom-in;" alt="<?= htmlspecialchars($row['name']); ?> - image 4">
                                   <?php endif; ?>
                                   <input type="file" name="side_img4" class="form-control" accept="image/*">
                                 </div>
@@ -281,7 +281,7 @@ include_once 'includes/header.php';
                                 <label class="form-label">Side Image 5</label>
                                 <div class="d-flex align-items-center gap-2">
                                   <?php if (!empty($row['side_img5'])): ?>
-                                    <img src="../uploads/<?= $row['side_img5']; ?>" class="img-thumbnail flex-shrink-0 object-fit-cover" style="width: 38px; height: 38px;">
+                                    <img src="../uploads/<?= htmlspecialchars($row['side_img5']); ?>" class="img-thumbnail flex-shrink-0 object-fit-cover product-image-preview" style="width: 38px; height: 38px; cursor: zoom-in;" alt="<?= htmlspecialchars($row['name']); ?> - image 5">
                                   <?php endif; ?>
                                   <input type="file" name="side_img5" class="form-control" accept="image/*">
                                 </div>

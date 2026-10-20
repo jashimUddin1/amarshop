@@ -27,15 +27,17 @@ $items = $items_stmt->fetchAll(PDO::FETCH_ASSOC);
 <div class="row g-3 mb-3">
   <div class="col-md-6">
     <h6>Customer Details</h6>
-    <p class="mb-1"><strong>Name:</strong> <?= htmlspecialchars($order['customer_name']); ?></p>
-    <p class="mb-1"><strong>Phone:</strong> <?= htmlspecialchars($order['customer_phone'] ?? 'N/A'); ?></p>
-    <p class="mb-1"><strong>Address:</strong> <?= htmlspecialchars($order['shipping_address'] ?? 'N/A'); ?></p>
+    <p class="mb-1"><strong>Name:</strong> <?= htmlspecialchars($order['fullname'] ?? 'N/A'); ?></p>
+    <p class="mb-1"><strong>Phone:</strong> <?= htmlspecialchars($order['phone'] ?? 'N/A'); ?></p>
+    <p class="mb-1"><strong>Email:</strong> <?= htmlspecialchars($order['email'] ?? 'N/A'); ?></p>
+    <p class="mb-1"><strong>Address:</strong> <?= nl2br(htmlspecialchars($order['address'] ?? 'N/A')); ?></p>
   </div>
   <div class="col-md-6 text-md-end">
     <h6>Order Overview</h6>
     <p class="mb-1"><strong>Order ID:</strong> #<?= htmlspecialchars($order['order_number']); ?></p>
     <p class="mb-1"><strong>Date:</strong> <?= date('d M Y, h:i A', strtotime($order['created_at'])); ?></p>
-    <p class="mb-1"><strong>Status:</strong> <span class="badge bg-primary"><?= ucfirst($order['status']); ?></span></p>
+    <p class="mb-1"><strong>Status:</strong> <span class="badge bg-primary"><?= htmlspecialchars(ucfirst($order['order_status'] ?? 'pending')); ?></span></p>
+    <p class="mb-1"><strong>Payment:</strong> <?= htmlspecialchars($order['payment_method'] ?? 'COD'); ?></p>
   </div>
 </div>
 
@@ -54,7 +56,7 @@ $items = $items_stmt->fetchAll(PDO::FETCH_ASSOC);
       <?php if (count($items) > 0): ?>
         <?php foreach ($items as $item): ?>
           <tr>
-            <td><?= htmlspecialchars($item['product_name']); ?></td>
+            <td><?= htmlspecialchars($item['product_code'] ?? 'Product'); ?><?= !empty($item['size']) ? ' (' . htmlspecialchars($item['size']) . ')' : ''; ?></td>
             <td class="text-center"><?= $item['quantity']; ?></td>
             <td class="text-end">৳<?= number_format($item['price'], 2); ?></td>
             <td class="text-end">৳<?= number_format($item['quantity'] * $item['price'], 2); ?></td>
@@ -69,7 +71,7 @@ $items = $items_stmt->fetchAll(PDO::FETCH_ASSOC);
     <tfoot>
       <tr>
         <th colspan="3" class="text-end">Grand Total:</th>
-        <th class="text-end fw-bold">৳<?= number_format($order['total_amount'], 2); ?></th>
+        <th class="text-end fw-bold">৳<?= number_format((float)($order['grand_total'] ?? 0), 2); ?></th>
       </tr>
     </tfoot>
   </table>

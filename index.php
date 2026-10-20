@@ -229,7 +229,7 @@ foreach ($db_collections as $col) {
                                         <?= $discount_percent; ?>%
                                     </span>
                                 <?php endif; ?>
-                                <img src="<?= base_url('uploads/' . ($product['main_img'] ?: 'placeholder.jpg')); ?>" class="img-fluid rounded" alt="<?= htmlspecialchars($product['name']); ?>">
+                                <img src="<?= base_url('uploads/' . ($product['main_img'] ?: 'placeholder.jpg')); ?>" class="img-fluid rounded product-image-preview" style="cursor: zoom-in;" alt="<?= htmlspecialchars($product['name']); ?>">
                             </div>
 
                             <div class="product-card-body d-flex flex-column justify-content-between">
@@ -483,7 +483,7 @@ foreach ($db_collections as $col) {
                         <div class="product-card position-relative border rounded p-2 bg-white shadow-sm h-100">
                             <div class="product-img-container text-center mb-2 position-relative">
                                 ${discountPercent > 0 ? `<span class="product-badge bg-danger text-white position-absolute top-0 end-0 px-2 py-1 rounded small fw-bold">${discountPercent}%</span>` : ''}
-                                <img src="${imgSrc}" class="img-fluid rounded" alt="${escapeHtml(product.name)}">
+                                <img src="${imgSrc}" class="img-fluid rounded product-image-preview" style="cursor: zoom-in;" alt="${escapeHtml(product.name)}">
                             </div>
                             <div class="product-card-body d-flex flex-column justify-content-between">
                                 <div>

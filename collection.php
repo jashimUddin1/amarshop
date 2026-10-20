@@ -106,7 +106,7 @@ try {
                     <div class="col">
                         <div class="product-card">
                             <div class="product-img-container">
-                                <img src="<?= base_url('uploads/' . ($product['main_img'] ?: 'placeholder.jpg')); ?>" class="img-fluid" alt="<?= htmlspecialchars($product['name']); ?>">
+                                <img src="<?= base_url('uploads/' . ($product['main_img'] ?: 'placeholder.jpg')); ?>" class="img-fluid product-image-preview" style="cursor: zoom-in;" alt="<?= htmlspecialchars($product['name']); ?>">
                             </div>
                             <div class="product-card-body">
                                 <div>

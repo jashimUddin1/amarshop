@@ -11,10 +11,9 @@ $current_page = "dashboard";
 $stmt_products = $pdo->query("SELECT COUNT(*) FROM products");
 $total_products = $stmt_products->fetchColumn();
 
-// 2. Total Sales (Completed Orders Sum)
-// Note: 'orders' টেবিলে 'grand_total' এবং 'order_status' কলাম আছে ধরে নেওয়া হয়েছে
+// 2. Total delivered sales
 try {
-  $stmt_sales = $pdo->query("SELECT SUM(grand_total) FROM orders WHERE order_status = 'delivered'");
+  $stmt_sales = $pdo->query("SELECT SUM(grand_total) FROM orders WHERE LOWER(order_status) IN ('delivered', 'completed')");
   $total_sales = $stmt_sales->fetchColumn() ?: 0;
 } catch (PDOException $e) {
   $total_sales = 0; // টেবিল না থাকলে 0 দেখাবে
@@ -28,9 +27,9 @@ try {
   $total_users = 0;
 }
 
-// 4. Pending / Active Orders Count
+// 4. Orders that still need fulfillment
 try {
-  $stmt_orders = $pdo->query("SELECT COUNT(*) FROM orders WHERE order_status = 'pending'");
+  $stmt_orders = $pdo->query("SELECT COUNT(*) FROM orders WHERE LOWER(order_status) IN ('pending', 'confirmed', 'processing', 'shipped')");
   $pending_orders = $stmt_orders->fetchColumn();
 } catch (PDOException $e) {
   $pending_orders = 0;
@@ -91,7 +90,7 @@ include_once 'includes/header.php';
     <div class="card border-0 shadow-sm bg-info text-white">
       <div class="card-body d-flex justify-content-between align-items-center">
         <div>
-          <h6 class="text-uppercase fs-7 opacity-75">Pending Orders</h6>
+          <h6 class="text-uppercase fs-7 opacity-75">Active Orders</h6>
           <h2 class="mb-0 fw-bold"><?= number_format($pending_orders); ?></h2>
         </div>
         <i class="bi bi-cart-check fs-1 opacity-50"></i>
@@ -114,7 +113,7 @@ include_once 'includes/header.php';
             <th>Customer Name</th>
             <th>Phone</th>
             <th>Total Amount</th>
-            <th>order_status</th>
+            <th>Status</th>
             <th>Date</th>
           </tr>
         </thead>
@@ -128,15 +127,21 @@ include_once 'includes/header.php';
                 <td class="fw-bold text-success">৳<?= number_format($order['grand_total'] ?? 0, 2); ?></td>
                 <td>
                   <?php 
-                    $order_status = $order['order_status'] ?? 'pending';
+                    $order_status = strtolower($order['order_status'] ?? 'pending');
+                    if ($order_status === 'completed') {
+                      $order_status = 'delivered';
+                    }
                     $badge_class = match($order_status) {
-                      'completed' => 'bg-success',
+                      'delivered' => 'bg-success',
+                      'shipped' => 'bg-primary',
+                      'processing' => 'bg-info text-dark',
+                      'confirmed' => 'bg-secondary',
                       'pending'   => 'bg-warning text-dark',
                       'cancelled' => 'bg-danger',
                       default     => 'bg-secondary'
                     };
                   ?>
-                  <span class="badge <?= $badge_class; ?>"><?= ucfirst($order_status); ?></span>
+                  <span class="badge <?= $badge_class; ?>"><?= htmlspecialchars(ucfirst($order_status), ENT_QUOTES, 'UTF-8'); ?></span>
                 </td>
                 <td><?= date('d M, Y', strtotime($order['created_at'] ?? 'now')); ?></td>
               </tr>

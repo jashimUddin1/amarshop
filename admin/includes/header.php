@@ -2,6 +2,17 @@
 if (session_status() === PHP_SESSION_NONE) {
   session_start();
 }
+
+$admin_nav_links = [
+  ['key' => 'dashboard', 'label' => 'Dashboard', 'icon' => 'speedometer2', 'href' => 'index.php'],
+  ['key' => 'products', 'label' => 'Products', 'icon' => 'box-seam', 'href' => 'products.php'],
+  ['key' => 'category', 'label' => 'Categories', 'icon' => 'folder-plus', 'href' => 'categories.php'],
+  ['key' => 'collection', 'label' => 'Collections', 'icon' => 'tags', 'href' => 'collection.php'],
+  ['key' => 'orders', 'label' => 'Orders', 'icon' => 'cart-check', 'href' => 'sales.php'],
+  ['key' => 'users', 'label' => 'Users', 'icon' => 'people', 'href' => 'users.php'],
+  ['key' => 'setting', 'label' => 'Settings', 'icon' => 'gear', 'href' => 'setting.php'],
+  ['key' => 'profile', 'label' => 'My Profile', 'icon' => 'person-circle', 'href' => 'profile.php'],
+];
 ?>
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="light">
@@ -22,14 +33,15 @@ if (session_status() === PHP_SESSION_NONE) {
 
     .admin-brand {
       width: 16.666667%;
-      min-width: 250px;
+      flex: 0 0 16.666667%;
       display: flex;
       align-items: center;
       padding: 0 1.25rem;
-      color: #fff;
-      background: #111827;
+      color: var(--bs-body-color);
+      background: var(--bs-tertiary-bg);
       text-decoration: none;
       font-size: 1.25rem;
+      border-right: 1px solid var(--bs-border-color);
     }
 
     .admin-toolbar {
@@ -71,20 +83,31 @@ if (session_status() === PHP_SESSION_NONE) {
         display: none;
       }
     }
+
+    @media (max-width: 575.98px) {
+      .admin-toolbar > .d-flex {
+        gap: 0.5rem !important;
+      }
+
+      .admin-brand {
+        font-size: 0.9rem;
+        padding: 0 0.5rem;
+      }
+    }
   </style>
 </head>
 
 <body class="vh-100 overflow-hidden d-flex flex-column">
 
   <nav class="admin-topbar border-bottom sticky-top z-3 flex-shrink-0">
+    <button class="btn d-lg-none ms-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#adminMobileMenu" aria-controls="adminMobileMenu" aria-label="Open navigation menu">
+      <i class="bi bi-list fs-3"></i>
+    </button>
     <a class="admin-brand fw-bold" href="index.php">AmarShop Admin</a>
     <div class="admin-toolbar">
-      <button class="btn d-lg-none me-2" type="button" data-bs-toggle="collapse" data-bs-target="#adminMobileMenu" aria-label="Toggle navigation">
-        <i class="bi bi-list fs-3"></i>
-      </button>
       <span class="admin-page-title"><?= htmlspecialchars(($current_page ?? '') === 'dashboard' ? 'Home' : ($page_title ?? 'Admin Panel')); ?></span>
       <div class="ms-auto d-flex align-items-center gap-3">
-        <div class="dropdown">
+        <div class="dropdown d-none d-sm-block">
           <button class="btn btn-secondary position-relative" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Notifications">
             <i class="bi bi-bell-fill text-warning"></i>
           </button>
@@ -96,7 +119,7 @@ if (session_status() === PHP_SESSION_NONE) {
         <a class="btn btn-link text-decoration-none fw-semibold admin-account-button" href="profile.php">
           <?= htmlspecialchars($_SESSION['user_name'] ?? 'Admin'); ?>
         </a>
-        <div class="dropdown">
+        <div class="dropdown d-none d-sm-block">
           <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Admin account options"></button>
           <ul class="dropdown-menu dropdown-menu-end">
             <li><a class="dropdown-item text-danger" href="auth/logout.php"><i class="bi bi-box-arrow-right me-2"></i>Log out</a></li>
@@ -107,48 +130,40 @@ if (session_status() === PHP_SESSION_NONE) {
     </div>
   </nav>
 
+  <div class="offcanvas offcanvas-start d-lg-none" tabindex="-1" id="adminMobileMenu" aria-labelledby="adminMobileMenuLabel">
+    <div class="offcanvas-header border-bottom">
+      <h2 class="offcanvas-title h5 fw-bold" id="adminMobileMenuLabel">AmarShop Admin</h2>
+      <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close navigation menu"></button>
+    </div>
+    <div class="offcanvas-body p-2 bg-body-tertiary">
+      <ul class="nav nav-pills flex-column gap-1">
+        <?php foreach ($admin_nav_links as $link): ?>
+          <li class="nav-item">
+            <a class="nav-link <?= ($current_page ?? '') === $link['key'] ? 'active' : 'text-body'; ?>" href="<?= htmlspecialchars($link['href'], ENT_QUOTES, 'UTF-8'); ?>">
+              <i class="bi bi-<?= htmlspecialchars($link['icon'], ENT_QUOTES, 'UTF-8'); ?> me-2"></i><?= htmlspecialchars($link['label'], ENT_QUOTES, 'UTF-8'); ?>
+            </a>
+          </li>
+        <?php endforeach; ?>
+        <li class="nav-item mt-2 border-top pt-2">
+          <a class="nav-link text-danger" href="auth/logout.php"><i class="bi bi-box-arrow-right me-2"></i>Log out</a>
+        </li>
+      </ul>
+    </div>
+  </div>
+
   <div class="container-fluid flex-grow-1 overflow-hidden">
     <div class="row h-100">
 
       <aside class="col-lg-2 d-none d-lg-block bg-body-tertiary border-end h-100 overflow-y-auto pt-3">
         <ul class="nav nav-pills flex-column gap-1 px-1 pb-5">
-          <li class="nav-item">
-            <a class="nav-link <?= ($current_page ?? '') === 'dashboard' ? 'active' : 'text-body'; ?>" href="index.php"><i class="bi bi-speedometer2 me-2"></i>Dashboard</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link <?= ($current_page ?? '') === 'products' ? 'active' : 'text-body'; ?>" href="products.php"><i class="bi bi-box-seam me-2"></i>Products</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link <?= ($current_page ?? '') === 'category' ? 'active' : 'text-body'; ?>" href="categories.php"><i class="bi bi-folder-plus me-2"></i>Categories</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link <?= ($current_page ?? '') === 'collection' ? 'active' : 'text-body'; ?>" href="collection.php"><i class="bi bi-tags me-2"></i>Collections</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link <?= ($current_page ?? '') === 'sales' ? 'active' : 'text-body'; ?>" href="sales.php"><i class="bi bi-cart-check me-2"></i>Sales</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link <?= ($current_page ?? '') === 'users' ? 'active' : 'text-body'; ?>" href="users.php"><i class="bi bi-people me-2"></i>Users</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link <?= ($current_page ?? '') === 'setting' ? 'active' : 'text-body'; ?>" href="setting.php"><i class="bi bi-gear me-2"></i>Settings</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link <?= ($current_page ?? '') === 'profile' ? 'active' : 'text-body'; ?>" href="profile.php"><i class="bi bi-person-circle me-2"></i>My Profile</a>
-          </li>
+          <?php foreach ($admin_nav_links as $link): ?>
+            <li class="nav-item">
+              <a class="nav-link <?= ($current_page ?? '') === $link['key'] ? 'active' : 'text-body'; ?>" href="<?= htmlspecialchars($link['href'], ENT_QUOTES, 'UTF-8'); ?>">
+                <i class="bi bi-<?= htmlspecialchars($link['icon'], ENT_QUOTES, 'UTF-8'); ?> me-2"></i><?= htmlspecialchars($link['label'], ENT_QUOTES, 'UTF-8'); ?>
+              </a>
+            </li>
+          <?php endforeach; ?>
         </ul>
       </aside>
 
       <main class="col-lg-10 h-100 d-flex flex-column overflow-hidden">
-        <div class="collapse d-lg-none" id="adminMobileMenu">
-          <div class="nav nav-pills flex-column gap-1 p-2 border-bottom">
-            <a class="nav-link" href="index.php">Dashboard</a>
-            <a class="nav-link" href="products.php">Products</a>
-            <a class="nav-link" href="categories.php">Categories</a>
-            <a class="nav-link" href="collection.php">Collections</a>
-            <a class="nav-link" href="sales.php">Sales</a>
-            <a class="nav-link" href="users.php">Users</a>
-            <a class="nav-link" href="setting.php">Settings</a>
-            <a class="nav-link" href="profile.php">My Profile</a>
-          </div>
-        </div>

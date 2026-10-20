@@ -11,7 +11,7 @@ $user_id = $_SESSION['user_id'];
 // Get cart items from DB
 $stmt = $pdo->prepare("
     SELECT c.id as cart_id, c.size as selected_size, c.quantity, c.product_code,
-           p.name, p.main_img, p.size as available_sizes,
+           p.name, p.main_img, p.size as available_sizes, p.stock,
            COALESCE(p.actual_price, p.sell_price) as price 
     FROM cart c 
     JOIN products p ON c.product_id = p.id 
@@ -32,6 +32,7 @@ $subtotal = 0;
     <title>Shopping Cart</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <style>.product-image-preview { cursor: zoom-in; }</style>
 </head>
 <body class="bg-light py-5">
 
@@ -56,7 +57,7 @@ $subtotal = 0;
                         ?>
                             <div class="d-flex align-items-center justify-content-between border-bottom py-3">
                                 <!-- Product Image -->
-                                <img src="uploads/<?= $item['main_img']; ?>" class="rounded border" style="width: 75px; height: 75px; object-fit: contain;">
+                                <img src="uploads/<?= htmlspecialchars($item['main_img']); ?>" class="rounded border product-image-preview" style="width: 75px; height: 75px; object-fit: contain;" alt="<?= htmlspecialchars($item['name']); ?>">
                                 
                                 <!-- Details (3 Rows Layout) -->
                                 <div class="flex-grow-1 px-3">
@@ -69,17 +70,17 @@ $subtotal = 0;
                                         <?php if (!empty($item['available_sizes'])): 
                                             $sizes = array_map('trim', explode(',', $item['available_sizes']));
                                         ?>
-                                            <select class="form-select form-select-sm pe-4" style="width: auto; font-size: 0.8rem;" onchange="updateCartSize(<?= $item['cart_id']; ?>, this.value)">
+                                            <select class="form-select form-select-sm pe-4" style="width: auto; font-size: 0.8rem;" onchange="updateCartSize(<?= (int)$item['cart_id']; ?>, this.value)">
                                                 <?php foreach ($sizes as $sz): ?>
-                                                    <option value="<?= $sz; ?>" <?= $sz === $item['selected_size'] ? 'selected' : ''; ?>>Size: <?= $sz; ?></option>
+                                                    <option value="<?= htmlspecialchars($sz, ENT_QUOTES, 'UTF-8'); ?>" <?= $sz === $item['selected_size'] ? 'selected' : ''; ?>>Size: <?= htmlspecialchars($sz, ENT_QUOTES, 'UTF-8'); ?></option>
                                                 <?php endforeach; ?>
                                             </select>
                                         <?php endif; ?>
 
                                         <div class="input-group input-group-sm" style="width: 85px;">
-                                            <button class="btn btn-outline-secondary px-2" type="button" onclick="updateCartQuantity(<?= $item['cart_id']; ?>, 'decrease')">-</button>
+                                            <button class="btn btn-outline-secondary px-2" type="button" onclick="updateCartQuantity(<?= (int)$item['cart_id']; ?>, 'decrease')" <?= (int)$item['quantity'] <= 1 ? 'disabled' : ''; ?>>-</button>
                                             <input type="text" class="form-control text-center p-0 fw-bold" value="<?= $item['quantity']; ?>" readonly style="font-size: 0.8rem;">
-                                            <button class="btn btn-outline-secondary px-2" type="button" onclick="updateCartQuantity(<?= $item['cart_id']; ?>, 'increase')">+</button>
+                                            <button class="btn btn-outline-secondary px-2" type="button" onclick="updateCartQuantity(<?= (int)$item['cart_id']; ?>, 'increase')" <?= (int)$item['quantity'] >= min(6, (int)$item['stock']) ? 'disabled' : ''; ?>>+</button>
                                         </div>
                                     </div>
                                     
@@ -92,7 +93,7 @@ $subtotal = 0;
 
                                 <!-- Delete Action -->
                                 <div>
-                                    <button class="btn btn-sm text-danger p-2" onclick="removeCartItem(<?= $item['cart_id']; ?>)" title="Remove Item">
+                                    <button class="btn btn-sm text-danger p-2" onclick="removeCartItem(<?= (int)$item['cart_id']; ?>)" title="Remove Item">
                                         <i class="bi bi-trash fs-4"></i>
                                     </button>
                                 </div>
@@ -127,14 +128,66 @@ $subtotal = 0;
     <?php endif; ?>
 </div>
 
+<div class="modal fade" id="productImagePreview" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content bg-dark border-0">
+            <div class="modal-header border-0 py-2">
+                <h5 class="modal-title text-white" id="productImagePreviewTitle"></h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center p-2 p-md-3">
+                <img id="productImagePreviewContent" class="img-fluid" alt="" style="max-height: 80vh; object-fit: contain;">
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+document.addEventListener('click', function (event) {
+    const target = event.target instanceof Element ? event.target.closest('.product-image-preview') : null;
+    if (!target) return;
+
+    const preview = document.getElementById('productImagePreview');
+    const previewImage = document.getElementById('productImagePreviewContent');
+    const previewTitle = document.getElementById('productImagePreviewTitle');
+    if (!preview || !previewImage || !previewTitle) return;
+
+    previewImage.src = target.currentSrc || target.src;
+    previewImage.alt = target.alt || 'Product image';
+    previewTitle.textContent = target.alt || 'Product image';
+    bootstrap.Modal.getOrCreateInstance(preview).show();
+});
+function showCartUpdateError(message) {
+    let alert = document.getElementById('cartUpdateAlert');
+    if (!alert) {
+        alert = document.createElement('div');
+        alert.id = 'cartUpdateAlert';
+        alert.className = 'alert alert-warning';
+        document.querySelector('.container').prepend(alert);
+    }
+    alert.textContent = message;
+}
+
+function sendCartUpdate(formData) {
+    return fetch('core/update_cart.php', { method: 'POST', body: formData })
+        .then(async response => {
+            const result = await response.json();
+            if (!response.ok || result.status !== 'success') {
+                throw new Error(result.message || 'Cart update failed. Please try again.');
+            }
+            location.reload();
+        })
+        .catch(error => {
+            showCartUpdateError(error.message || 'Cart update failed. Please try again.');
+        });
+}
+
 function updateCartQuantity(cartId, action) {
     const formData = new FormData();
     formData.append('cart_id', cartId);
     formData.append('action', action);
-    fetch('update_cart.php', { method: 'POST', body: formData })
-        .then(res => res.json())
-        .then(res => { if (res.status === 'success') location.reload(); });
+    sendCartUpdate(formData);
 }
 
 function updateCartSize(cartId, newSize) {
@@ -142,16 +195,14 @@ function updateCartSize(cartId, newSize) {
     formData.append('cart_id', cartId);
     formData.append('action', 'update_size');
     formData.append('size', newSize);
-    fetch('update_cart.php', { method: 'POST', body: formData })
-        .then(res => res.json())
-        .then(res => { if (res.status === 'success') location.reload(); });
+    sendCartUpdate(formData);
 }
 
 function removeCartItem(cartId) {
     if (confirm("Are you sure you want to remove this item?")) {
         const formData = new FormData();
         formData.append('cart_id', cartId);
-        fetch('remove_cart_item.php', { method: 'POST', body: formData })
+        fetch('core/remove_cart_item.php', { method: 'POST', body: formData })
             .then(res => res.json())
             .then(res => { if (res.status === 'success') location.reload(); });
     }
