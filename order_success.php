@@ -61,13 +61,14 @@ if (!$order) {
                     </div>
                     <div class="d-flex justify-content-between">
                         <span class="text-muted">Total Amount:</span>
-                        <span class="fw-bold text-dark">৳<?= number_format($order['grand_total'], 2); ?></span>
+                        <span class="fw-bold text-dark">৳<?= number_format((float)$order['grand_total'], 0); ?></span>
                     </div>
                 </div>
 
                 <p class="small text-muted mb-4">We will call you on <strong><?= htmlspecialchars($order['phone']); ?></strong> to confirm delivery details.</p>
 
                 <div class="d-grid gap-2">
+                    <a href="user/order_details.php?id=<?= (int)$order['id']; ?>" class="btn btn-outline-success fw-semibold py-2">Track This Order</a>
                     <a href="index.php" class="btn btn-success fw-semibold py-2">Continue Shopping</a>
                 </div>
             </div>

@@ -317,9 +317,9 @@ foreach ($db_collections as $col) {
                                 <div class="mt-2">
                                     <div class="row justify-content-between">
                                         <div class="price-wrapper col-md-6 mb-2 d-flex align-items-center gap-2">
-                                            <span class="current-price fw-bold text-success fs-6">৳<?= number_format($actual_price, 2); ?></span>
+                                            <span class="current-price fw-bold text-success fs-6">৳<?= number_format((float)$actual_price, 0); ?></span>
                                             <?php if ($has_discount): ?>
-                                                <span class="old-price text-muted text-decoration-line-through small">৳<?= number_format($sell_price, 2); ?></span>
+                                                <span class="old-price text-muted text-decoration-line-through small">৳<?= number_format((float)$sell_price, 0); ?></span>
                                             <?php endif; ?>
                                         </div>
                                         <div class="col-md-6 text-end">
@@ -466,8 +466,8 @@ foreach ($db_collections as $col) {
 
             let html = '';
             products.forEach(product => {
-                let actualPrice = parseFloat(product.actual_price || product.sell_price || 0);
-                let sellPrice = parseFloat(product.sell_price || 0);
+                let actualPrice = Math.round(parseFloat(product.actual_price || product.sell_price || 0));
+                let sellPrice = Math.round(parseFloat(product.sell_price || 0));
                 let hasDiscount = (sellPrice > actualPrice && sellPrice > 0);
                 let discountPercent = hasDiscount ? Math.round(((sellPrice - actualPrice) / sellPrice) * 100) : 0;
                 let imgSrc = product.main_img ? `uploads/${product.main_img}` : 'assets/uploads/placeholder.jpg';
@@ -512,8 +512,8 @@ foreach ($db_collections as $col) {
                                 <div class="mt-2">
                                     <div class="row justify-content-between align-items-center">
                                         <div class="price-wrapper col-md-6 mb-2 d-flex align-items-center gap-2">
-                                            <span class="current-price fw-bold text-success fs-6">৳${actualPrice.toFixed(2)}</span>
-                                            ${hasDiscount ? `<span class="old-price text-muted text-decoration-line-through small">৳${sellPrice.toFixed(2)}</span>` : ''}
+                                            <span class="current-price fw-bold text-success fs-6">৳${actualPrice}</span>
+                                            ${hasDiscount ? `<span class="old-price text-muted text-decoration-line-through small">৳${sellPrice}</span>` : ''}
                                         </div>
                                         <div class="col-md-6 text-end">
                                             ${stock > 0 ? `<span class="badge bg-success mb-2">In Stock</span>` : `<span class="badge bg-danger mb-2">Out of Stock</span>`}

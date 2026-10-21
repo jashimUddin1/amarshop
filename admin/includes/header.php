@@ -1,14 +1,20 @@
 <?php
+require_once __DIR__ . '/../../core/user_profile_picture.php';
+
 if (session_status() === PHP_SESSION_NONE) {
   session_start();
 }
+$admin_profile_picture = !empty($_SESSION['user_id'])
+  ? get_user_profile_picture($pdo, (int)$_SESSION['user_id'])
+  : null;
 
 $admin_nav_links = [
   ['key' => 'dashboard', 'label' => 'Dashboard', 'icon' => 'speedometer2', 'href' => 'index.php'],
+  ['key' => 'orders', 'label' => 'Orders', 'icon' => 'cart-check', 'href' => 'sales.php'],
+  ['key' => 'order-requests', 'label' => 'Order Requests', 'icon' => 'inbox', 'href' => 'order_requests.php'],
   ['key' => 'products', 'label' => 'Products', 'icon' => 'box-seam', 'href' => 'products.php'],
   ['key' => 'category', 'label' => 'Categories', 'icon' => 'folder-plus', 'href' => 'categories.php'],
   ['key' => 'collection', 'label' => 'Collections', 'icon' => 'tags', 'href' => 'collection.php'],
-  ['key' => 'orders', 'label' => 'Orders', 'icon' => 'cart-check', 'href' => 'sales.php'],
   ['key' => 'users', 'label' => 'Users', 'icon' => 'people', 'href' => 'users.php'],
   ['key' => 'setting', 'label' => 'Settings', 'icon' => 'gear', 'href' => 'setting.php'],
   ['key' => 'profile', 'label' => 'My Profile', 'icon' => 'person-circle', 'href' => 'profile.php'],
@@ -69,10 +75,7 @@ $admin_nav_links = [
 
     @media (max-width: 991.98px) {
       .admin-brand {
-        width: auto;
-        min-width: 0;
-        padding: 0 0.75rem;
-        font-size: 1rem;
+        display: none;
       }
 
       .admin-toolbar {
@@ -101,7 +104,7 @@ $admin_nav_links = [
 
   <nav class="admin-topbar border-bottom sticky-top z-3 flex-shrink-0">
     <button class="btn d-lg-none ms-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#adminMobileMenu" aria-controls="adminMobileMenu" aria-label="Open navigation menu">
-      <i class="bi bi-list fs-3"></i>
+      <i class="bi bi-list fs-2"></i>
     </button>
     <a class="admin-brand fw-bold" href="index.php">AmarShop Admin</a>
     <div class="admin-toolbar">
@@ -117,6 +120,11 @@ $admin_nav_links = [
           </div>
         </div>
         <a class="btn btn-link text-decoration-none fw-semibold admin-account-button" href="profile.php">
+          <?php if ($admin_profile_picture): ?>
+            <img src="../uploads/<?= htmlspecialchars($admin_profile_picture, ENT_QUOTES, 'UTF-8'); ?>" alt="" class="rounded-circle object-fit-cover me-1" style="width:28px;height:28px;">
+          <?php else: ?>
+            <i class="bi bi-person-circle me-1"></i>
+          <?php endif; ?>
           <?= htmlspecialchars($_SESSION['user_name'] ?? 'Admin'); ?>
         </a>
         <div class="dropdown d-none d-sm-block">

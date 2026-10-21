@@ -58,8 +58,8 @@ $items = $items_stmt->fetchAll(PDO::FETCH_ASSOC);
           <tr>
             <td><?= htmlspecialchars($item['product_code'] ?? 'Product'); ?><?= !empty($item['size']) ? ' (' . htmlspecialchars($item['size']) . ')' : ''; ?></td>
             <td class="text-center"><?= $item['quantity']; ?></td>
-            <td class="text-end">৳<?= number_format($item['price'], 2); ?></td>
-            <td class="text-end">৳<?= number_format($item['quantity'] * $item['price'], 2); ?></td>
+            <td class="text-end">৳<?= number_format((float)$item['price'], 0); ?></td>
+            <td class="text-end">৳<?= number_format((float)$item['quantity'] * (float)$item['price'], 0); ?></td>
           </tr>
         <?php endforeach; ?>
       <?php else: ?>
@@ -71,7 +71,7 @@ $items = $items_stmt->fetchAll(PDO::FETCH_ASSOC);
     <tfoot>
       <tr>
         <th colspan="3" class="text-end">Grand Total:</th>
-        <th class="text-end fw-bold">৳<?= number_format((float)($order['grand_total'] ?? 0), 2); ?></th>
+        <th class="text-end fw-bold">৳<?= number_format((float)($order['grand_total'] ?? 0), 0); ?></th>
       </tr>
     </tfoot>
   </table>

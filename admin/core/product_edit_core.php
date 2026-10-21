@@ -14,6 +14,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $category_name    = trim($_POST['category_name'] ?? '');
     $purchase_price   = $_POST['purchase_price'] ?? 0;
     $sell_price       = $_POST['sell_price'] ?? 0;
+    if (!is_numeric($purchase_price) || !is_numeric($sell_price) || (float)$purchase_price < 0 || (float)$sell_price < 0) {
+        http_response_code(400);
+        echo json_encode(['status' => 'error', 'message' => 'Prices must be valid non-negative amounts.']);
+        exit;
+    }
+    $purchase_price = (int)round((float)$purchase_price);
+    $sell_price = (int)round((float)$sell_price);
     $discount_percent = $_POST['discount_percent'] ?? 0;
     $description      = trim($_POST['description'] ?? '');
     $size             = trim($_POST['size'] ?? '');

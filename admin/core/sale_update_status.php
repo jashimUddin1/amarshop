@@ -1,5 +1,7 @@
 <?php
 require_once '../auth/config.php';
+require_once __DIR__ . '/../../core/order_status.php';
+require_once __DIR__ . '/../../core/order_admin.php';
 require_admin();
 
 header('Content-Type: application/json');
@@ -10,11 +12,16 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
+ensure_order_status_history_table($pdo);
+if (($_POST['status'] ?? '') === 'delivering') {
+    ensure_order_delivery_assignments_table($pdo);
+}
+
 $sale_id = $_POST['sale_id'] ?? '';
 $requested_status = $_POST['status'] ?? '';
 $submitted_csrf_token = $_POST['csrf_token'] ?? '';
 $expected_csrf_token = $_SESSION['order_status_csrf'] ?? '';
-$valid_statuses = ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'];
+$valid_statuses = ['processing', 'confirmed', 'picked', 'packed', 'delivering', 'delivered', 'cancelled'];
 
 if (!is_string($sale_id) || filter_var($sale_id, FILTER_VALIDATE_INT) === false || (int)$sale_id <= 0 ||
     !is_string($requested_status) || !in_array($requested_status, $valid_statuses, true) ||
@@ -26,12 +33,12 @@ if (!is_string($sale_id) || filter_var($sale_id, FILTER_VALIDATE_INT) === false 
 }
 
 $transitions = [
-    'pending' => ['confirmed', 'cancelled'],
-    'confirmed' => ['processing', 'cancelled'],
-    'processing' => ['shipped', 'cancelled'],
-    'shipped' => ['delivered'],
+    'processing' => ['confirmed', 'cancelled'],
+    'confirmed' => ['processing', 'picked', 'cancelled'],
+    'picked' => ['confirmed', 'packed', 'cancelled'],
+    'packed' => ['picked', 'delivering', 'cancelled'],
+    'delivering' => ['delivered'],
     'delivered' => [],
-    'completed' => [],
     'cancelled' => [],
 ];
 
@@ -48,7 +55,7 @@ try {
         exit;
     }
 
-    $current_status = strtolower((string)$order['order_status']);
+    $current_status = normalize_order_status((string)$order['order_status']);
     if ($current_status === $requested_status) {
         $pdo->commit();
         echo json_encode(['status' => 'success', 'message' => 'Order status is already up to date.']);
@@ -60,6 +67,17 @@ try {
         http_response_code(409);
         echo json_encode(['status' => 'error', 'message' => 'This order cannot move from ' . $current_status . ' to ' . $requested_status . '.']);
         exit;
+    }
+
+    if ($requested_status === 'delivering') {
+        $assignment_stmt = $pdo->prepare('SELECT 1 FROM order_delivery_assignments WHERE order_id = :order_id');
+        $assignment_stmt->execute([':order_id' => (int)$sale_id]);
+        if (!$assignment_stmt->fetchColumn()) {
+            $pdo->rollBack();
+            http_response_code(409);
+            echo json_encode(['status' => 'error', 'message' => 'Assign a rider or courier before marking this order as delivering.']);
+            exit;
+        }
     }
 
     if ($requested_status === 'cancelled') {
@@ -82,9 +100,16 @@ try {
         ':order_status' => $requested_status,
         ':id' => (int)$sale_id,
     ]);
+    $history_stmt = $pdo->prepare(
+        'INSERT INTO order_status_history (order_id, status) VALUES (:order_id, :status)'
+    );
+    $history_stmt->execute([
+        ':order_id' => (int)$sale_id,
+        ':status' => $requested_status,
+    ]);
     $pdo->commit();
 
-    echo json_encode(['status' => 'success', 'message' => 'Order status updated to ' . $requested_status . '.']);
+    echo json_encode(['status' => 'success', 'message' => 'Order status updated to ' . order_status_label($requested_status) . '.']);
 } catch (Throwable $e) {
     if ($pdo->inTransaction()) {
         $pdo->rollBack();

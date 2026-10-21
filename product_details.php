@@ -204,9 +204,9 @@ include 'includes/header.php';
 
                     <!-- Price -->
                     <div class="price-area mb-3">
-                        <span class="current-price">৳<?= number_format($product['sell_price'], 2); ?></span>
+                        <span class="current-price">৳<?= number_format((float)$product['sell_price'], 0); ?></span>
                         <?php if (!empty($product['purchase_price']) && $product['purchase_price'] > $product['sell_price']): ?>
-                            <span class="old-price">৳<?= number_format($product['purchase_price'], 2); ?></span>
+                            <span class="old-price">৳<?= number_format((float)$product['purchase_price'], 0); ?></span>
                         <?php endif; ?>
                     </div>
 
@@ -279,7 +279,7 @@ include 'includes/header.php';
                     <div>
                         <img src="uploads/<?= htmlspecialchars($rel_prod['main_img']); ?>" class="img-fluid rounded mb-2 product-image-preview" style="height: 180px; object-fit: cover; cursor: zoom-in;" alt="<?= htmlspecialchars($rel_prod['name']); ?>">
                         <h6 class="text-truncate"><?= htmlspecialchars($rel_prod['name']); ?></h6>
-                        <p class="text-success fw-bold mb-1">৳<?= number_format($rel_prod['sell_price'], 2); ?></p>
+                        <p class="text-success fw-bold mb-1">৳<?= number_format((float)$rel_prod['sell_price'], 0); ?></p>
                     </div>
                     <a href="product_details.php?product_id=<?= $rel_prod['id']; ?>" class="btn btn-sm btn-outline-success w-100 mt-2">View Product</a>
                 </div>

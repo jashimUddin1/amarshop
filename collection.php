@@ -116,7 +116,7 @@ try {
                                 </div>
                                 <div>
                                     <div class="mb-2">
-                                        <span class="current-price">৳<?= number_format($product['actual_price'] ?? $product['sell_price'], 2); ?></span>
+                                        <span class="current-price">৳<?= number_format((float)($product['actual_price'] ?? $product['sell_price']), 0); ?></span>
                                     </div>
                                     <a href="product-details.php?id=<?= $product['id']; ?>" class="btn btn-add-cart w-100 text-center">View Details</a>
                                 </div>

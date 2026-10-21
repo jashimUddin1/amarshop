@@ -99,10 +99,10 @@ include_once 'includes/header.php';
                 <td><span class="badge bg-secondary"><?= htmlspecialchars($row['product_code']); ?></span></td>
                 <td class="fw-bold"><?= htmlspecialchars($row['name']); ?></td>
                 <td><span class="badge bg-info-subtle text-info border border-info"><?= htmlspecialchars($row['category_name'] ?: 'Uncategorized'); ?></span></td>
-                <td>৳<?= number_format($row['purchase_price'], 2); ?></td>
-                <td>৳<?= number_format($row['sell_price'], 2); ?></td>
+                <td>৳<?= number_format((float)$row['purchase_price'], 0); ?></td>
+                <td>৳<?= number_format((float)$row['sell_price'], 0); ?></td>
                 <td><?= $row['discount_percent']; ?>%</td>
-                <td class="text-success fw-bold">৳<?= number_format($row['actual_price'] ?? 0, 2); ?></td>
+                <td class="text-success fw-bold">৳<?= number_format((float)($row['actual_price'] ?? 0), 0); ?></td>
                 <td><?= htmlspecialchars($row['size'] ?: 'N/A'); ?></td>
                 <td>
                   <?php
@@ -186,11 +186,11 @@ include_once 'includes/header.php';
 
                               <div class="col-md-3">
                                 <label class="form-label">Purchase Price <span class="text-danger">*</span></label>
-                                <input type="number" step="0.01" name="purchase_price" class="form-control" value="<?= $row['purchase_price']; ?>" required>
+                                <input type="number" step="1" min="0" name="purchase_price" class="form-control" value="<?= (int)round((float)$row['purchase_price']); ?>" required>
                               </div>
                               <div class="col-md-3">
                                 <label class="form-label">Sell Price <span class="text-danger">*</span></label>
-                                <input type="number" step="0.01" name="sell_price" class="form-control" value="<?= $row['sell_price']; ?>" required>
+                                <input type="number" step="1" min="0" name="sell_price" class="form-control" value="<?= (int)round((float)$row['sell_price']); ?>" required>
                               </div>
                               <div class="col-md-3">
                                 <label class="form-label">Discount (%)</label>
@@ -388,11 +388,11 @@ include_once 'includes/header.php';
 
             <div class="col-md-3">
               <label class="form-label">Purchase Price <span class="text-danger">*</span></label>
-              <input type="number" step="0.01" name="purchase_price" class="form-control" placeholder="320" required>
+              <input type="number" step="1" min="0" name="purchase_price" class="form-control" placeholder="320" required>
             </div>
             <div class="col-md-3">
               <label class="form-label">Sell Price <span class="text-danger">*</span></label>
-              <input type="number" step="0.01" name="sell_price" class="form-control" placeholder="500" required>
+              <input type="number" step="1" min="0" name="sell_price" class="form-control" placeholder="500" required>
             </div>
             <div class="col-md-3">
               <label class="form-label">Discount (%)</label>

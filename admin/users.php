@@ -1,5 +1,7 @@
 <?php
 require_once 'auth/config.php';
+require_once __DIR__ . '/../core/user_addresses.php';
+require_once __DIR__ . '/../core/user_profile_picture.php';
 require_admin();
 
 $page_title = "Manage Users";
@@ -7,6 +9,8 @@ $current_page = "users";
 
 $message = '';
 $message_type = '';
+$csrf_token = $_SESSION['users_csrf_token'] ?? bin2hex(random_bytes(32));
+$_SESSION['users_csrf_token'] = $csrf_token;
 
 // Handling Form Submissions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -71,6 +75,66 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 $message = "Failed to update user access.";
                 $message_type = "danger";
+            }
+        }
+    }
+
+    // 3. DELETE CUSTOMER ACCOUNT
+    if (isset($_POST['action']) && $_POST['action'] === 'delete_user') {
+        $user_id = filter_var($_POST['user_id'] ?? null, FILTER_VALIDATE_INT);
+        $submitted_csrf = $_POST['csrf_token'] ?? '';
+        if ($user_id === false || $user_id === null || $user_id <= 0 ||
+            !is_string($submitted_csrf) || !hash_equals($csrf_token, $submitted_csrf)) {
+            $message = 'Invalid delete request. Refresh the page and try again.';
+            $message_type = 'danger';
+        } elseif ($user_id === (int)$_SESSION['user_id']) {
+            $message = 'You cannot delete your own account while signed in.';
+            $message_type = 'warning';
+        } else {
+            try {
+                ensure_user_addresses_table($pdo);
+                ensure_user_profile_pictures_table($pdo);
+                $pdo->beginTransaction();
+                $target_stmt = $pdo->prepare('SELECT role FROM users WHERE id = :id FOR UPDATE');
+                $target_stmt->execute([':id' => $user_id]);
+                $target_user = $target_stmt->fetch(PDO::FETCH_ASSOC);
+
+                if (!$target_user) {
+                    $pdo->rollBack();
+                    $message = 'User not found.';
+                    $message_type = 'warning';
+                } elseif (in_array(strtolower((string)$target_user['role']), ['admin', 'manager'], true)) {
+                    $pdo->rollBack();
+                    $message = 'Admin and manager accounts cannot be deleted here.';
+                    $message_type = 'warning';
+                } else {
+                    $address_stmt = $pdo->prepare('DELETE FROM user_addresses WHERE user_id = :user_id');
+                    $address_stmt->execute([':user_id' => $user_id]);
+                    $picture_stmt = $pdo->prepare('SELECT image_path FROM user_profile_pictures WHERE user_id = :user_id');
+                    $picture_stmt->execute([':user_id' => $user_id]);
+                    $removed_picture = $picture_stmt->fetchColumn();
+                    $pdo->prepare('DELETE FROM user_profile_pictures WHERE user_id = :user_id')
+                        ->execute([':user_id' => $user_id]);
+
+                    $delete_stmt = $pdo->prepare('DELETE FROM users WHERE id = :id');
+                    $delete_stmt->execute([':id' => $user_id]);
+                    if ($delete_stmt->rowCount() !== 1) {
+                        throw new RuntimeException('The user account could not be deleted.');
+                    }
+                    $pdo->commit();
+                    if (is_string($removed_picture)) {
+                        remove_managed_user_profile_picture_file($removed_picture);
+                    }
+                    $message = 'User account deleted. Order history and request records were retained.';
+                    $message_type = 'success';
+                }
+            } catch (Throwable $e) {
+                if ($pdo->inTransaction()) {
+                    $pdo->rollBack();
+                }
+                error_log('Admin user deletion failed: ' . $e->getMessage());
+                $message = 'User account could not be deleted. Please try again.';
+                $message_type = 'danger';
             }
         }
     }
@@ -184,6 +248,16 @@ include_once 'includes/header.php';
                             <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editUserModal<?= $user['id']; ?>">
                                 <i class="bi bi-pencil-square"></i> Edit Role & Status
                             </button>
+                            <?php if (!in_array($role, ['admin', 'manager'], true) && (int)$user['id'] !== (int)$_SESSION['user_id']): ?>
+                                <form method="POST" action="users.php<?= $search !== '' ? '?search=' . rawurlencode($search) : ''; ?>" class="d-inline" onsubmit="return confirm('Delete this user account? Saved addresses will be removed, but order history and request records will remain.');">
+                                    <input type="hidden" name="action" value="delete_user">
+                                    <input type="hidden" name="user_id" value="<?= (int)$user['id']; ?>">
+                                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token, ENT_QUOTES, 'UTF-8'); ?>">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                                        <i class="bi bi-trash"></i> Delete
+                                    </button>
+                                </form>
+                            <?php endif; ?>
                         </td>
                     </tr>
 

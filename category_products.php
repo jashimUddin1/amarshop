@@ -112,9 +112,9 @@ include 'includes/header.php';
                                     <div class="mt-2">
                                         <div class="row justify-content-between">
                                             <div class="price-wrapper col-md-6 mb-2 d-flex align-items-center gap-2">
-                                                <span class="current-price fw-bold text-success fs-6">৳<?= number_format($actual_price, 2); ?></span>
+                                                <span class="current-price fw-bold text-success fs-6">৳<?= number_format((float)$actual_price, 0); ?></span>
                                                 <?php if ($has_discount): ?>
-                                                    <span class="old-price text-muted text-decoration-line-through small">৳<?= number_format($sell_price, 2); ?></span>
+                                                    <span class="old-price text-muted text-decoration-line-through small">৳<?= number_format((float)$sell_price, 0); ?></span>
                                                 <?php endif; ?>
                                             </div>
                                             <div class="col-md-6 text-end">

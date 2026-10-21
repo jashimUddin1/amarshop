@@ -357,9 +357,9 @@ $is_logged_in = isset($_SESSION['user_id']) ? true : false;
 
                                     <div>
                                         <div class="d-flex align-items-center gap-2 mb-2">
-                                            <span class="fw-bold text-success fs-6">৳<?= number_format($actual_price, 2); ?></span>
+                                            <span class="fw-bold text-success fs-6">৳<?= number_format((float)$actual_price, 0); ?></span>
                                             <?php if ($has_discount): ?>
-                                                <span class="text-muted text-decoration-line-through small">৳<?= number_format($sell_price, 2); ?></span>
+                                                <span class="text-muted text-decoration-line-through small">৳<?= number_format((float)$sell_price, 0); ?></span>
                                             <?php endif; ?>
                                         </div>
 
@@ -529,7 +529,7 @@ $is_logged_in = isset($_SESSION['user_id']) ? true : false;
 
                     let html = '';
                     data.items.forEach(item => {
-                        const itemTotal = (item.price * item.quantity).toFixed(2);
+                        const itemTotal = Math.round(Number(item.price)) * Number(item.quantity);
                         html += `
                             <div class="d-flex align-items-center justify-content-between border-bottom py-3">
                                 <img src="uploads/${item.main_img}" class="rounded border" style="width: 55px; height: 55px; object-fit: contain;">

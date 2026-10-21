@@ -1,5 +1,14 @@
 <?php
 require_once('../auth/config.php');
+require_once __DIR__ . '/order_status.php';
+require_once __DIR__ . '/order_admin.php';
+
+function redirect_to_checkout_with_error(string $message): void
+{
+    $_SESSION['checkout_error'] = $message;
+    header('Location: ../checkout.php');
+    exit;
+}
 
 if (!isset($_SESSION['user_id'])) {
     header('Location: ../auth/login.php?status=warning&message=' . urlencode('Please login to place an order.'));
@@ -7,6 +16,9 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    ensure_order_status_history_table($pdo);
+    ensure_order_number_sequence_table($pdo);
+
     $user_id         = $_SESSION['user_id'];
     $fullname        = trim($_POST['fullname'] ?? '');
     $phone           = trim($_POST['phone'] ?? '');
@@ -23,13 +35,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         !is_string($shipping_area) ||
         !array_key_exists($shipping_area, $shipping_rates)
     ) {
-        header('Location: ../checkout.php?status=error&message=' . urlencode('Please fill in all required fields.'));
-        exit;
+        redirect_to_checkout_with_error('Please fill in all required fields.');
     }
     $shipping_charge = $shipping_rates[$shipping_area];
 
     try {
         $pdo->beginTransaction();
+        $number_stmt = $pdo->query('SELECT next_number FROM order_number_sequences WHERE id = 1 FOR UPDATE');
+        $order_sequence = (int)$number_stmt->fetchColumn();
+        if ($order_sequence < 1) {
+            throw new RuntimeException('Order number sequence is unavailable.');
+        }
 
         // ১. ইউজার কার্ট ডাটা ফেচ করা
         $cart_stmt = $pdo->prepare("
@@ -52,20 +68,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         foreach ($cart_items as $item) {
             if ((int)$item['quantity'] <= 0 || (int)$item['stock'] < (int)$item['quantity']) {
                 $pdo->rollBack();
-                header('Location: ../cart.php?status=error&message=' . urlencode('One or more items are no longer available in the requested quantity.'));
-                exit;
+                redirect_to_checkout_with_error('One or more items are no longer available in the requested quantity. Please update your cart and try again.');
             }
         }
 
-        // ২. সাবটোটাল ও গ্র্যান্ড টোটাল হিসাব
+        // ২. সাবটোটাল ও গ্র্যান্ড টোটাল হিসাব (whole currency units)
         $subtotal = 0;
         foreach ($cart_items as $item) {
-            $subtotal += ($item['price'] * $item['quantity']);
+            $item['price'] = (int)round((float)$item['price']);
+            $subtotal += ($item['price'] * (int)$item['quantity']);
         }
         $grand_total = $subtotal + $shipping_charge;
 
-        // ইউনিক অর্ডার নম্বর জেনারেট (Ex: ORD-102938)
-        $order_number = 'ORD-' . strtoupper(substr(uniqid(), -6));
+        $order_number = str_pad((string)$order_sequence, 3, '0', STR_PAD_LEFT);
 
         $stock_stmt = $pdo->prepare("
             UPDATE products
@@ -79,13 +94,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ':minimum_stock' => (int)$item['quantity']
             ]);
             if ($stock_stmt->rowCount() !== 1) {
-                throw new RuntimeException('Product stock changed while placing the order.');
+                throw new RuntimeException('Stock changed while placing the order.');
             }
         }
 
         // ৩. `orders` টেবিলে মূল অর্ডার ডাটা ইনসার্ট
-        $order_sql = "INSERT INTO orders (order_number, user_id, fullname, phone, email, address, shipping_area, subtotal, shipping_charge, grand_total, payment_method, created_at) 
-                      VALUES (:order_number, :user_id, :fullname, :phone, :email, :address, :shipping_area, :subtotal, :shipping_charge, :grand_total, :payment_method, NOW())";
+        $order_sql = "INSERT INTO orders (order_number, user_id, fullname, phone, email, address, shipping_area, subtotal, shipping_charge, grand_total, payment_method, order_status, created_at)
+                      VALUES (:order_number, :user_id, :fullname, :phone, :email, :address, :shipping_area, :subtotal, :shipping_charge, :grand_total, :payment_method, 'processing', NOW())";
         
         $order_stmt = $pdo->prepare($order_sql);
         $order_stmt->execute([
@@ -103,6 +118,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ]);
 
         $order_id = $pdo->lastInsertId();
+        $advance_sequence = $pdo->prepare('UPDATE order_number_sequences SET next_number = :next_number WHERE id = 1');
+        $advance_sequence->execute([':next_number' => $order_sequence + 1]);
+        $history_stmt = $pdo->prepare(
+            "INSERT INTO order_status_history (order_id, status, created_at) VALUES (:order_id, :status, NOW())"
+        );
+        $history_stmt->execute([':order_id' => $order_id, ':status' => 'placed']);
+        $history_stmt->execute([':order_id' => $order_id, ':status' => 'processing']);
 
         // ৪. `order_items` টেবিলে প্রোডাক্ট ডাটা ইনসার্ট
         $item_sql = "INSERT INTO order_items (order_id, product_id, product_code, size, quantity, price, total_price) 
@@ -110,14 +132,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $item_stmt = $pdo->prepare($item_sql);
 
         foreach ($cart_items as $item) {
-            $item_total = $item['price'] * $item['quantity'];
+            $unit_price = (int)round((float)$item['price']);
+            $item_total = $unit_price * (int)$item['quantity'];
             $item_stmt->execute([
                 ':order_id'     => $order_id,
                 ':product_id'   => $item['product_id'],
                 ':product_code' => $item['product_code'],
                 ':size'         => $item['size'],
                 ':quantity'     => $item['quantity'],
-                ':price'        => $item['price'],
+                ':price'        => $unit_price,
                 ':total_price'  => $item_total
             ]);
         }
@@ -138,7 +161,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $pdo->rollBack();
         }
         error_log('Order placement failed: ' . $e->getMessage());
-        header('Location: ../checkout.php?status=error&message=' . urlencode('Your order could not be placed. Please try again.'));
-        exit;
+        $message = $e instanceof RuntimeException && $e->getMessage() === 'Stock changed while placing the order.'
+            ? 'Stock changed while you were checking out. Please update your cart and try again.'
+            : 'Your order could not be placed. Please try again.';
+        redirect_to_checkout_with_error($message);
     }
 }

@@ -1,45 +1,51 @@
 <?php
 require_once 'auth/config.php';
+require_once __DIR__ . '/../core/order_status.php';
 require_admin();
 
 $page_title = "Orders";
 $current_page = "orders";
 
-$status_filter = $_GET['order_status'] ?? '';
-$status_filter = is_string($status_filter) ? strtolower(trim($status_filter)) : '';
+$status_filter = $_GET['order_status'] ?? 'all';
+$status_filter = is_string($status_filter) ? strtolower(trim($status_filter)) : 'all';
 $search = $_GET['search'] ?? '';
 $search = is_string($search) ? trim($search) : '';
 $order_statuses = [
-    'pending' => 'Pending',
-    'confirmed' => 'Confirmed',
     'processing' => 'Processing',
-    'shipped' => 'Shipped',
+    'confirmed' => 'Confirmed',
+    'picked' => 'Picked',
+    'packed' => 'Packed',
+    'delivering' => 'Delivering',
     'delivered' => 'Delivered',
     'cancelled' => 'Cancelled',
 ];
 $order_status_transitions = [
-    'pending' => ['confirmed', 'cancelled'],
-    'confirmed' => ['processing', 'cancelled'],
-    'processing' => ['shipped', 'cancelled'],
-    'shipped' => ['delivered'],
+    'processing' => ['confirmed', 'cancelled'],
+    'confirmed' => ['processing', 'picked', 'cancelled'],
+    'picked' => ['confirmed', 'packed', 'cancelled'],
+    'packed' => ['picked', 'delivering', 'cancelled'],
+    'delivering' => ['delivered'],
     'delivered' => [],
-    'completed' => [],
     'cancelled' => [],
 ];
 $status_csrf_token = $_SESSION['order_status_csrf'] ?? bin2hex(random_bytes(32));
 $_SESSION['order_status_csrf'] = $status_csrf_token;
 
-if (!array_key_exists($status_filter, $order_statuses)) {
-    $status_filter = '';
+if ($status_filter !== 'all' && !array_key_exists($status_filter, $order_statuses)) {
+    $status_filter = 'all';
 }
 
 // Build Query dynamically
 $query = "SELECT * FROM orders WHERE 1=1";
 $params = [];
 
-if (!empty($status_filter)) {
+if ($status_filter !== 'all') {
     if ($status_filter === 'delivered') {
         $query .= " AND LOWER(order_status) IN ('delivered', 'completed')";
+    } elseif ($status_filter === 'processing') {
+        $query .= " AND LOWER(order_status) IN ('processing', 'pending')";
+    } elseif ($status_filter === 'delivering') {
+        $query .= " AND LOWER(order_status) IN ('delivering', 'shipped')";
     } else {
         $query .= " AND LOWER(order_status) = :order_status";
         $params[':order_status'] = $status_filter;
@@ -58,49 +64,43 @@ try {
     $stmt->execute($params);
     $sales = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
+    error_log('Admin orders could not be loaded: ' . $e->getMessage());
     $sales = [];
+    $sales_load_error = 'Orders could not be loaded. Please try again.';
 }
 
 include_once 'includes/header.php';
 ?>
 
-<div class="d-flex justify-content-between align-items-center my-3 px-2 flex-shrink-0 flex-wrap gap-2">
-    <div>
-        <h2 class="h3 mb-0">Orders</h2>
-        <p class="text-muted small mb-0">Confirm orders and manage them through delivery.</p>
-    </div>
-</div>
-
 <!-- Alert Display Container -->
 <div id="alertContainer" class="px-2"></div>
 
-<!-- Filter and Search Section -->
-<div class="card border-0 shadow-sm mb-3">
-    <div class="card-body p-3">
-        <form method="GET" action="sales.php" class="row g-2 align-items-center">
-            <div class="col-md-5">
-                <input type="text" name="search" class="form-control"
-                    placeholder="Search by Order ID, Name, or Phone..." value="<?= htmlspecialchars($search); ?>">
-            </div>
-            <div class="col-md-4">
-                <select name="order_status" class="form-select">
-                    <option value="">All Statuses</option>
-                    <?php foreach ($order_statuses as $status_value => $status_label): ?>
-                        <option value="<?= htmlspecialchars($status_value, ENT_QUOTES, 'UTF-8'); ?>" <?= $status_filter === $status_value ? 'selected' : ''; ?>>
-                            <?= htmlspecialchars($status_label, ENT_QUOTES, 'UTF-8'); ?>
-                        </option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
-            <div class="col-md-3 d-flex gap-2">
-                <button type="submit" class="btn btn-primary w-100"><i class="bi bi-search me-1"></i> Filter</button>
-                <?php if (!empty($search) || !empty($status_filter)): ?>
-                <a href="sales.php" class="btn btn-outline-secondary"><i class="bi bi-x-circle"></i> Reset</a>
-                <?php endif; ?>
-            </div>
-        </form>
+<form method="get" class="row g-2 align-items-end px-2 py-3 flex-shrink-0">
+    <div class="col-12 col-md">
+        <label for="orderSearch" class="form-label mb-1">Search orders</label>
+        <input type="search" class="form-control" id="orderSearch" name="search"
+            value="<?= htmlspecialchars($search, ENT_QUOTES, 'UTF-8'); ?>"
+            placeholder="Order ID, customer name, or phone">
     </div>
-</div>
+    <div class="col-12 col-md-4">
+        <label for="orderStatus" class="form-label mb-1">Status</label>
+        <select class="form-select" id="orderStatus" name="order_status">
+            <option value="all" <?= $status_filter === 'all' ? 'selected' : ''; ?>>All</option>
+            <option value="processing" <?= $status_filter === 'processing' ? 'selected' : ''; ?>>Processing</option>
+            <?php foreach ($order_statuses as $status_value => $status_label): ?>
+                <?php if ($status_value !== 'processing'): ?>
+                    <option value="<?= htmlspecialchars($status_value, ENT_QUOTES, 'UTF-8'); ?>" <?= $status_filter === $status_value ? 'selected' : ''; ?>>
+                        <?= htmlspecialchars($status_label, ENT_QUOTES, 'UTF-8'); ?>
+                    </option>
+                <?php endif; ?>
+            <?php endforeach; ?>
+        </select>
+    </div>
+    <div class="col-12 col-md-auto d-flex gap-2">
+        <button type="submit" class="btn btn-success"><i class="bi bi-search me-1"></i>Search</button>
+        <a href="sales.php" class="btn btn-outline-secondary">Reset</a>
+    </div>
+</form>
 
 <!-- Sales Data Table -->
 <div class="card border-0 shadow-sm flex-grow-1 overflow-hidden">
@@ -125,13 +125,10 @@ include_once 'includes/header.php';
                         <td class="fw-bold">#<?= htmlspecialchars($sale['order_number'] ?? ''); ?></td>
                         <td><?= htmlspecialchars($sale['fullname'] ?? ''); ?></td>
                         <td><?= htmlspecialchars($sale['phone'] ?? 'N/A'); ?></td>
-                        <td class="fw-bold">৳<?= number_format((float)($sale['grand_total'] ?? 0), 2); ?></td>
+                        <td class="fw-bold">৳<?= number_format((float)($sale['grand_total'] ?? 0), 0); ?></td>
                         <td>
                             <?php
-                            $status = strtolower($sale['order_status'] ?? 'pending');
-                            if ($status === 'completed') {
-                                $status = 'delivered';
-                            }
+                            $status = normalize_order_status((string)($sale['order_status'] ?? 'processing'));
                             $available_statuses = array_merge(
                                 [$status => $order_statuses[$status] ?? ucfirst($status)],
                                 array_intersect_key(
@@ -141,10 +138,10 @@ include_once 'includes/header.php';
                             );
                             $badgeClass = match($status) {
                                 'delivered' => 'bg-success',
-                                'shipped' => 'bg-primary',
+                                'delivering' => 'bg-primary',
+                                'packed', 'picked' => 'bg-info text-dark',
                                 'processing' => 'bg-info text-dark',
                                 'confirmed' => 'bg-secondary',
-                                'pending' => 'bg-warning text-dark',
                                 'cancelled' => 'bg-danger',
                                 default     => 'bg-secondary'
                             };
@@ -155,10 +152,10 @@ include_once 'includes/header.php';
                         </td>
                         <td><?= !empty($sale['created_at']) ? date('d M Y, h:i A', strtotime($sale['created_at'])) : 'N/A'; ?></td>
                         <td class="text-end">
-                            <button class="btn btn-sm btn-outline-info me-1"
-                                onclick='viewOrder(<?= htmlspecialchars(json_encode($sale, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP), ENT_QUOTES, "UTF-8"); ?>)'>
+                            <a class="btn btn-sm btn-outline-info me-1"
+                                href="order_details.php?id=<?= (int)$sale['id']; ?>">
                                 <i class="bi bi-eye"></i> View
-                            </button>
+                            </a>
                             <?php if (!empty($order_status_transitions[$status])): ?>
                                 <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal"
                                     data-bs-target="#updateStatusModal<?= $sale['id']; ?>">
@@ -186,8 +183,8 @@ include_once 'includes/header.php';
                                             <label class="form-label fw-bold">Order Status</label>
                                             <select name="status" class="form-select" required>
                                                 <?php foreach ($available_statuses as $status_value => $status_label): ?>
-                                                    <option value="<?= htmlspecialchars($status_value, ENT_QUOTES, 'UTF-8'); ?>" <?= strtolower($sale['order_status'] ?? 'pending') === $status_value || ($status_value === 'delivered' && strtolower($sale['order_status'] ?? '') === 'completed') ? 'selected' : ''; ?>>
-                                                        <?= htmlspecialchars($status_label, ENT_QUOTES, 'UTF-8'); ?>
+                                                    <option value="<?= htmlspecialchars($status_value, ENT_QUOTES, 'UTF-8'); ?>" data-undo="<?= in_array($status_value, ['processing', 'confirmed', 'picked'], true) && $status_value !== $status ? 'true' : 'false'; ?>" <?= $status === $status_value ? 'selected' : ''; ?>>
+                                                        <?= in_array($status_value, ['processing', 'confirmed', 'picked'], true) && $status_value !== $status ? 'Undo to ' : 'Set to '; ?><?= htmlspecialchars($status_label, ENT_QUOTES, 'UTF-8'); ?>
                                                     </option>
                                                 <?php endforeach; ?>
                                             </select>
@@ -204,54 +201,15 @@ include_once 'includes/header.php';
                     <?php endforeach; ?>
                     <?php else: ?>
                     <tr>
+                        <?php if (!empty($sales_load_error)): ?>
+                            <td colspan="7" class="text-center py-4 text-danger"><?= htmlspecialchars($sales_load_error, ENT_QUOTES, 'UTF-8'); ?></td>
+                        <?php else: ?>
                         <td colspan="7" class="text-center py-4 text-muted">No sales orders found.</td>
+                        <?php endif; ?>
                     </tr>
                     <?php endif; ?>
                 </tbody>
             </table>
-        </div>
-    </div>
-</div>
-
-<!-- View Details Modal (Outside of table for better performance) -->
-<div class="modal fade" id="viewOrderModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="viewOrderTitle">Order Details</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <table class="table table-bordered mb-0">
-                    <tr>
-                        <th class="w-40 bg-light">Order ID</th>
-                        <td id="viewOrderId"></td>
-                    </tr>
-                    <tr>
-                        <th class="bg-light">Customer Name</th>
-                        <td id="viewCustomerName"></td>
-                    </tr>
-                    <tr>
-                        <th class="bg-light">Customer Phone</th>
-                        <td id="viewCustomerPhone"></td>
-                    </tr>
-                    <tr>
-                        <th class="bg-light">Total Amount</th>
-                        <td id="viewTotalAmount" class="fw-bold text-success"></td>
-                    </tr>
-                    <tr>
-                        <th class="bg-light">Status</th>
-                        <td id="viewStatus"></td>
-                    </tr>
-                    <tr>
-                        <th class="bg-light">Order Date</th>
-                        <td id="viewOrderDate"></td>
-                    </tr>
-                </table>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-            </div>
         </div>
     </div>
 </div>
@@ -269,26 +227,13 @@ function showAlert(message, type = 'success') {
     setTimeout(() => alertBox.remove(), 3500);
 }
 
-function viewOrder(sale) {
-    if (!sale) return;
-
-    document.getElementById('viewOrderId').innerText = '#' + (sale.order_number || '');
-    document.getElementById('viewCustomerName').innerText = sale.fullname || 'N/A';
-    document.getElementById('viewCustomerPhone').innerText = sale.phone || 'N/A';
-    
-    const amount = parseFloat(sale.grand_total || 0).toFixed(2);
-    document.getElementById('viewTotalAmount').innerText = '৳' + amount;
-    
-    document.getElementById('viewStatus').innerText = (sale.order_status || '').toUpperCase();
-    document.getElementById('viewOrderDate').innerText = sale.created_at || 'N/A';
-
-    const modal = new bootstrap.Modal(document.getElementById('viewOrderModal'));
-    modal.show();
-}
-
 function updateStatus(event, id) {
     event.preventDefault();
     const form = event.target;
+    if (form.elements.status.selectedOptions[0]?.dataset.undo === 'true' &&
+        !window.confirm('Undo this order to the previous status?')) {
+        return;
+    }
     const formData = new FormData(form);
 
     fetch('core/sale_update_status.php', {

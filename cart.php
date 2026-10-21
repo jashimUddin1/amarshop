@@ -12,7 +12,7 @@ $user_id = $_SESSION['user_id'];
 $stmt = $pdo->prepare("
     SELECT c.id as cart_id, c.size as selected_size, c.quantity, c.product_code,
            p.name, p.main_img, p.size as available_sizes, p.stock,
-           COALESCE(p.actual_price, p.sell_price) as price 
+           ROUND(COALESCE(p.actual_price, p.sell_price)) as price
     FROM cart c 
     JOIN products p ON c.product_id = p.id 
     WHERE c.user_id = :user_id 
@@ -86,8 +86,8 @@ $subtotal = 0;
                                     
                                     <!-- Row 3: Total (Price * Quantity) -->
                                     <div class="mt-1" style="font-size: 0.85rem;">
-                                        <span class="fw-bold text-success">Total: ৳<?= number_format($item_total, 2); ?></span>
-                                        <small class="text-muted ms-1">(৳<?= number_format($item['price'], 2); ?> × <?= $item['quantity']; ?>)</small>
+                                        <span class="fw-bold text-success">Total: ৳<?= number_format((float)$item_total, 0); ?></span>
+                                        <small class="text-muted ms-1">(৳<?= number_format((float)$item['price'], 0); ?> × <?= $item['quantity']; ?>)</small>
                                     </div>
                                 </div>
 
@@ -109,7 +109,7 @@ $subtotal = 0;
                     <h5 class="fw-bold border-bottom pb-2">Order Summary</h5>
                     <div class="d-flex justify-content-between my-2">
                         <span>Subtotal</span>
-                        <span class="fw-bold">৳<?= number_format($subtotal, 2); ?></span>
+                        <span class="fw-bold">৳<?= number_format((float)$subtotal, 0); ?></span>
                     </div>
                     <div class="d-flex justify-content-between my-2">
                         <span>Shipping</span>
@@ -118,7 +118,7 @@ $subtotal = 0;
                     <hr>
                     <div class="d-flex justify-content-between fs-5 fw-bold mb-3">
                         <span>Estimated Total</span>
-                        <span class="text-success">৳<?= number_format($subtotal, 2); ?></span>
+                        <span class="text-success">৳<?= number_format((float)$subtotal, 0); ?></span>
                     </div>
                     <a href="checkout.php" class="btn btn-success w-100 fw-bold py-2">Proceed to Checkout</a>
                     <a href="index.php" class="btn btn-link text-secondary text-decoration-none text-center w-100 mt-2">← Continue Shopping</a>

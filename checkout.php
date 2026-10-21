@@ -17,7 +17,7 @@ $user_info = $user_stmt->fetch(PDO::FETCH_ASSOC);
 $stmt = $pdo->prepare("
     SELECT c.id as cart_id, c.size, c.quantity, c.product_code,
            p.name, p.main_img,
-           COALESCE(p.actual_price, p.sell_price) as price 
+           ROUND(COALESCE(p.actual_price, p.sell_price)) as price
     FROM cart c 
     JOIN products p ON c.product_id = p.id 
     WHERE c.user_id = :user_id
@@ -32,12 +32,22 @@ if (empty($cart_items)) {
 
 $subtotal = 0;
 foreach ($cart_items as $item) {
-    $subtotal += ($item['price'] * $item['quantity']);
+    $subtotal += ((int)$item['price'] * (int)$item['quantity']);
 }
+$checkout_error = $_SESSION['checkout_error'] ?? '';
+unset($_SESSION['checkout_error']);
 $page_title = "Checkout";
 include 'includes/header.php'; 
 ?>
 
+<?php if (is_string($checkout_error) && $checkout_error !== ''): ?>
+    <div class="container mt-3">
+        <div class="alert alert-danger alert-dismissible fade show mb-0" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i><?= htmlspecialchars($checkout_error, ENT_QUOTES, 'UTF-8'); ?>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    </div>
+<?php endif; ?>
 
 <section id="checkoutSearchSection" class="container-fluid px-2 px-md-5 my-4" style="display: none;">
     <div class="bg-white rounded shadow-sm border p-4">
@@ -125,7 +135,7 @@ include 'includes/header.php';
                                         <small class="text-muted">Size: <?= htmlspecialchars($item['size'] ?: 'N/A'); ?> | Qty: <?= $item['quantity']; ?> * <?= $item['price'] ?></small>
                                     </div>
                                 </div>
-                                <span class="fw-bold text-success text-nowrap flex-shrink-0" style="font-size: 0.85rem;">৳<?= number_format($item_total, 2); ?></span>
+                                <span class="fw-bold text-success text-nowrap flex-shrink-0" style="font-size: 0.85rem;">৳<?= number_format((float)$item_total, 0); ?></span>
                             </div>
                         <?php endforeach; ?>
                     </div>
@@ -133,7 +143,7 @@ include 'includes/header.php';
                     <!-- Financial Summary -->
                     <div class="d-flex justify-content-between my-2">
                         <span>Subtotal</span>
-                        <span class="fw-bold">৳<span id="subtotalVal"><?= number_format($subtotal, 2, '.', ''); ?></span></span>
+                        <span class="fw-bold">৳<span id="subtotalVal"><?= number_format((float)$subtotal, 0, '.', ''); ?></span></span>
                     </div>
                     <div class="d-flex justify-content-between my-2">
                         <span>Shipping Charge</span>
@@ -158,10 +168,10 @@ include 'includes/header.php';
         const subtotal = parseFloat(document.getElementById('subtotalVal').innerText);
         const shippingArea = document.getElementById('shippingArea').value === 'outside_dhaka' ? 120 : 60;
 
-        document.getElementById('shippingCharge').innerText = shippingArea.toFixed(2);
+        document.getElementById('shippingCharge').innerText = Math.round(shippingArea);
 
         const grandTotal = subtotal + shippingArea;
-        document.getElementById('grandTotal').innerText = grandTotal.toFixed(2);
+        document.getElementById('grandTotal').innerText = Math.round(grandTotal);
     }
 
     // Initial calculation on page load
@@ -208,8 +218,8 @@ include 'includes/header.php';
                 const image = product.main_img
                     ? `uploads/${escapeHtml(product.main_img)}`
                     : 'assets/uploads/placeholder.jpg';
-                const price = Number.parseFloat(product.actual_price || product.sell_price || 0);
-                const sellPrice = Number.parseFloat(product.sell_price || 0);
+                const price = Math.round(Number.parseFloat(product.actual_price || product.sell_price || 0));
+                const sellPrice = Math.round(Number.parseFloat(product.sell_price || 0));
                 const stock = Number.parseInt(product.stock || 0, 10);
                 const quantityInCart = Number.parseInt(product.cart_quantity || 0, 10);
                 const discounted = sellPrice > price && sellPrice > 0;
@@ -244,8 +254,8 @@ include 'includes/header.php';
                             <div class="mt-2">
                                 <div class="d-flex justify-content-between align-items-center mb-2">
                                     <div>
-                                        <span class="fw-bold text-success">৳${price.toFixed(2)}</span>
-                                        ${discounted ? `<small class="text-muted text-decoration-line-through ms-1">৳${sellPrice.toFixed(2)}</small>` : ''}
+                                        <span class="fw-bold text-success">৳${price}</span>
+                                        ${discounted ? `<small class="text-muted text-decoration-line-through ms-1">৳${sellPrice}</small>` : ''}
                                     </div>
                                     <span class="badge ${stock > 0 ? 'bg-success' : 'bg-danger'}">${stock > 0 ? 'In Stock' : 'Out of Stock'}</span>
                                 </div>

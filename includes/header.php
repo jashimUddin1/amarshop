@@ -685,6 +685,9 @@ if (!empty($selected_collection) && !empty($nav_collections)) {
             <div class="offcanvas-body">
                 <ul class="navbar-nav gap-2">
                     <li class="nav-item"><a class="nav-link text-dark fw-bold" href="index.php"><i class="bi bi-house-door me-2"></i>Home</a></li>
+                    <?php if (!empty($is_logged_in)): ?>
+                        <li class="nav-item"><a class="nav-link text-dark fw-bold" href="user/my_orders.php"><i class="bi bi-box-seam me-2 text-success"></i>My Orders</a></li>
+                    <?php endif; ?>
 
                     <small class="text-muted fw-bold text-uppercase mt-2 d-block" style="font-size: 0.75rem;">Collections</small>
                     <?php if (!empty($nav_collections)): ?>

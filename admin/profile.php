@@ -1,5 +1,6 @@
 <?php
 require_once 'auth/config.php';
+require_once __DIR__ . '/../core/user_profile_picture.php';
 require_admin();
 
 $page_title = 'Admin Profile';
@@ -7,6 +8,7 @@ $current_page = 'profile';
 $message = '';
 $message_type = '';
 $user_id = (int)$_SESSION['user_id'];
+ensure_user_profile_pictures_table($pdo);
 $csrf_token = $_SESSION['admin_profile_csrf'] ?? bin2hex(random_bytes(32));
 $_SESSION['admin_profile_csrf'] = $csrf_token;
 
@@ -24,11 +26,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $current_password = is_string($current_password) ? $current_password : '';
     $new_password = is_string($new_password) ? $new_password : '';
     $confirm_password = is_string($confirm_password) ? $confirm_password : '';
+    $action = $_POST['action'] ?? 'save_profile';
 
     if (!is_string($submitted_token) || !hash_equals($csrf_token, $submitted_token)) {
         http_response_code(400);
         $message = 'This request could not be verified. Please reload the page and try again.';
         $message_type = 'danger';
+    } elseif ($action === 'upload_profile_picture') {
+        try {
+            store_user_profile_picture($pdo, $user_id, $_FILES['profile_picture'] ?? []);
+            $message = 'Profile picture updated successfully.';
+            $message_type = 'success';
+        } catch (InvalidArgumentException | RuntimeException $e) {
+            $message = $e->getMessage();
+            $message_type = 'warning';
+        } catch (Throwable $e) {
+            error_log('Admin profile picture update failed: ' . $e->getMessage());
+            $message = 'Profile picture could not be updated. Please try again.';
+            $message_type = 'danger';
+        }
+    } elseif ($action === 'remove_profile_picture') {
+        try {
+            clear_user_profile_picture($pdo, $user_id);
+            $message = 'Profile picture removed.';
+            $message_type = 'success';
+        } catch (Throwable $e) {
+            error_log('Admin profile picture removal failed: ' . $e->getMessage());
+            $message = 'Profile picture could not be removed. Please try again.';
+            $message_type = 'danger';
+        }
+    } elseif ($action !== 'save_profile') {
+        http_response_code(400);
+        exit('Invalid profile action.');
     } elseif ($name === '' || !filter_var($email, FILTER_VALIDATE_EMAIL) || preg_match('/^[0-9+\s().-]+$/', $phone) !== 1 || strlen(preg_replace('/\D/', '', $phone)) < 8) {
         $message = 'Enter a valid name, email address, and phone number.';
         $message_type = 'warning';
@@ -98,6 +127,7 @@ if (!$profile) {
     http_response_code(404);
     exit('Admin account not found.');
 }
+$profile['profile_picture'] = get_user_profile_picture($pdo, $user_id);
 
 include_once 'includes/header.php';
 ?>
@@ -118,14 +148,36 @@ include_once 'includes/header.php';
         <?php endif; ?>
 
         <div class="d-flex align-items-center gap-3 mb-4">
-            <div class="rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center" style="width: 64px; height: 64px;">
-                <i class="bi bi-person-fill fs-2"></i>
-            </div>
+            <?php if ($profile['profile_picture']): ?>
+                <img src="../uploads/<?= htmlspecialchars($profile['profile_picture'], ENT_QUOTES, 'UTF-8'); ?>" alt="Profile picture" class="rounded-circle border object-fit-cover" style="width: 64px; height: 64px;">
+            <?php else: ?>
+                <div class="rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center" style="width: 64px; height: 64px;">
+                    <i class="bi bi-person-fill fs-2"></i>
+                </div>
+            <?php endif; ?>
             <div>
                 <h2 class="h5 mb-1"><?= htmlspecialchars($profile['customar_name'], ENT_QUOTES, 'UTF-8'); ?></h2>
                 <span class="badge text-bg-primary"><?= htmlspecialchars(ucfirst($profile['role']), ENT_QUOTES, 'UTF-8'); ?></span>
             </div>
         </div>
+
+        <form method="post" action="profile.php" enctype="multipart/form-data" class="mb-4">
+            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token, ENT_QUOTES, 'UTF-8'); ?>">
+            <input type="hidden" name="action" value="upload_profile_picture">
+            <label for="profile_picture" class="form-label">Profile picture</label>
+            <div class="d-flex flex-wrap gap-2 align-items-start">
+                <input type="file" class="form-control" id="profile_picture" name="profile_picture" accept="image/jpeg,image/png,image/webp" required style="max-width: 420px;">
+                <button type="submit" class="btn btn-outline-primary">Upload picture</button>
+            </div>
+            <div class="form-text">JPG, PNG, or WEBP. Maximum 3 MB.</div>
+        </form>
+        <?php if ($profile['profile_picture']): ?>
+            <form method="post" action="profile.php" class="mb-4">
+                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token, ENT_QUOTES, 'UTF-8'); ?>">
+                <input type="hidden" name="action" value="remove_profile_picture">
+                <button type="submit" class="btn btn-sm btn-outline-danger">Remove picture</button>
+            </form>
+        <?php endif; ?>
 
         <form method="post" action="profile.php" class="row g-3">
             <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token, ENT_QUOTES, 'UTF-8'); ?>">

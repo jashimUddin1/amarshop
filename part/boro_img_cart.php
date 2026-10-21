@@ -80,11 +80,11 @@
                                         <!-- ডাইনামিক প্রাইস -->
                                         <div class="price-wrapper mb-2 d-flex align-items-center gap-2">
                                             <span class="current-price fw-bold text-success fs-6">
-                                                ৳<?= number_format($actual_price, 2); ?>
+                                                ৳<?= number_format((float)$actual_price, 0); ?>
                                             </span>
                                             <?php if ($has_discount): ?>
                                                 <span class="old-price text-muted text-decoration-line-through small">
-                                                    ৳<?= number_format($sell_price, 2); ?>
+                                                    ৳<?= number_format((float)$sell_price, 0); ?>
                                                 </span>
                                             <?php endif; ?>
                                         </div>

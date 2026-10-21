@@ -226,7 +226,7 @@
                         const cartId = Number.parseInt(item.cart_id, 10) || 0;
                         const quantity = Number.parseInt(item.quantity, 10) || 0;
                         const price = Number(item.price) || 0;
-                        const itemTotal = (price * quantity).toFixed(2);
+                        const itemTotal = Math.round(price) * quantity;
                         const productName = escapeHtml(item.name);
                         let sizeSelectHtml = '';
                         if (item.available_sizes) {

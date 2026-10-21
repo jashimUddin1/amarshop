@@ -1,5 +1,6 @@
 <?php
 require_once 'auth/config.php';
+require_once __DIR__ . '/../core/order_status.php';
 require_admin();
 
 $page_title = "Admin Dashboard";
@@ -29,7 +30,7 @@ try {
 
 // 4. Orders that still need fulfillment
 try {
-  $stmt_orders = $pdo->query("SELECT COUNT(*) FROM orders WHERE LOWER(order_status) IN ('pending', 'confirmed', 'processing', 'shipped')");
+  $stmt_orders = $pdo->query("SELECT COUNT(*) FROM orders WHERE LOWER(order_status) IN ('pending', 'confirmed', 'processing', 'picked', 'packed', 'shipped', 'delivering')");
   $pending_orders = $stmt_orders->fetchColumn();
 } catch (PDOException $e) {
   $pending_orders = 0;
@@ -67,7 +68,7 @@ include_once 'includes/header.php';
       <div class="card-body d-flex justify-content-between align-items-center">
         <div>
           <h6 class="text-uppercase fs-7 opacity-75">Total Sales</h6>
-          <h2 class="mb-0 fw-bold">৳<?= number_format($total_sales, 2); ?></h2>
+          <h2 class="mb-0 fw-bold">৳<?= number_format((float)$total_sales, 0); ?></h2>
         </div>
         <i class="bi bi-currency-dollar fs-1 opacity-50"></i>
       </div>
@@ -121,29 +122,26 @@ include_once 'includes/header.php';
           <?php if (!empty($recent_orders)): ?>
             <?php foreach ($recent_orders as $order): ?>
               <tr>
-                <td class="fw-bold">#ORD-<?= htmlspecialchars($order['order_number']); ?></td>
+                <td class="fw-bold"><a href="order_details.php?id=<?= (int)$order['id']; ?>" class="link-body-emphasis">#<?= htmlspecialchars($order['order_number']); ?></a></td>
                 <td><?= htmlspecialchars($order['fullname'] ?? 'Guest'); ?></td>
                 <td><?= htmlspecialchars($order['phone'] ?? 'N/A'); ?></td>
-                <td class="fw-bold text-success">৳<?= number_format($order['grand_total'] ?? 0, 2); ?></td>
+                <td class="fw-bold text-success">৳<?= number_format((float)($order['grand_total'] ?? 0), 0); ?></td>
                 <td>
                   <?php 
-                    $order_status = strtolower($order['order_status'] ?? 'pending');
-                    if ($order_status === 'completed') {
-                      $order_status = 'delivered';
-                    }
+                    $order_status = normalize_order_status((string)($order['order_status'] ?? 'processing'));
                     $badge_class = match($order_status) {
                       'delivered' => 'bg-success',
-                      'shipped' => 'bg-primary',
+                      'delivering' => 'bg-primary',
+                      'packed', 'picked' => 'bg-info text-dark',
                       'processing' => 'bg-info text-dark',
                       'confirmed' => 'bg-secondary',
-                      'pending'   => 'bg-warning text-dark',
                       'cancelled' => 'bg-danger',
                       default     => 'bg-secondary'
                     };
                   ?>
                   <span class="badge <?= $badge_class; ?>"><?= htmlspecialchars(ucfirst($order_status), ENT_QUOTES, 'UTF-8'); ?></span>
                 </td>
-                <td><?= date('d M, Y', strtotime($order['created_at'] ?? 'now')); ?></td>
+                <td><?= !empty($order['created_at']) ? date('d M, Y', strtotime($order['created_at'])) : 'N/A'; ?></td>
               </tr>
             <?php endforeach; ?>
           <?php else: ?>

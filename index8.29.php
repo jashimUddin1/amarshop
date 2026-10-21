@@ -1152,7 +1152,7 @@ $is_logged_in = isset($_SESSION['user_id']) ? true : false;
 
                                 <div class="mt-2">
                                     <div class="price-wrapper mb-2">
-                                        <span class="current-price fw-bold text-success">৳<?= number_format($product['actual_price'] ?? $product['sell_price'], 2); ?></span>
+                                        <span class="current-price fw-bold text-success">৳<?= number_format((float)($product['actual_price'] ?? $product['sell_price']), 0); ?></span>
                                     </div>
 
                                     <div class="d-flex justify-content-between gap-2">
@@ -1255,9 +1255,9 @@ $is_logged_in = isset($_SESSION['user_id']) ? true : false;
                                 </div>
                                 <div>
                                     <div class="top-deals-price-wrapper mb-2">
-                                        <span class="top-deals-current-price">৳<?= number_format($product['actual_price'] ?? $product['sell_price'], 2); ?></span>
+                                        <span class="top-deals-current-price">৳<?= number_format((float)($product['actual_price'] ?? $product['sell_price']), 0); ?></span>
                                         <?php if (!empty($product['discount_percent']) && $product['discount_percent'] > 0): ?>
-                                            <span class="top-deals-old-price">৳<?= number_format($product['sell_price'], 2); ?></span>
+                                            <span class="top-deals-old-price">৳<?= number_format((float)$product['sell_price'], 0); ?></span>
                                         <?php endif; ?>
                                     </div>
                                     <div class="d-flex">
@@ -1304,8 +1304,8 @@ $is_logged_in = isset($_SESSION['user_id']) ? true : false;
                                 </div>
                                 <div>
                                     <div class="high-discount-price-wrapper mb-2">
-                                        <span class="high-discount-current-price">৳<?= number_format($product['actual_price'] ?? $product['sell_price'], 2); ?></span>
-                                        <span class="high-discount-old-price">৳<?= number_format($product['sell_price'], 2); ?></span>
+                                        <span class="high-discount-current-price">৳<?= number_format((float)($product['actual_price'] ?? $product['sell_price']), 0); ?></span>
+                                        <span class="high-discount-old-price">৳<?= number_format((float)$product['sell_price'], 0); ?></span>
                                     </div>
                                     <div class="d-flex">
                                         <a href="product_details.php" class="btn btn-quick-view" title="Quick View">
@@ -1351,9 +1351,9 @@ $is_logged_in = isset($_SESSION['user_id']) ? true : false;
                                 </div>
                                 <div>
                                     <div class="top-sales-price-wrapper mb-2">
-                                        <span class="top-sales-current-price">৳<?= number_format($product['actual_price'] ?? $product['sell_price'], 2); ?></span>
+                                        <span class="top-sales-current-price">৳<?= number_format((float)($product['actual_price'] ?? $product['sell_price']), 0); ?></span>
                                         <?php if (!empty($product['discount_percent']) && $product['discount_percent'] > 0): ?>
-                                            <span class="top-sales-old-price">৳<?= number_format($product['sell_price'], 2); ?></span>
+                                            <span class="top-sales-old-price">৳<?= number_format((float)$product['sell_price'], 0); ?></span>
                                         <?php endif; ?>
                                     </div>
                                     <div class="d-flex">
@@ -1648,7 +1648,7 @@ $is_logged_in = isset($_SESSION['user_id']) ? true : false;
 
                     let html = '';
                     data.items.forEach(item => {
-                        const itemTotal = (item.price * item.quantity).toFixed(2);
+                        const itemTotal = Math.round(Number(item.price)) * Number(item.quantity);
 
                         // ২ নম্বর রোর জন্য সাইজ ড্রপডাউন
                         let sizeSelectHtml = '';
