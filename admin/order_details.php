@@ -41,13 +41,17 @@ $can_edit = !in_array($status, ['cancelled', 'delivered'], true);
 $can_edit_items = in_array($status, ['processing', 'confirmed', 'picked', 'packed'], true);
 $status_transitions = [
     'processing' => ['confirmed', 'cancelled'],
-    'confirmed' => ['processing', 'picked', 'cancelled'],
-    'picked' => ['confirmed', 'packed', 'cancelled'],
-    'packed' => ['picked', 'delivering', 'cancelled'],
+    'confirmed' => ['picked', 'processing', 'cancelled'],
+    'picked' => ['packed', 'confirmed', 'cancelled'],
+    'packed' => ['delivering', 'picked', 'cancelled'],
     'delivering' => ['delivered'],
 ];
 $available_statuses = $status_transitions[$status] ?? [];
-$backward_statuses = ['processing', 'confirmed', 'picked'];
+$backward_transitions = [
+    'confirmed' => 'processing',
+    'picked' => 'confirmed',
+    'packed' => 'picked',
+];
 
 $page_title = 'Order Details';
 $current_page = 'orders';
@@ -78,8 +82,13 @@ $timeline_descriptions = [
                 <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($status_csrf_token, ENT_QUOTES, 'UTF-8'); ?>">
                 <select name="status" class="form-select form-select-sm" aria-label="Update order status">
                     <?php foreach ($available_statuses as $next_status): ?>
-                        <option value="<?= htmlspecialchars($next_status, ENT_QUOTES, 'UTF-8'); ?>" data-undo="<?= in_array($next_status, $backward_statuses, true) ? 'true' : 'false'; ?>">
-                            <?= in_array($next_status, $backward_statuses, true) ? 'Undo to ' : 'Set to '; ?><?= htmlspecialchars(order_status_label($next_status), ENT_QUOTES, 'UTF-8'); ?>
+                        <?php
+                        $is_undo = ($backward_transitions[$status] ?? null) === $next_status;
+                        $is_cancel = $next_status === 'cancelled';
+                        $label_prefix = $is_undo ? 'Undo to ' : ($is_cancel ? 'Cancel: ' : 'Set to ');
+                        ?>
+                        <option value="<?= htmlspecialchars($next_status, ENT_QUOTES, 'UTF-8'); ?>" data-undo="<?= $is_undo ? 'true' : 'false'; ?>">
+                            <?= $label_prefix . htmlspecialchars(order_status_label($next_status), ENT_QUOTES, 'UTF-8'); ?>
                         </option>
                     <?php endforeach; ?>
                 </select>
@@ -295,16 +304,29 @@ function showOrderAlert(message, type) {
     close.setAttribute('aria-label', 'Close');
     alert.append(close);
     orderAlert.append(alert);
+    orderAlert.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
 async function submitOrderForm(form, endpoint) {
+    const submitBtn = form.querySelector('button[type="submit"]');
+    if (submitBtn) submitBtn.disabled = true;
+    try {
     const response = await fetch(endpoint, { method: 'POST', body: new FormData(form) });
-    const result = await response.json();
+        const text = await response.text();
+        let result;
+        try {
+            result = JSON.parse(text);
+        } catch (e) {
+            throw new Error(text.trim() || 'Invalid server response.');
+        }
     if (!response.ok || result.status !== 'success') {
         throw new Error(result.message || 'The request could not be completed.');
     }
     showOrderAlert(result.message, 'success');
     window.setTimeout(() => window.location.reload(), 700);
+    } finally {
+        if (submitBtn) submitBtn.disabled = false;
+    }
 }
 
 document.addEventListener('submit', async event => {
@@ -448,7 +470,13 @@ orderProductSearch?.addEventListener('input', () => {
     productSearchTimer = window.setTimeout(async () => {
         try {
             const response = await fetch(`core/search_order_products.php?q=${encodeURIComponent(query)}`);
-            const result = await response.json();
+                const text = await response.text();
+        let result;
+        try {
+            result = JSON.parse(text);
+        } catch (e) {
+            throw new Error(text.trim() || 'Invalid server response.');
+        }
             if (!response.ok || result.status !== 'success') throw new Error(result.message || 'Product search failed.');
             if (requestSequence === productSearchSequence) renderOrderProductResults(result.products);
         } catch (error) {

@@ -1,5 +1,5 @@
 <?php
-require_once '../auth/config.php';
+require_once __DIR__ . '/../auth/config.php';
 require_once __DIR__ . '/../../core/order_status.php';
 require_admin();
 

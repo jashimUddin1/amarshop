@@ -48,6 +48,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $message = 'Profile picture could not be removed. Please try again.';
             $message_type = 'danger';
         }
+    } elseif ($action === 'verify_phone_otp') {
+        $submitted_otp = trim((string)($_POST['otp_code'] ?? ''));
+        $stmt = $pdo->prepare('SELECT phone_otp, phone_verified FROM users WHERE id = :id');
+        $stmt->execute([':id' => $user_id]);
+        $currUser = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (empty($currUser['phone_otp'])) {
+            $message = 'আপনার নাম্বারে এখনো কোনো OTP কোড সেট করা হয়নি। অ্যাডমিন থেকে এসএমএস পাওয়ার অপেক্ষা করুন অথবা সাপোর্টে যোগাযোগ করুন।';
+            $message_type = 'warning';
+        } elseif (trim((string)$currUser['phone_otp']) === $submitted_otp) {
+            $upd = $pdo->prepare('UPDATE users SET phone_verified = 1, phone_otp = NULL WHERE id = :id');
+            $upd->execute([':id' => $user_id]);
+            $message = 'অভিনন্দন! আপনার ফোন নাম্বার সফলভাবে ভেরিফাই সম্পন্ন হয়েছে।';
+            $message_type = 'success';
+        } else {
+            $message = 'ভুল OTP কোড! আপনার মেসেজে পাওয়া সঠিক কোডটি দিন।';
+            $message_type = 'danger';
+        }
+    } elseif ($action === 'verify_email_otp') {
+        /*
+        // ========================================================
+        // EMAIL OTP VERIFICATION (COMMENTED OUT AS REQUESTED)
+        // ভবিষ্যতে SMTP_PASS যুক্ত করে নিচের কোডটি আনকমেন্ট করুন:
+        // ========================================================
+        // require '../vendor/autoload.php';
+        // use PHPMailer\PHPMailer\PHPMailer;
+        // $mail = new PHPMailer(true);
+        // ...
+        // $mail->send();
+        */
+        $message = 'ইমেইল ভেরিফিকেশন সিস্টেম বর্তমানে অপেক্ষমাণ রয়েছে। খুব শীঘ্রই এটি চালু হবে।';
+        $message_type = 'info';
     } elseif ($action !== 'save_profile') {
         http_response_code(400);
         exit('Invalid profile action.');
@@ -71,7 +103,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             );
             $update_stmt->execute([
                 ':name' => $name,
-                ':email' => $email,
+                ':email' => $email !== '' ? $email : null,
                 ':phone' => $phone,
                 ':id' => $user_id,
             ]);
@@ -90,7 +122,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$user_stmt = $pdo->prepare('SELECT customar_name, email, phone, address FROM users WHERE id = :id');
+$user_stmt = $pdo->prepare('SELECT customar_name, email, phone, address, phone_verified, phone_otp, email_verified FROM users WHERE id = :id');
 $user_stmt->execute([':id' => $user_id]);
 $user = $user_stmt->fetch(PDO::FETCH_ASSOC);
 if (!$user) {
@@ -159,6 +191,23 @@ $nav_items = [
                 <h1 class="h4 fw-bold mb-0">My Profile</h1>
                 <a href="addresses.php" class="btn btn-success btn-sm"><i class="bi bi-geo-alt me-1"></i>Manage Addresses</a>
             </div>
+
+            <!-- Phone Verification Notice Banner if not verified -->
+            <?php if ((int)($user['phone_verified'] ?? 0) === 0): ?>
+                <div class="alert alert-warning d-flex flex-wrap align-items-center justify-content-between gap-2 p-3 mb-3 rounded-3 border-warning-subtle" role="alert">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-exclamation-triangle-fill fs-5 text-warning flex-shrink-0"></i>
+                        <div>
+                            <strong>আপনার ফোন নাম্বার ভেরিফাই করা হয়নি!</strong>
+                            <div class="small text-muted">অ্যাডমিন থেকে মেসেজে পাওয়া ৬ ডিজিটের OTP দিয়ে আপনার ফোন নাম্বার ভেরিফাই করুন।</div>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-success text-nowrap" data-bs-toggle="modal" data-bs-target="#verifyPhoneModal">
+                        <i class="bi bi-shield-check me-1"></i> Verify Phone
+                    </button>
+                </div>
+            <?php endif; ?>
+
             <div class="card border shadow-sm">
                 <div class="card-header bg-white fw-semibold">Personal Information</div>
                 <div class="card-body p-3 p-md-4">
@@ -194,12 +243,46 @@ $nav_items = [
                         </div>
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label for="phone" class="form-label">Phone Number</label>
+                                <div class="d-flex align-items-center justify-content-between mb-1">
+                                    <label for="phone" class="form-label mb-0">Phone Number</label>
+                                    <div>
+                                        <?php if ((int)($user['phone_verified'] ?? 0) === 1): ?>
+                                            <span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size: 0.75rem;">
+                                                <i class="bi bi-check-circle-fill me-1"></i>Verified
+                                            </span>
+                                        <?php else: ?>
+                                            <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle me-1" style="font-size: 0.75rem;">
+                                                <i class="bi bi-exclamation-triangle-fill me-1"></i>Unverified
+                                            </span>
+                                            <button type="button" class="btn btn-outline-success btn-sm py-0 px-2" style="font-size: 0.75rem;" data-bs-toggle="modal" data-bs-target="#verifyPhoneModal">
+                                                Verify
+                                            </button>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
                                 <input type="tel" class="form-control" id="phone" name="phone" value="<?= htmlspecialchars($user['phone'], ENT_QUOTES, 'UTF-8'); ?>" required>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label for="email" class="form-label">Email Address</label>
-                                <input type="email" class="form-control" id="email" name="email" value="<?= htmlspecialchars($user['email'], ENT_QUOTES, 'UTF-8'); ?>">
+                                <div class="d-flex align-items-center justify-content-between mb-1">
+                                    <label for="email" class="form-label mb-0">Email Address <span class="text-muted small">(Optional)</span></label>
+                                    <div>
+                                        <?php if (!empty($user['email'])): ?>
+                                            <?php if ((int)($user['email_verified'] ?? 0) === 1): ?>
+                                                <span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size: 0.75rem;">
+                                                    <i class="bi bi-check-circle-fill me-1"></i>Verified
+                                                </span>
+                                            <?php else: ?>
+                                                <span class="badge bg-secondary-subtle text-secondary border me-1" style="font-size: 0.75rem;">
+                                                    Unverified
+                                                </span>
+                                                <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-2" style="font-size: 0.75rem;" data-bs-toggle="modal" data-bs-target="#verifyEmailModal">
+                                                    Verify
+                                                </button>
+                                            <?php endif; ?>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                                <input type="email" class="form-control" id="email" name="email" value="<?= htmlspecialchars($user['email'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" placeholder="optional@example.com">
                             </div>
                         </div>
                         <div class="mb-3">
@@ -214,5 +297,74 @@ $nav_items = [
         </section>
     </div>
 </main>
+
+<!-- Verify Phone Modal -->
+<div class="modal fade" id="verifyPhoneModal" tabindex="-1" aria-labelledby="verifyPhoneModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content text-start">
+            <form method="POST" action="profile.php">
+                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['profile_csrf'], ENT_QUOTES, 'UTF-8'); ?>">
+                <input type="hidden" name="action" value="verify_phone_otp">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold" id="verifyPhoneModalLabel"><i class="bi bi-phone text-success me-2"></i>Verify Phone Number</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="text-center mb-3">
+                        <div class="rounded-circle bg-success-subtle text-success d-inline-flex p-3 mb-2">
+                            <i class="bi bi-shield-check fs-2"></i>
+                        </div>
+                        <h6 class="mb-1">Phone Number: <strong class="text-dark"><?= htmlspecialchars($user['phone']); ?></strong></h6>
+                        <p class="text-muted small">অ্যাডমিন থেকে আপনার নাম্বারে পাঠানো ৬ ডিজিটের OTP কোডটি এখানে লিখুন:</p>
+                    </div>
+                    <div class="mb-3">
+                        <input type="text" name="otp_code" class="form-control text-center fs-3 fw-bold tracking-wider" placeholder="••••••" maxlength="10" required autofocus autocomplete="one-time-code">
+                        <div class="form-text text-center">মেসেজের কোডটি সঠিকভাবে লিখে সাবমিট করুন।</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-success btn-sm px-4">Submit OTP</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Verify Email Modal (Frontend ready, backend placeholder) -->
+<div class="modal fade" id="verifyEmailModal" tabindex="-1" aria-labelledby="verifyEmailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content text-start">
+            <form method="POST" action="profile.php">
+                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['profile_csrf'], ENT_QUOTES, 'UTF-8'); ?>">
+                <input type="hidden" name="action" value="verify_email_otp">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold" id="verifyEmailModalLabel"><i class="bi bi-envelope-check text-success me-2"></i>Verify Email Address</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="text-center mb-3">
+                        <div class="rounded-circle bg-primary-subtle text-primary d-inline-flex p-3 mb-2">
+                            <i class="bi bi-envelope fs-2"></i>
+                        </div>
+                        <h6 class="mb-1">Email: <strong class="text-dark"><?= htmlspecialchars($user['email'] ?? 'Not set'); ?></strong></h6>
+                        <p class="text-muted small">ইমেইল ভেরিফিকেশন কোড সিস্টেম শীঘ্রই চালু হবে।</p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-secondary">Verification Code</label>
+                        <input type="text" name="email_otp" class="form-control text-center fs-4 fw-bold" placeholder="••••••" maxlength="10">
+                        <div class="form-text text-center">ইমেইলে পাওয়া কোডটি প্রবেশ করান।</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-success btn-sm px-4">Submit</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

@@ -57,10 +57,17 @@ unset($_SESSION['order_request_flash']);
 $timeline = get_order_status_timeline($pdo, $order);
 $order_status = normalize_order_status((string)$order['order_status']);
 $can_request_item_addition = in_array($order_status, ['processing', 'confirmed', 'picked', 'packed'], true);
-if ($assignment) {
+$has_delivering = false;
+foreach ($timeline as $event) {
+    if (normalize_order_status((string)($event['status'] ?? '')) === 'delivering') {
+        $has_delivering = true;
+        break;
+    }
+}
+if ($assignment && !$has_delivering && in_array($order_status, ['packed', 'delivering', 'delivered'], true)) {
     $delivery_event = [
-        'type' => 'delivery_information',
-        'created_at' => $assignment['assigned_at'],
+        'status' => 'delivering',
+        'created_at' => $assignment['assigned_at'] ?? null,
     ];
     $delivery_insert_index = count($timeline);
     foreach ($timeline as $index => $event) {
@@ -129,34 +136,46 @@ $timeline_descriptions = [
         <div class="card-body">
             <ol class="list-unstyled mb-0">
                 <?php foreach ($timeline as $event): ?>
-                    <?php if (($event['type'] ?? '') === 'delivery_information'): ?>
-                        <li class="d-flex gap-3 pb-4">
-                            <div class="small text-muted text-nowrap" style="min-width: 118px;">
-                                <?= !empty($event['created_at']) ? date('M d, Y', strtotime($event['created_at'])) . '<br>' . date('h:i A', strtotime($event['created_at'])) : 'Time not recorded'; ?>
-                            </div>
-                            <div class="border-start border-2 border-success ps-3 position-relative">
-                                <span class="position-absolute top-0 start-0 translate-middle-x badge rounded-pill text-bg-success"><i class="bi bi-truck"></i></span>
-                                <div class="fw-semibold">Delivery Information</div>
-                                <div class="small">
-                                    <?= htmlspecialchars($assignment['provider_name'], ENT_QUOTES, 'UTF-8'); ?>
-                                    <span class="badge text-bg-light"><?= htmlspecialchars($assignment['delivery_type'] === 'courier' ? 'Courier' : 'Rider', ENT_QUOTES, 'UTF-8'); ?></span>
-                                </div>
-                                <?php if ($assignment['contact_name'] !== ''): ?><div class="small"><?= htmlspecialchars($assignment['contact_name'], ENT_QUOTES, 'UTF-8'); ?></div><?php endif; ?>
-                                <?php if ($assignment['contact_phone'] !== ''): ?><div class="small"><a href="tel:<?= htmlspecialchars($assignment['contact_phone'], ENT_QUOTES, 'UTF-8'); ?>"><?= htmlspecialchars($assignment['contact_phone'], ENT_QUOTES, 'UTF-8'); ?></a></div><?php endif; ?>
-                                <?php if ($assignment['tracking_number'] !== ''): ?><div class="small text-muted mt-1">Tracking / Consignment: <?= htmlspecialchars($assignment['tracking_number'], ENT_QUOTES, 'UTF-8'); ?></div><?php endif; ?>
-                            </div>
-                        </li>
-                        <?php continue; ?>
-                    <?php endif; ?>
                     <?php $event_status = normalize_order_status((string)$event['status']); ?>
                     <li class="d-flex gap-3 pb-4">
                         <div class="small text-muted text-nowrap" style="min-width: 118px;">
                             <?= !empty($event['created_at']) ? date('M d, Y', strtotime($event['created_at'])) . '<br>' . date('h:i A', strtotime($event['created_at'])) : 'Time not recorded'; ?>
                         </div>
                         <div class="border-start border-2 border-success ps-3 position-relative">
-                            <span class="position-absolute top-0 start-0 translate-middle-x badge rounded-pill text-bg-success"><i class="bi bi-check"></i></span>
+                            <span class="position-absolute top-0 start-0 translate-middle-x badge rounded-pill text-bg-success">
+                                <i class="bi <?= $event_status === 'delivering' ? 'bi-truck' : 'bi-check'; ?>"></i>
+                            </span>
                             <div class="fw-semibold"><?= htmlspecialchars(order_status_label($event_status), ENT_QUOTES, 'UTF-8'); ?></div>
                             <div class="small text-muted"><?= htmlspecialchars($timeline_descriptions[$event_status] ?? 'Your order status was updated.', ENT_QUOTES, 'UTF-8'); ?></div>
+                            <?php if ($event_status === 'delivering' && !empty($assignment)): ?>
+                                <div class="bg-light border rounded p-2 mt-2" style="max-width: 480px;">
+                                    <div class="d-flex align-items-center gap-2 mb-1">
+                                        <span class="badge text-bg-success" style="font-size: 0.75rem;">
+                                            <?= htmlspecialchars($assignment['delivery_type'] === 'courier' ? 'Courier' : 'Rider', ENT_QUOTES, 'UTF-8'); ?>
+                                        </span>
+                                        <strong class="text-dark small"><?= htmlspecialchars($assignment['provider_name'], ENT_QUOTES, 'UTF-8'); ?></strong>
+                                    </div>
+                                    <?php if ($assignment['contact_name'] !== ''): ?>
+                                        <div class="small text-secondary mb-1">
+                                            <i class="bi bi-person me-1 text-muted"></i><?= htmlspecialchars($assignment['contact_name'], ENT_QUOTES, 'UTF-8'); ?>
+                                        </div>
+                                    <?php endif; ?>
+                                    <?php if ($assignment['contact_phone'] !== ''): ?>
+                                        <div class="small mb-1">
+                                            <i class="bi bi-telephone me-1 text-muted"></i>
+                                            <a href="tel:<?= htmlspecialchars($assignment['contact_phone'], ENT_QUOTES, 'UTF-8'); ?>" class="text-decoration-none">
+                                                <?= htmlspecialchars($assignment['contact_phone'], ENT_QUOTES, 'UTF-8'); ?>
+                                            </a>
+                                        </div>
+                                    <?php endif; ?>
+                                    <?php if ($assignment['tracking_number'] !== ''): ?>
+                                        <div class="small text-muted mt-1 pt-1 border-top">
+                                            <i class="bi bi-upc-scan me-1"></i>Tracking / Consignment: 
+                                            <span class="fw-semibold text-dark"><?= htmlspecialchars($assignment['tracking_number'], ENT_QUOTES, 'UTF-8'); ?></span>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+                            <?php endif; ?>
                         </div>
                     </li>
                 <?php endforeach; ?>

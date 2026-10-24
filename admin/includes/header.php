@@ -11,7 +11,7 @@ $admin_profile_picture = !empty($_SESSION['user_id'])
 $admin_nav_links = [
   ['key' => 'dashboard', 'label' => 'Dashboard', 'icon' => 'speedometer2', 'href' => 'index.php'],
   ['key' => 'orders', 'label' => 'Orders', 'icon' => 'cart-check', 'href' => 'sales.php'],
-  ['key' => 'order-requests', 'label' => 'Order Requests', 'icon' => 'inbox', 'href' => 'order_requests.php'],
+  ['key' => 'order-requests', 'label' => 'Requests', 'icon' => 'inbox', 'href' => 'order_requests.php'],
   ['key' => 'products', 'label' => 'Products', 'icon' => 'box-seam', 'href' => 'products.php'],
   ['key' => 'category', 'label' => 'Categories', 'icon' => 'folder-plus', 'href' => 'categories.php'],
   ['key' => 'collection', 'label' => 'Collections', 'icon' => 'tags', 'href' => 'collection.php'],

@@ -21,12 +21,17 @@ $order_statuses = [
 ];
 $order_status_transitions = [
     'processing' => ['confirmed', 'cancelled'],
-    'confirmed' => ['processing', 'picked', 'cancelled'],
-    'picked' => ['confirmed', 'packed', 'cancelled'],
-    'packed' => ['picked', 'delivering', 'cancelled'],
+    'confirmed' => ['picked', 'processing', 'cancelled'],
+    'picked' => ['packed', 'confirmed', 'cancelled'],
+    'packed' => ['delivering', 'picked', 'cancelled'],
     'delivering' => ['delivered'],
     'delivered' => [],
     'cancelled' => [],
+];
+$backward_transitions = [
+    'confirmed' => 'processing',
+    'picked' => 'confirmed',
+    'packed' => 'picked',
 ];
 $status_csrf_token = $_SESSION['order_status_csrf'] ?? bin2hex(random_bytes(32));
 $_SESSION['order_status_csrf'] = $status_csrf_token;
@@ -183,8 +188,13 @@ include_once 'includes/header.php';
                                             <label class="form-label fw-bold">Order Status</label>
                                             <select name="status" class="form-select" required>
                                                 <?php foreach ($available_statuses as $status_value => $status_label): ?>
-                                                    <option value="<?= htmlspecialchars($status_value, ENT_QUOTES, 'UTF-8'); ?>" data-undo="<?= in_array($status_value, ['processing', 'confirmed', 'picked'], true) && $status_value !== $status ? 'true' : 'false'; ?>" <?= $status === $status_value ? 'selected' : ''; ?>>
-                                                        <?= in_array($status_value, ['processing', 'confirmed', 'picked'], true) && $status_value !== $status ? 'Undo to ' : 'Set to '; ?><?= htmlspecialchars($status_label, ENT_QUOTES, 'UTF-8'); ?>
+                                                    <?php
+                                                    $is_undo = ($backward_transitions[$status] ?? null) === $status_value;
+                                                    $is_cancel = $status_value === 'cancelled';
+                                                    $prefix = $status === $status_value ? '' : ($is_undo ? 'Undo to ' : ($is_cancel ? 'Cancel: ' : 'Set to '));
+                                                    ?>
+                                                    <option value="<?= htmlspecialchars($status_value, ENT_QUOTES, 'UTF-8'); ?>" data-undo="<?= $is_undo ? 'true' : 'false'; ?>" <?= $status === $status_value ? 'selected' : ''; ?>>
+                                                        <?= $prefix . htmlspecialchars($status_label, ENT_QUOTES, 'UTF-8'); ?>
                                                     </option>
                                                 <?php endforeach; ?>
                                             </select>

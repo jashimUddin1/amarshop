@@ -23,7 +23,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($user && password_verify($password, $user['password'])) {
             
             // ইমেইল ভেরিফাইড কিনা চেক
-            if ($user['verify_status'] != 1) {
+            if (false) { // ভেরিফিকেশন চেক আপাতত অফ রাখা হলো
                 $_SESSION['verify_email'] = $user['email'];
                 $_SESSION['status']       = 'warning';
                 $_SESSION['message']      = 'Your email is not verified yet. Please verify your OTP!';

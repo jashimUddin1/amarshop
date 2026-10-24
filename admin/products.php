@@ -28,11 +28,10 @@ include_once 'includes/header.php';
 ?>
 
 <div class="p-3 flex-shrink-0">
-  <h2 class="h3 mb-3 text-center">Product Management</h2>
   <div class="d-flex justify-content-between align-items-center gap-3 flex-wrap">
     <input type="search" id="productSearchInput" class="form-control" style="width: min(16rem, 100%);" placeholder="Search products..." aria-label="Search products" oninput="searchProductTable()">
     <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addProductModal">
-      <i class="bi bi-plus-circle me-1"></i> Add Product
+      Add Product
     </button>
   </div>
 </div>
