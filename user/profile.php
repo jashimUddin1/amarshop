@@ -199,7 +199,7 @@ $nav_items = [
                         <i class="bi bi-exclamation-triangle-fill fs-5 text-warning flex-shrink-0"></i>
                         <div>
                             <strong>আপনার ফোন নাম্বার ভেরিফাই করা হয়নি!</strong>
-                            <div class="small text-muted">অ্যাডমিন থেকে মেসেজে পাওয়া ৬ ডিজিটের OTP দিয়ে আপনার ফোন নাম্বার ভেরিফাই করুন।</div>
+                            <div class="small text-muted">অ্যাডমিন থেকে মেসেজে পাওয়া ৬ ডিজিটের OTP দিয়ে আপনার ফোন নাম্বার ভেরিফাই করুন। মেসেজে না পেলে এডমিন এর সাথে যোগাযোগ করুন what's up 01950047790</div>
                         </div>
                     </div>
                     <button type="button" class="btn btn-sm btn-success text-nowrap" data-bs-toggle="modal" data-bs-target="#verifyPhoneModal">

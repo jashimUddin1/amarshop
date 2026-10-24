@@ -2,12 +2,12 @@
 require_once('../auth/config.php');
 
 // PHPMailer (ভবিষ্যতে ইমেইল ওটিপি পাঠানোর জন্য প্রস্তুত রাখা হয়েছে)
-use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\Exception;
+// use PHPMailer\PHPMailer\PHPMailer;
+// use PHPMailer\PHPMailer\Exception;
 
-if (file_exists('../vendor/autoload.php')) {
-    require '../vendor/autoload.php';
-}
+// if (file_exists('../vendor/autoload.php')) {
+//     require '../vendor/autoload.php';
+// }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
