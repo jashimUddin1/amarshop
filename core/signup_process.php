@@ -1,13 +1,11 @@
 <?php
 require_once('../auth/config.php');
+require_once __DIR__ . '/email_verification.php';
 
-// PHPMailer (ভবিষ্যতে ইমেইল ওটিপি পাঠানোর জন্য প্রস্তুত রাখা হয়েছে)
-// use PHPMailer\PHPMailer\PHPMailer;
-// use PHPMailer\PHPMailer\Exception;
-
-// if (file_exists('../vendor/autoload.php')) {
-//     require '../vendor/autoload.php';
-// }
+if (!empty($_SESSION['user_id'])) {
+    header('Location: ' . base_url('index.php'));
+    exit;
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
@@ -32,8 +30,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors['phone'] = 'Phone number must contain at least 8 digits.';
     }
 
-    // ৩. ইমেইল অপশনাল (যদি দেওয়া হয় তবে ভ্যালিড হতে হবে)
-    if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+    // Email is required because accounts must verify ownership before login.
+    if ($email === '') {
+        $errors['email'] = 'Email address is required for account verification.';
+    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $errors['email'] = 'Please enter a valid email address.';
     }
 
@@ -103,8 +103,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $remote_host = $user_ip ? @gethostbyaddr($user_ip) : null;
         $user_agent  = $_SERVER['HTTP_USER_AGENT'] ?? null;
 
-        // ৩. আপাতত কোনো ভেরিফাই ছাড়াই একাউন্ট তৈরি হবে
-        // verify_status = 1 (সরাসরি একটিভ), phone_verified = 0, email_verified = 0
+        // Account access remains blocked until the email OTP is verified.
         $sql = "INSERT INTO users (
                     customar_name, phone, email, password, 
                     verify_token, verify_status, phone_verified, email_verified, created_at, role, 
@@ -121,7 +120,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $executed = $insert_stmt->execute([
             ':customar_name'  => $customar_name,
             ':phone'          => $phone,
-            ':email'          => $email !== '' ? $email : null,
+            ':email'          => $email,
             ':password'       => $hashed_password,
             ':verify_token'   => $verify_token,
             ':created_at'     => $created_at,
@@ -134,50 +133,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($executed) {
             $new_user_id = (int)$pdo->lastInsertId();
-
-            /*
-            // ========================================================
-            // ইমেইল OTP ভেরিফিকেশন (অনুরোধ অনুযায়ী আপাতত কমেন্ট করা হলো)
-            // ভবিষ্যতে SMTP_PASS যুক্ত করার পর নিচের কোড আনকমেন্ট করলেই স্বয়ংক্রিয়ভাবে মেইল যাবে:
-            // ========================================================
-            if ($email !== '' && defined('SMTP_PASS') && SMTP_PASS !== '') {
-                try {
-                    $otp_code = rand(100000, 999999);
-                    $otp_expires = date('Y-m-d H:i:s', strtotime('+10 minutes'));
-                    $pdo->prepare("UPDATE users SET otp_code = :otp, otp_expires_at = :exp WHERE id = :id")
-                        ->execute([':otp' => $otp_code, ':exp' => $otp_expires, ':id' => $new_user_id]);
-
-                    $mail = new PHPMailer(true);
-                    $mail->isSMTP();
-                    $mail->Host       = SMTP_HOST;
-                    $mail->SMTPAuth   = true;
-                    $mail->Username   = SMTP_USER;
-                    $mail->Password   = SMTP_PASS;
-                    $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-                    $mail->Port       = SMTP_PORT;
-
-                    $mail->setFrom(SMTP_FROM, SMTP_NAME);
-                    $mail->addAddress($email, $customar_name);
-                    $mail->isHTML(true);
-                    $mail->Subject = 'Verify Your Email - AmarShop';
-                    $mail->Body    = "<h3>Hello {$customar_name},</h3><p>Your OTP verification code for AmarShop is: <b style='font-size: 20px; color: #198754;'>{$otp_code}</b></p><p>This code will expire in 10 minutes.</p>";
-                    $mail->send();
-                } catch (\Throwable $mEx) {
-                    error_log('Signup email send error: ' . $mEx->getMessage());
-                }
+            $_SESSION['verify_user_id'] = $new_user_id;
+            $_SESSION['verify_email'] = $email;
+            try {
+                send_email_verification_otp($pdo, $new_user_id, $email, $customar_name);
+                $_SESSION['status'] = 'success';
+                $_SESSION['message'] = 'আপনার ইমেইলে ৬ সংখ্যার OTP পাঠানো হয়েছে। ১০ মিনিটের মধ্যে যাচাই করুন।';
+            } catch (Throwable $mailError) {
+                error_log('Signup email verification send failed: ' . $mailError->getMessage());
+                $_SESSION['status'] = 'danger';
+                $_SESSION['message'] = 'অ্যাকাউন্ট তৈরি হয়েছে, কিন্তু OTP ইমেইল পাঠানো যায়নি। SMTP সেটিংস ঠিক করে OTP আবার পাঠান।';
             }
-            */
-
-            // সরাসরি সেশন সেট করে লগইন করিয়ে দেওয়া হলো
-            $_SESSION['user_id']    = $new_user_id;
-            $_SESSION['user_name']  = $customar_name;
-            $_SESSION['user_email'] = $email ?: '';
-            $_SESSION['user_role']  = $role;
-
-            $_SESSION['status']  = 'success';
-            $_SESSION['message'] = 'একাউন্ট সফলভাবে তৈরি হয়েছে! স্বাগতম, ' . htmlspecialchars($customar_name) . '।';
-
-            header('Location: ' . base_url('index.php'));
+            header('Location: ' . base_url('auth/otp_verify.php'));
             exit;
         }
 

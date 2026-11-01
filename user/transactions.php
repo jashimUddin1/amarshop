@@ -105,7 +105,7 @@ $nav_items = [
                                 <tbody>
                                     <?php foreach ($transactions as $tx): ?>
                                         <tr>
-                                            <td class="fw-semibold"><a class="text-dark" href="order_details.php?id=<?= (int)$tx['id']; ?>"><?= htmlspecialchars($tx['order_number'], ENT_QUOTES, 'UTF-8'); ?></a></td>
+                                            <td class="fw-semibold"><a class="text-dark" href="order_details.php?id=<?= (int)$tx['id']; ?>">#<?= htmlspecialchars(order_shipment_number((string)$tx['order_number']), ENT_QUOTES, 'UTF-8'); ?></a></td>
                                             <td><small class="text-muted"><?= date('d M Y, h:i A', strtotime($tx['created_at'])); ?></small></td>
                                             <td><span class="badge bg-light text-dark border"><?= htmlspecialchars($tx['payment_method'], ENT_QUOTES, 'UTF-8'); ?></span></td>
                                             <td class="fw-bold text-success">৳<?= number_format((float)$tx['grand_total'], 0); ?></td>

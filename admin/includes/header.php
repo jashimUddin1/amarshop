@@ -1,21 +1,29 @@
 <?php
 require_once __DIR__ . '/../../core/user_profile_picture.php';
+require_once __DIR__ . '/../../core/order_admin.php';
 
 if (session_status() === PHP_SESSION_NONE) {
   session_start();
 }
 $admin_profile_picture = !empty($_SESSION['user_id'])
-  ? get_user_profile_picture($pdo, (int)$_SESSION['user_id'])
+  ? get_user_profile_picture($pdo, (int)$_SESSION['user_id'], true)
   : null;
+
+ensure_order_requests_table($pdo);
+ensure_order_issues_table($pdo);
+$pending_order_request_count = (int)$pdo->query("SELECT COUNT(*) FROM order_requests WHERE status = 'pending'")->fetchColumn();
+$pending_order_issue_count = (int)$pdo->query("SELECT COUNT(*) FROM order_issues WHERE status = 'pending'")->fetchColumn();
 
 $admin_nav_links = [
   ['key' => 'dashboard', 'label' => 'Dashboard', 'icon' => 'speedometer2', 'href' => 'index.php'],
   ['key' => 'orders', 'label' => 'Orders', 'icon' => 'cart-check', 'href' => 'sales.php'],
   ['key' => 'order-requests', 'label' => 'Requests', 'icon' => 'inbox', 'href' => 'order_requests.php'],
+  ['key' => 'order-issues', 'label' => 'Order Issues', 'icon' => 'exclamation-triangle', 'href' => 'order_issues.php'],
   ['key' => 'products', 'label' => 'Products', 'icon' => 'box-seam', 'href' => 'products.php'],
   ['key' => 'category', 'label' => 'Categories', 'icon' => 'folder-plus', 'href' => 'categories.php'],
   ['key' => 'collection', 'label' => 'Collections', 'icon' => 'tags', 'href' => 'collection.php'],
   ['key' => 'users', 'label' => 'Users', 'icon' => 'people', 'href' => 'users.php'],
+  ['key' => 'deliverymen', 'label' => 'Deliverymen', 'icon' => 'bicycle', 'href' => 'deliverymen.php'],
   ['key' => 'setting', 'label' => 'Settings', 'icon' => 'gear', 'href' => 'setting.php'],
   ['key' => 'profile', 'label' => 'My Profile', 'icon' => 'person-circle', 'href' => 'profile.php'],
 ];
@@ -149,6 +157,8 @@ $admin_nav_links = [
           <li class="nav-item">
             <a class="nav-link <?= ($current_page ?? '') === $link['key'] ? 'active' : 'text-body'; ?>" href="<?= htmlspecialchars($link['href'], ENT_QUOTES, 'UTF-8'); ?>">
               <i class="bi bi-<?= htmlspecialchars($link['icon'], ENT_QUOTES, 'UTF-8'); ?> me-2"></i><?= htmlspecialchars($link['label'], ENT_QUOTES, 'UTF-8'); ?>
+              <?php if ($link['key'] === 'order-requests' && $pending_order_request_count > 0): ?><span class="badge text-bg-warning ms-1"><?= $pending_order_request_count; ?></span><?php endif; ?>
+              <?php if ($link['key'] === 'order-issues' && $pending_order_issue_count > 0): ?><span class="badge text-bg-danger ms-1"><?= $pending_order_issue_count; ?></span><?php endif; ?>
             </a>
           </li>
         <?php endforeach; ?>
@@ -168,6 +178,8 @@ $admin_nav_links = [
             <li class="nav-item">
               <a class="nav-link <?= ($current_page ?? '') === $link['key'] ? 'active' : 'text-body'; ?>" href="<?= htmlspecialchars($link['href'], ENT_QUOTES, 'UTF-8'); ?>">
                 <i class="bi bi-<?= htmlspecialchars($link['icon'], ENT_QUOTES, 'UTF-8'); ?> me-2"></i><?= htmlspecialchars($link['label'], ENT_QUOTES, 'UTF-8'); ?>
+                <?php if ($link['key'] === 'order-requests' && $pending_order_request_count > 0): ?><span class="badge text-bg-warning ms-1"><?= $pending_order_request_count; ?></span><?php endif; ?>
+                <?php if ($link['key'] === 'order-issues' && $pending_order_issue_count > 0): ?><span class="badge text-bg-danger ms-1"><?= $pending_order_issue_count; ?></span><?php endif; ?>
               </a>
             </li>
           <?php endforeach; ?>

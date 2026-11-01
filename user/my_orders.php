@@ -164,8 +164,8 @@ $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             <div class="p-3 border-bottom d-flex flex-wrap justify-content-between align-items-center gap-2">
                                 <div class="d-flex align-items-center gap-1">
                                     <span class="text-secondary fw-normal">Order ID:</span>
-                                    <span class="fw-bold text-dark">#<?= htmlspecialchars($order['order_number'] ?? (string)$order['id'], ENT_QUOTES, 'UTF-8'); ?></span>
-                                    <button type="button" class="btn btn-link text-muted p-0 ms-1 copy-order-btn" data-order-number="<?= htmlspecialchars($order['order_number'] ?? (string)$order['id'], ENT_QUOTES, 'UTF-8'); ?>" title="Copy Order ID" style="line-height:1;text-decoration:none;">
+                                    <span class="fw-bold text-dark">#<?= htmlspecialchars(order_shipment_number((string)($order['order_number'] ?? $order['id'])), ENT_QUOTES, 'UTF-8'); ?></span>
+                                    <button type="button" class="btn btn-link text-muted p-0 ms-1 copy-order-btn" data-order-number="<?= htmlspecialchars(order_shipment_number((string)($order['order_number'] ?? $order['id'])), ENT_QUOTES, 'UTF-8'); ?>" title="Copy Order ID" style="line-height:1;text-decoration:none;">
                                         <i class="bi bi-copy"></i>
                                     </button>
                                 </div>

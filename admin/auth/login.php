@@ -1,6 +1,7 @@
 <?php
 // Include your PDO database & configuration setup
 require_once 'config.php';
+ensure_admin_account_tables($pdo);
 
 $error = '';
 
@@ -13,20 +14,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!empty($email) && !empty($password)) {
         try {
             // Prepared statement using PDO
-            $stmt = $pdo->prepare("SELECT id, customar_name, email, password, role FROM users WHERE email = :email LIMIT 1");
+            $stmt = $pdo->prepare("SELECT id, customar_name, email, password, role FROM admin_users WHERE email = :email LIMIT 1");
             $stmt->execute([':email' => $email]);
             $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
             if ($user) {
-                // Supports both hashed passwords and plain text
-                if (password_verify($password, $user['password']) && in_array(strtolower((string)$user['role']), ['admin', 'manager'], true)) {
+                if (password_verify($password, $user['password']) &&
+                    in_array(strtoupper(trim((string)$user['role'])), ['CEO', 'MD', 'MANAGER', 'ASS. MANAGER', 'SALESMAN'], true)) {
                     
                     // Set session variables
                     session_regenerate_id(true);
                     $_SESSION['user_id'] = $user['id'];
+                    $_SESSION['admin_user_id'] = $user['id'];
                     $_SESSION['email']   = $user['email'];
                     $_SESSION['user_name'] = $user['customar_name'] ?? $user['email'];
-                    $_SESSION['user_role'] = strtolower((string)$user['role']);
+                    $_SESSION['user_role'] = strtoupper(trim((string)$user['role']));
 
                     // Redirect after login
                     header("Location: " . base_url('index.php'));

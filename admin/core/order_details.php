@@ -1,5 +1,6 @@
 <?php
 require_once '../auth/config.php';
+require_once __DIR__ . '/../../core/order_status.php';
 require_admin();
 
 if (!isset($_GET['id'])) {
@@ -34,7 +35,7 @@ $items = $items_stmt->fetchAll(PDO::FETCH_ASSOC);
   </div>
   <div class="col-md-6 text-md-end">
     <h6>Order Overview</h6>
-    <p class="mb-1"><strong>Order ID:</strong> #<?= htmlspecialchars($order['order_number']); ?></p>
+    <p class="mb-1"><strong>Order ID:</strong> #<?= htmlspecialchars(order_shipment_number((string)$order['order_number']), ENT_QUOTES, 'UTF-8'); ?></p>
     <p class="mb-1"><strong>Date:</strong> <?= date('d M Y, h:i A', strtotime($order['created_at'])); ?></p>
     <p class="mb-1"><strong>Status:</strong> <span class="badge bg-primary"><?= htmlspecialchars(ucfirst($order['order_status'] ?? 'pending')); ?></span></p>
     <p class="mb-1"><strong>Payment:</strong> <?= htmlspecialchars($order['payment_method'] ?? 'COD'); ?></p>

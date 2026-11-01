@@ -1,13 +1,15 @@
 <?php
 require_once 'config.php';
 require_admin();
+$signup_csrf_token = $_SESSION['admin_signup_csrf'] ?? bin2hex(random_bytes(32));
+$_SESSION['admin_signup_csrf'] = $signup_csrf_token;
 ?>
 <!DOCTYPE html>
 <html lang="bn">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sign Up - User Registration</title>
+  <title>Create Admin Staff - AmarShop</title>
   <!-- Bootstrap 5 CSS CDN -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <!-- Bootstrap Icons CDN -->
@@ -27,11 +29,12 @@ require_admin();
               <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-2" style="width: 60px; height: 60px;">
                 <i class="bi bi-person-plus-fill fs-3"></i>
               </div>
-              <h3 class="fw-bold">Create an Account</h3>
-              <p class="text-muted small">Please fill in the information below to register</p>
+              <h3 class="fw-bold">Create Admin Staff</h3>
+              <p class="text-muted small">The account will be stored separately from customer accounts.</p>
             </div>
 
             <form action="signup_core.php" method="POST">
+              <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($signup_csrf_token, ENT_QUOTES, 'UTF-8'); ?>">
               
               <!-- First Name & Last Name (Row) -->
               <div class="row g-3 mb-3">
@@ -61,6 +64,18 @@ require_admin();
                   <span class="input-group-text bg-light"><i class="bi bi-telephone"></i></span>
                   <input type="tel" class="form-control form-control-lg fs-6" id="phone" name="phone" placeholder="01700000000" required>
                 </div>
+              </div>
+
+              <div class="mb-3">
+                <label for="role" class="form-label fw-semibold">Role <span class="text-danger">*</span></label>
+                <select class="form-select form-select-lg fs-6" id="role" name="role" required>
+                  <option value="">Choose a role</option>
+                  <option value="CEO">CEO</option>
+                  <option value="MD">MD</option>
+                  <option value="MANAGER">Manager</option>
+                  <option value="ASS. MANAGER">Assistant Manager</option>
+                  <option value="SALESMAN">Salesman</option>
+                </select>
               </div>
 
               <!-- Password & Confirm Password (Row) -->

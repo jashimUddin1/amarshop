@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../auth/config.php';
+require_once __DIR__ . '/../core/email_verification.php';
 require_once __DIR__ . '/../core/user_profile_picture.php';
 
 if (empty($_SESSION['user_id'])) {
@@ -19,8 +20,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $csrf = $_POST['csrf_token'] ?? '';
     $action = $_POST['action'] ?? 'save_profile';
     $name = trim((string)($_POST['customar_name'] ?? ''));
-    $email = trim((string)($_POST['email'] ?? ''));
-    $phone = trim((string)($_POST['phone'] ?? ''));
 
     if (!is_string($csrf) || !hash_equals($_SESSION['profile_csrf'], $csrf)) {
         http_response_code(400);
@@ -67,48 +66,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $message_type = 'danger';
         }
     } elseif ($action === 'verify_email_otp') {
-        /*
-        // ========================================================
-        // EMAIL OTP VERIFICATION (COMMENTED OUT AS REQUESTED)
-        // ভবিষ্যতে SMTP_PASS যুক্ত করে নিচের কোডটি আনকমেন্ট করুন:
-        // ========================================================
-        // require '../vendor/autoload.php';
-        // use PHPMailer\PHPMailer\PHPMailer;
-        // $mail = new PHPMailer(true);
-        // ...
-        // $mail->send();
-        */
-        $message = 'ইমেইল ভেরিফিকেশন সিস্টেম বর্তমানে অপেক্ষমাণ রয়েছে। খুব শীঘ্রই এটি চালু হবে।';
-        $message_type = 'info';
+        try {
+            $verification_stmt = $pdo->prepare('SELECT customar_name, email, email_verified, verify_status FROM users WHERE id = :id');
+            $verification_stmt->execute([':id' => $user_id]);
+            $verification_user = $verification_stmt->fetch(PDO::FETCH_ASSOC);
+            if (!$verification_user || (int)$verification_user['verify_status'] !== 1 || empty($verification_user['email'])) {
+                throw new RuntimeException('An active account email address is required for verification.');
+            }
+            if ((int)$verification_user['email_verified'] === 1) {
+                $message = 'আপনার ইমেইল ইতিমধ্যে যাচাই করা হয়েছে।';
+                $message_type = 'success';
+            } else {
+                send_email_verification_otp($pdo, $user_id, (string)$verification_user['email'], (string)$verification_user['customar_name']);
+                $_SESSION['verify_user_id'] = $user_id;
+                $_SESSION['verify_email'] = (string)$verification_user['email'];
+                header('Location: ../auth/otp_verify.php');
+                exit;
+            }
+        } catch (Throwable $e) {
+            error_log('Profile email verification request failed: ' . $e->getMessage());
+            $message = 'ইমেইলে OTP পাঠানো যায়নি। SMTP সেটিংস পরীক্ষা করে আবার চেষ্টা করুন।';
+            $message_type = 'danger';
+        }
     } elseif ($action !== 'save_profile') {
         http_response_code(400);
         exit('Invalid profile action.');
-    } elseif ($name === '' || $phone === '') {
-        $message = 'Name and phone number are required.';
-        $message_type = 'warning';
-    } elseif ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        $message = 'Please enter a valid email address.';
+    } elseif ($name === '') {
+        $message = 'Name is required.';
         $message_type = 'warning';
     } else {
         try {
-            if ($email !== '') {
-                $email_stmt = $pdo->prepare('SELECT id FROM users WHERE email = :email AND id <> :id LIMIT 1');
-                $email_stmt->execute([':email' => $email, ':id' => $user_id]);
-                if ($email_stmt->fetchColumn()) {
-                    throw new InvalidArgumentException('This email address is already used by another account.');
-                }
-            }
-            $update_stmt = $pdo->prepare(
-                'UPDATE users SET customar_name = :name, email = :email, phone = :phone WHERE id = :id'
-            );
-            $update_stmt->execute([
-                ':name' => $name,
-                ':email' => $email !== '' ? $email : null,
-                ':phone' => $phone,
-                ':id' => $user_id,
-            ]);
+            $update_stmt = $pdo->prepare('UPDATE users SET customar_name = :name WHERE id = :id');
+            $update_stmt->execute([':name' => $name, ':id' => $user_id]);
             $_SESSION['user_name'] = $name;
-            $_SESSION['user_email'] = $email;
             $message = 'Profile updated successfully.';
             $message_type = 'success';
         } catch (PDOException $e) {
@@ -260,11 +250,12 @@ $nav_items = [
                                         <?php endif; ?>
                                     </div>
                                 </div>
-                                <input type="tel" class="form-control" id="phone" name="phone" value="<?= htmlspecialchars($user['phone'], ENT_QUOTES, 'UTF-8'); ?>" required>
+                                <input type="tel" class="form-control" id="phone" value="<?= htmlspecialchars($user['phone'], ENT_QUOTES, 'UTF-8'); ?>" readonly>
+                                <div class="form-text">Contact support to update your phone number.</div>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <div class="d-flex align-items-center justify-content-between mb-1">
-                                    <label for="email" class="form-label mb-0">Email Address <span class="text-muted small">(Optional)</span></label>
+                                    <label for="email" class="form-label mb-0">Email Address</label>
                                     <div>
                                         <?php if (!empty($user['email'])): ?>
                                             <?php if ((int)($user['email_verified'] ?? 0) === 1): ?>
@@ -275,14 +266,17 @@ $nav_items = [
                                                 <span class="badge bg-secondary-subtle text-secondary border me-1" style="font-size: 0.75rem;">
                                                     Unverified
                                                 </span>
-                                                <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-2" style="font-size: 0.75rem;" data-bs-toggle="modal" data-bs-target="#verifyEmailModal">
-                                                    Verify
-                                                </button>
                                             <?php endif; ?>
                                         <?php endif; ?>
                                     </div>
                                 </div>
-                                <input type="email" class="form-control" id="email" name="email" value="<?= htmlspecialchars($user['email'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" placeholder="optional@example.com">
+                                <input type="email" class="form-control" id="email" value="<?= htmlspecialchars($user['email'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" readonly>
+                                <div class="form-text">Contact support to update your email address.</div>
+                                <?php if (!empty($user['email']) && (int)($user['email_verified'] ?? 0) !== 1): ?>
+                                    <button type="submit" name="action" value="verify_email_otp" formnovalidate class="btn btn-outline-success btn-sm mt-2">Send verification OTP</button>
+                                <?php elseif (empty($user['email'])): ?>
+                                    <div class="form-text text-warning">Contact support to add an email address before verification.</div>
+                                <?php endif; ?>
                             </div>
                         </div>
                         <div class="mb-3">
@@ -325,40 +319,6 @@ $nav_items = [
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
                     <button type="submit" class="btn btn-success btn-sm px-4">Submit OTP</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<!-- Verify Email Modal (Frontend ready, backend placeholder) -->
-<div class="modal fade" id="verifyEmailModal" tabindex="-1" aria-labelledby="verifyEmailModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content text-start">
-            <form method="POST" action="profile.php">
-                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['profile_csrf'], ENT_QUOTES, 'UTF-8'); ?>">
-                <input type="hidden" name="action" value="verify_email_otp">
-                <div class="modal-header">
-                    <h5 class="modal-title fw-bold" id="verifyEmailModalLabel"><i class="bi bi-envelope-check text-success me-2"></i>Verify Email Address</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="text-center mb-3">
-                        <div class="rounded-circle bg-primary-subtle text-primary d-inline-flex p-3 mb-2">
-                            <i class="bi bi-envelope fs-2"></i>
-                        </div>
-                        <h6 class="mb-1">Email: <strong class="text-dark"><?= htmlspecialchars($user['email'] ?? 'Not set'); ?></strong></h6>
-                        <p class="text-muted small">ইমেইল ভেরিফিকেশন কোড সিস্টেম শীঘ্রই চালু হবে।</p>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold text-secondary">Verification Code</label>
-                        <input type="text" name="email_otp" class="form-control text-center fs-4 fw-bold" placeholder="••••••" maxlength="10">
-                        <div class="form-text text-center">ইমেইলে পাওয়া কোডটি প্রবেশ করান।</div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
-                    <button type="submit" class="btn btn-success btn-sm px-4">Submit</button>
                 </div>
             </form>
         </div>

@@ -10,6 +10,9 @@ $status_filter = $_GET['order_status'] ?? 'all';
 $status_filter = is_string($status_filter) ? strtolower(trim($status_filter)) : 'all';
 $search = $_GET['search'] ?? '';
 $search = is_string($search) ? trim($search) : '';
+if (preg_match('/^#?([0-9]+)[A-Z]$/i', $search, $order_number_search)) {
+    $search = $order_number_search[1];
+}
 $order_statuses = [
     'processing' => 'Processing',
     'confirmed' => 'Confirmed',
@@ -127,7 +130,7 @@ include_once 'includes/header.php';
                     <?php if (!empty($sales)): ?>
                     <?php foreach ($sales as $sale): ?>
                     <tr id="sale-row-<?= $sale['id']; ?>">
-                        <td class="fw-bold">#<?= htmlspecialchars($sale['order_number'] ?? ''); ?></td>
+                        <td class="fw-bold">#<?= htmlspecialchars(order_shipment_number((string)($sale['order_number'] ?? '')), ENT_QUOTES, 'UTF-8'); ?></td>
                         <td><?= htmlspecialchars($sale['fullname'] ?? ''); ?></td>
                         <td><?= htmlspecialchars($sale['phone'] ?? 'N/A'); ?></td>
                         <td class="fw-bold">৳<?= number_format((float)($sale['grand_total'] ?? 0), 0); ?></td>
@@ -178,7 +181,7 @@ include_once 'includes/header.php';
                             <div class="modal-content text-start">
                                 <form onsubmit="updateStatus(event, <?= $sale['id']; ?>)">
                                     <div class="modal-header">
-                                        <h5 class="modal-title">Update Order #<?= htmlspecialchars($sale['order_number'] ?? ''); ?></h5>
+                                        <h5 class="modal-title">Update Order #<?= htmlspecialchars(order_shipment_number((string)($sale['order_number'] ?? '')), ENT_QUOTES, 'UTF-8'); ?></h5>
                                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                     </div>
                                     <div class="modal-body">

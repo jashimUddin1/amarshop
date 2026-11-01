@@ -35,6 +35,53 @@ function base_url(string $path = ''): string {
     return rtrim(BASE_URL, '/') . '/' . ltrim($path, '/');
 }
 
+function ensure_admin_account_tables(PDO $pdo): void
+{
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS admin_users (
+            id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+            customar_name VARCHAR(180) NOT NULL,
+            email VARCHAR(191) NOT NULL,
+            phone VARCHAR(40) NOT NULL DEFAULT '',
+            password VARCHAR(255) NOT NULL,
+            role VARCHAR(40) NOT NULL,
+            verify_status TINYINT(1) NOT NULL DEFAULT 1,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            UNIQUE KEY uq_admin_users_email (email)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+    ");
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS deliveryman (
+            id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+            customar_name VARCHAR(180) NOT NULL,
+            phone VARCHAR(40) NOT NULL DEFAULT '',
+            email VARCHAR(191) NULL,
+            status VARCHAR(20) NOT NULL DEFAULT 'active',
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            KEY idx_deliveryman_status (status)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+    ");
+    $pdo->exec("
+        INSERT IGNORE INTO admin_users
+            (id, customar_name, email, phone, password, role, verify_status, created_at)
+        SELECT id, customar_name, email, COALESCE(phone, ''), password,
+            CASE LOWER(role)
+                WHEN 'admin' THEN 'CEO'
+                WHEN 'manager' THEN 'MANAGER'
+                WHEN 'assistant manager' THEN 'ASS. MANAGER'
+                WHEN 'asst. manager' THEN 'ASS. MANAGER'
+                WHEN 'ass. manager' THEN 'ASS. MANAGER'
+                ELSE UPPER(role)
+            END,
+            COALESCE(verify_status, 1), COALESCE(created_at, CURRENT_TIMESTAMP)
+        FROM users
+        WHERE email IS NOT NULL AND email <> ''
+            AND LOWER(role) IN ('admin', 'manager', 'ceo', 'md', 'assistant manager', 'asst. manager', 'ass. manager', 'salesman')
+    ");
+}
+
 /* ================= AUTH GUARD ================= */
 function require_admin(): void {
     global $pdo;
@@ -44,18 +91,20 @@ function require_admin(): void {
         exit;
     }
 
-    $stmt = $pdo->prepare("SELECT customar_name, email, role FROM users WHERE id = :id LIMIT 1");
+    ensure_admin_account_tables($pdo);
+    $stmt = $pdo->prepare("SELECT id, customar_name, email, role FROM admin_users WHERE id = :id LIMIT 1");
     $stmt->execute([':id' => $_SESSION['user_id']]);
     $admin = $stmt->fetch(PDO::FETCH_ASSOC);
-    $role = strtolower((string)($admin['role'] ?? ''));
+    $role = strtoupper(trim((string)($admin['role'] ?? '')));
 
-    if (!in_array($role, ['admin', 'manager'], true)) {
+    if (!in_array($role, ['CEO', 'MD', 'MANAGER', 'ASS. MANAGER', 'SALESMAN'], true)) {
         $_SESSION = [];
         session_destroy();
         http_response_code(403);
         exit('Access denied.');
     }
 
+    $_SESSION['admin_user_id'] = (int)$admin['id'];
     $_SESSION['user_role'] = $role;
     $_SESSION['user_name'] = $admin['customar_name'];
     $_SESSION['email'] = $admin['email'];

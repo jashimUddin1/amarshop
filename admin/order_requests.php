@@ -5,6 +5,8 @@ require_once __DIR__ . '/../core/order_status.php';
 require_admin();
 
 ensure_order_requests_table($pdo);
+ensure_order_request_messages_table($pdo);
+$pending_request_count = (int)$pdo->query("SELECT COUNT(*) FROM order_requests WHERE status = 'pending'")->fetchColumn();
 $status_csrf_token = $_SESSION['order_status_csrf'] ?? bin2hex(random_bytes(32));
 $_SESSION['order_status_csrf'] = $status_csrf_token;
 $filter = $_GET['status'] ?? 'pending';
@@ -24,6 +26,16 @@ $query .= ' ORDER BY (r.status = "pending") DESC, r.created_at DESC';
 $stmt = $pdo->prepare($query);
 $stmt->execute($params);
 $requests = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$request_messages = [];
+if ($requests) {
+    $request_ids = array_column($requests, 'id');
+    $placeholders = implode(',', array_fill(0, count($request_ids), '?'));
+    $messages_stmt = $pdo->prepare("SELECT request_id, sender_type, message, created_at FROM order_request_messages WHERE request_id IN ($placeholders) ORDER BY id ASC");
+    $messages_stmt->execute($request_ids);
+    foreach ($messages_stmt->fetchAll(PDO::FETCH_ASSOC) as $request_message) {
+        $request_messages[(int)$request_message['request_id']][] = $request_message;
+    }
+}
 $page_title = 'Order Requests';
 $current_page = 'order-requests';
 include_once 'includes/header.php';
@@ -33,7 +45,7 @@ include_once 'includes/header.php';
     <form method="get" class="d-flex gap-2">
         <select class="form-select form-select-sm" name="status" aria-label="Filter requests">
             <?php foreach (['pending' => 'Pending', 'approved' => 'Approved', 'rejected' => 'Rejected', 'all' => 'All'] as $value => $label): ?>
-                <option value="<?= $value; ?>" <?= $filter === $value ? 'selected' : ''; ?>><?= $label; ?></option>
+                <option value="<?= $value; ?>" <?= $filter === $value ? 'selected' : ''; ?>><?= $value === 'pending' ? $label . ' (' . $pending_request_count . ')' : $label; ?></option>
             <?php endforeach; ?>
         </select>
         <button class="btn btn-sm btn-outline-success">Filter</button>
@@ -53,11 +65,15 @@ include_once 'includes/header.php';
                     'cancel' => 'Cancellation request',
                     default => ucfirst($request['request_type']),
                 };
+                $has_admin_reply = count(array_filter(
+                    $request_messages[(int)$request['id']] ?? [],
+                    static fn(array $message): bool => $message['sender_type'] === 'admin'
+                )) > 0;
                 ?>
                 <article class="card shadow-sm">
                     <div class="card-header bg-body d-flex flex-wrap justify-content-between align-items-center gap-2">
                         <div><strong><?= htmlspecialchars($type_label, ENT_QUOTES, 'UTF-8'); ?></strong>
-                            · Order <a href="order_details.php?id=<?= (int)$request['order_id']; ?>">#<?= htmlspecialchars($request['order_number'], ENT_QUOTES, 'UTF-8'); ?></a>
+                            · Order <a href="order_details.php?id=<?= (int)$request['order_id']; ?>">#<?= htmlspecialchars(order_shipment_number((string)$request['order_number']), ENT_QUOTES, 'UTF-8'); ?></a>
                         </div>
                         <span class="badge <?= $request['status'] === 'pending' ? 'text-bg-warning' : ($request['status'] === 'approved' ? 'text-bg-success' : 'text-bg-secondary'); ?>"><?= htmlspecialchars(ucfirst($request['status']), ENT_QUOTES, 'UTF-8'); ?></span>
                     </div>
@@ -67,20 +83,32 @@ include_once 'includes/header.php';
                             · Current order status: <?= htmlspecialchars(order_status_label((string)$request['order_status']), ENT_QUOTES, 'UTF-8'); ?>
                             · <?= !empty($request['created_at']) ? date('d M Y, h:i A', strtotime($request['created_at'])) : ''; ?>
                         </div>
-                        <p class="mb-2"><?= nl2br(htmlspecialchars($request['message'], ENT_QUOTES, 'UTF-8')); ?></p>
+                        <div class="border rounded p-2 mb-2 bg-body-tertiary">
+                            <div class="small"><strong>Customer:</strong> <?= nl2br(htmlspecialchars($request['message'], ENT_QUOTES, 'UTF-8')); ?></div>
+                            <?php foreach ($request_messages[(int)$request['id']] ?? [] as $request_message): ?>
+                                <div class="small mt-2"><strong><?= $request_message['sender_type'] === 'admin' ? 'Admin' : 'Customer'; ?>:</strong> <?= nl2br(htmlspecialchars($request_message['message'], ENT_QUOTES, 'UTF-8')); ?></div>
+                                <small class="text-muted"><?= !empty($request_message['created_at']) ? date('d M Y, h:i A', strtotime($request_message['created_at'])) : ''; ?></small>
+                            <?php endforeach; ?>
+                        </div>
                         <?php if ($request['request_type'] === 'update' && $request['status'] === 'pending'): ?>
-                            <div class="small text-primary mb-2">Review the requested change in the order details, apply it if appropriate, then approve this request.</div>
+                            <div class="small text-primary mb-2">Review changes on the order page and reply to the customer before approving or rejecting this request.</div>
                         <?php endif; ?>
                         <?php if ($request['admin_note']): ?><div class="alert alert-light border py-2 mb-0">Admin note: <?= nl2br(htmlspecialchars($request['admin_note'], ENT_QUOTES, 'UTF-8')); ?></div><?php endif; ?>
                     </div>
                     <?php if ($request['status'] === 'pending'): ?>
                         <div class="card-footer bg-body">
+                            <form class="js-request-message-form d-flex flex-wrap gap-2 mb-2">
+                                <input type="hidden" name="request_id" value="<?= (int)$request['id']; ?>">
+                                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($status_csrf_token, ENT_QUOTES, 'UTF-8'); ?>">
+                                <input name="message" class="form-control form-control-sm flex-grow-1" maxlength="3000" required placeholder="Reply to customer">
+                                <button class="btn btn-sm btn-outline-primary" type="submit">Send reply</button>
+                            </form>
                             <form class="js-resolve-request d-flex flex-wrap gap-2 align-items-center">
                                 <input type="hidden" name="request_id" value="<?= (int)$request['id']; ?>">
                                 <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($status_csrf_token, ENT_QUOTES, 'UTF-8'); ?>">
                                 <input name="admin_note" class="form-control form-control-sm flex-grow-1" placeholder="Optional note to customer">
-                                <button class="btn btn-sm btn-success" name="decision" value="approve" type="submit">Approve</button>
-                                <button class="btn btn-sm btn-outline-danger" name="decision" value="reject" type="submit">Reject</button>
+                                <button class="btn btn-sm btn-success" name="decision" value="approve" type="submit" <?= $request['request_type'] === 'update' && !$has_admin_reply ? 'disabled' : ''; ?>>Approve</button>
+                                <button class="btn btn-sm btn-outline-danger" name="decision" value="reject" type="submit" <?= $request['request_type'] === 'update' && !$has_admin_reply ? 'disabled' : ''; ?>>Reject</button>
                             </form>
                         </div>
                     <?php endif; ?>
@@ -115,6 +143,29 @@ document.querySelectorAll('.js-resolve-request').forEach(form => {
             closeButton.setAttribute('data-bs-dismiss', 'alert');
             closeButton.setAttribute('aria-label', 'Close');
             alert.append(closeButton);
+            alertContainer.append(alert);
+        }
+    });
+});
+document.querySelectorAll('.js-request-message-form').forEach(form => {
+    form.addEventListener('submit', async event => {
+        event.preventDefault();
+        try {
+            const response = await fetch('core/add_order_request_message.php', {
+                method: 'POST',
+                body: new FormData(form),
+            });
+            const result = await response.json();
+            if (!response.ok || result.status !== 'success') {
+                throw new Error(result.message || 'Reply could not be sent.');
+            }
+            window.location.reload();
+        } catch (error) {
+            const alertContainer = document.getElementById('requestAlert');
+            alertContainer.replaceChildren();
+            const alert = document.createElement('div');
+            alert.className = 'alert alert-danger';
+            alert.textContent = error.message || 'Reply could not be sent.';
             alertContainer.append(alert);
         }
     });

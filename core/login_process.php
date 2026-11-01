@@ -1,6 +1,11 @@
 <?php //login_process.php
 require_once('../auth/config.php');
 
+if (!empty($_SESSION['user_id'])) {
+    header('Location: ../index.php');
+    exit;
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     $login_identity = trim($_POST['login_identity'] ?? '');
@@ -16,19 +21,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     try {
         // ইমেইল বা ফোন নম্বর দিয়ে ইউজার খোঁজা
-        $stmt = $pdo->prepare("SELECT * FROM users WHERE email = :identity OR phone = :identity LIMIT 1");
+        $stmt = $pdo->prepare("
+            SELECT * FROM users
+            WHERE (email = :identity OR phone = :identity)
+                AND LOWER(COALESCE(role, 'user')) NOT IN ('admin', 'manager', 'ceo', 'md', 'assistant manager', 'asst. manager', 'ass. manager', 'salesman')
+            LIMIT 1
+        ");
         $stmt->execute([':identity' => $login_identity]);
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if ($user && password_verify($password, $user['password'])) {
-            
-            // ইমেইল ভেরিফাইড কিনা চেক
-            if (false) { // ভেরিফিকেশন চেক আপাতত অফ রাখা হলো
-                $_SESSION['verify_email'] = $user['email'];
-                $_SESSION['status']       = 'warning';
-                $_SESSION['message']      = 'Your email is not verified yet. Please verify your OTP!';
+            if ((int)($user['verify_status'] ?? 0) !== 1) {
+                $_SESSION['status'] = 'warning';
+                $_SESSION['message'] = 'Your account is currently disabled. Please contact the site administrator.';
                 session_write_close();
-                header('Location: otp_verify.php');
+                header('Location: ../auth/login.php');
+                exit;
+            }
+
+            if ((int)($user['email_verified'] ?? 0) !== 1) {
+                if (empty($user['email'])) {
+                    $_SESSION['status'] = 'warning';
+                    $_SESSION['message'] = 'An email address is required for verification. Please contact the site administrator.';
+                    session_write_close();
+                    header('Location: ../auth/login.php');
+                    exit;
+                }
+                $_SESSION['verify_user_id'] = (int)$user['id'];
+                $_SESSION['verify_email'] = $user['email'];
+                $_SESSION['status'] = 'warning';
+                $_SESSION['message'] = 'Your email is not verified. Enter the OTP or request a new one.';
+                session_write_close();
+                header('Location: ../auth/otp_verify.php');
                 exit;
             }
 

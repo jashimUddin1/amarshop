@@ -24,6 +24,15 @@ function normalize_order_status(string $status): string
     };
 }
 
+function order_shipment_number(string $order_number, string $suffix = 'A'): string
+{
+    $base = preg_replace('/[A-Z]+$/i', '', trim($order_number));
+    if ($base === '' || !ctype_digit($base)) {
+        return trim($order_number) . strtoupper($suffix);
+    }
+    return str_pad($base, 3, '0', STR_PAD_LEFT) . strtoupper($suffix);
+}
+
 function order_status_label(string $status): string
 {
     return match (normalize_order_status($status)) {

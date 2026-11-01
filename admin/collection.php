@@ -1,6 +1,8 @@
 <?php
 require_once 'auth/config.php';
 require_admin();
+$collection_csrf_token = $_SESSION['collection_csrf'] ?? bin2hex(random_bytes(32));
+$_SESSION['collection_csrf'] = $collection_csrf_token;
 
 $page_title = "Manage Collections";
 $current_page = "collection";
@@ -66,7 +68,7 @@ include_once 'includes/header.php';
                   <i class="bi bi-pencil-square"></i> Edit
                 </button>
                 <!-- Delete Button -->
-                <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteCollection(<?= $col['id']; ?>)">
+                <button type="button" class="btn btn-sm btn-outline-danger" data-csrf="<?= htmlspecialchars($collection_csrf_token, ENT_QUOTES, 'UTF-8'); ?>" onclick="deleteCollection(<?= (int)$col['id']; ?>, this)">
                   <i class="bi bi-trash"></i> Delete
                 </button>
               </td>
@@ -273,20 +275,24 @@ function updateCollection(event, id) {
 }
 
 // Delete Collection AJAX
-function deleteCollection(id) {
+async function deleteCollection(id, button) {
   if (confirm('Are you sure you want to delete this collection?')) {
-    fetch(`core/collection_delete.php?id=${id}`)
-      .then(res => res.json())
-      .then(data => {
-        if (data.status === 'success') {
-          const row = document.getElementById(`collection-row-${id}`);
-          if (row) row.remove();
-          showAlert(data.message, 'success');
-        } else {
-          showAlert(data.message || 'Failed to delete collection', 'danger');
-        }
-      })
-      .catch(err => console.error(err));
+    button.disabled = true;
+    try {
+      const formData = new FormData();
+      formData.set('id', String(id));
+      formData.set('csrf_token', button.dataset.csrf || '');
+      const response = await fetch('core/collection_delete.php', { method: 'POST', body: formData });
+      const data = await response.json();
+      if (!response.ok || data.status !== 'success') {
+        throw new Error(data.message || 'Failed to delete collection.');
+      }
+      document.getElementById(`collection-row-${id}`)?.remove();
+      showAlert(data.message, 'success');
+    } catch (error) {
+      showAlert(error.message || 'Failed to delete collection.', 'danger');
+      button.disabled = false;
+    }
   }
 }
 </script>

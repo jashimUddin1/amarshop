@@ -17,6 +17,8 @@ if (!is_string($order_id) || filter_var($order_id, FILTER_VALIDATE_INT) === fals
 ensure_order_status_history_table($pdo);
 ensure_order_delivery_assignments_table($pdo);
 ensure_order_requests_table($pdo);
+ensure_order_request_messages_table($pdo);
+ensure_order_issues_table($pdo);
 if (empty($_SESSION['order_request_csrf'])) {
     $_SESSION['order_request_csrf'] = bin2hex(random_bytes(32));
 }
@@ -32,7 +34,7 @@ if (!$order) {
 }
 
 $items_stmt = $pdo->prepare("
-    SELECT oi.*, p.name, p.main_img
+    SELECT oi.*, p.name, p.main_img, p.sell_price AS mrp
     FROM order_items oi
     LEFT JOIN products p ON p.id = oi.product_id
     WHERE oi.order_id = :order_id
@@ -43,9 +45,25 @@ $items = $items_stmt->fetchAll(PDO::FETCH_ASSOC);
 $assignment_stmt = $pdo->prepare('SELECT delivery_type, provider_name, contact_name, contact_phone, tracking_number, assigned_at FROM order_delivery_assignments WHERE order_id = :order_id');
 $assignment_stmt->execute([':order_id' => (int)$order_id]);
 $assignment = $assignment_stmt->fetch(PDO::FETCH_ASSOC);
-$requests_stmt = $pdo->prepare('SELECT request_type, message, status, admin_note, created_at FROM order_requests WHERE order_id = :order_id AND user_id = :user_id ORDER BY id DESC');
+$requests_stmt = $pdo->prepare('SELECT id, request_type, product_id, size, quantity, message, status, admin_note, created_at, resolved_at FROM order_requests WHERE order_id = :order_id AND user_id = :user_id ORDER BY id DESC');
 $requests_stmt->execute([':order_id' => (int)$order_id, ':user_id' => (int)$_SESSION['user_id']]);
 $order_requests = $requests_stmt->fetchAll(PDO::FETCH_ASSOC);
+$request_messages = [];
+if ($order_requests) {
+    $request_ids = array_column($order_requests, 'id');
+    $placeholders = implode(',', array_fill(0, count($request_ids), '?'));
+    $messages_stmt = $pdo->prepare("SELECT id, request_id, sender_type, message, created_at FROM order_request_messages WHERE request_id IN ($placeholders) ORDER BY id ASC");
+    $messages_stmt->execute($request_ids);
+    foreach ($messages_stmt->fetchAll(PDO::FETCH_ASSOC) as $request_message) {
+        $request_messages[(int)$request_message['request_id']][] = $request_message;
+    }
+}
+$mrp_total = 0.0;
+foreach ($items as $item) {
+    $mrp_total += max((float)($item['mrp'] ?? 0), (float)$item['price']) * (int)$item['quantity'];
+}
+$order_subtotal = (float)($order['subtotal'] ?? 0);
+$discount_total = max(0, $mrp_total - $order_subtotal);
 $latest_request_statuses = [];
 foreach ($order_requests as $request) {
     if (!isset($latest_request_statuses[$request['request_type']])) {
@@ -54,7 +72,110 @@ foreach ($order_requests as $request) {
 }
 $request_flash = $_SESSION['order_request_flash'] ?? '';
 unset($_SESSION['order_request_flash']);
+$latest_request_messages = [];
+foreach ($request_messages as $request_id => $messages) {
+    if ($messages) {
+        $latest_request_messages[(int)$request_id] = end($messages);
+    }
+}
 $timeline = get_order_status_timeline($pdo, $order);
+$timeline_events = array_map(static function (array $event): array {
+    $event['event_type'] = 'status';
+    return $event;
+}, $timeline);
+foreach ($order_requests as $request) {
+    $timeline_events[] = [
+        'event_type' => 'request',
+        'request' => $request,
+        'created_at' => $request['created_at'],
+    ];
+    foreach ($request_messages[(int)$request['id']] ?? [] as $request_message) {
+        $timeline_events[] = [
+            'event_type' => 'request_message',
+            'request' => $request,
+            'message_id' => (int)$request_message['id'],
+            'sender_type' => $request_message['sender_type'],
+            'message' => $request_message['message'],
+            'created_at' => $request_message['created_at'],
+        ];
+    }
+    if ($request['status'] !== 'pending' && !empty($request['resolved_at'])) {
+        $timeline_events[] = [
+            'event_type' => 'request_decision',
+            'request' => $request,
+            'created_at' => $request['resolved_at'],
+        ];
+    }
+}
+$issue_stmt = $pdo->prepare('SELECT * FROM order_issues WHERE order_id = :order_id AND user_id = :user_id ORDER BY id ASC');
+$issue_stmt->execute([':order_id' => (int)$order_id, ':user_id' => (int)$_SESSION['user_id']]);
+$order_issues = $issue_stmt->fetchAll(PDO::FETCH_ASSOC);
+$issue_assignments = [];
+$order_issues_by_id = [];
+if ($order_issues) {
+    foreach ($order_issues as $issue_index => $order_issue) {
+        $order_issues_by_id[(int)$order_issue['id']] = $order_issue;
+        if (empty($order_issue['shipment_number'])) {
+            $order_issues_by_id[(int)$order_issue['id']]['shipment_number'] = order_shipment_number((string)$order['order_number'], issue_shipment_suffix($issue_index + 1));
+        }
+    }
+    $issue_ids = array_map(static fn(array $issue): int => (int)$issue['id'], $order_issues);
+    $issue_placeholders = implode(',', array_fill(0, count($issue_ids), '?'));
+    $issue_assignment_stmt = $pdo->prepare("SELECT * FROM order_issue_delivery_assignments WHERE issue_id IN ($issue_placeholders)");
+    $issue_assignment_stmt->execute($issue_ids);
+    foreach ($issue_assignment_stmt->fetchAll(PDO::FETCH_ASSOC) as $issue_assignment) {
+        $issue_assignments[(int)$issue_assignment['issue_id']] = $issue_assignment;
+    }
+    foreach ($order_issues as $order_issue) {
+        $timeline_events[] = [
+            'event_type' => 'issue_created',
+            'issue_id' => (int)$order_issue['id'],
+            'created_at' => $order_issue['created_at'],
+        ];
+        if (!empty($issue_assignments[(int)$order_issue['id']])) {
+            $assignment = $issue_assignments[(int)$order_issue['id']];
+            $timeline_events[] = [
+                'event_type' => 'issue_assigned',
+                'issue_id' => (int)$order_issue['id'],
+                'created_at' => $assignment['updated_at'] ?: $assignment['assigned_at'],
+            ];
+        }
+    }
+    $issue_history_stmt = $pdo->prepare("SELECT issue_id, shipment_status, created_at FROM order_issue_shipment_history WHERE issue_id IN ($issue_placeholders) ORDER BY created_at ASC, id ASC");
+    $issue_history_stmt->execute($issue_ids);
+    $has_final_issue_event = [];
+    foreach ($issue_history_stmt->fetchAll(PDO::FETCH_ASSOC) as $issue_history) {
+        if (!in_array($issue_history['shipment_status'], ['delivered', 'cancelled'], true)) {
+            continue;
+        }
+        $has_final_issue_event[(int)$issue_history['issue_id']] = true;
+        $timeline_events[] = [
+            'event_type' => 'issue_shipment',
+            'issue_id' => (int)$issue_history['issue_id'],
+            'shipment_status' => $issue_history['shipment_status'],
+            'created_at' => $issue_history['created_at'],
+        ];
+    }
+    foreach ($order_issues as $order_issue) {
+        $issue_id = (int)$order_issue['id'];
+        $final_status = $order_issue['status'] === 'rejected'
+            ? 'cancelled'
+            : (in_array($order_issue['shipment_status'], ['delivered', 'cancelled'], true) ? $order_issue['shipment_status'] : null);
+        if ($final_status !== null && empty($has_final_issue_event[$issue_id])) {
+            $timeline_events[] = [
+                'event_type' => 'issue_shipment',
+                'issue_id' => $issue_id,
+                'shipment_status' => $final_status,
+                'created_at' => $order_issue['resolved_at'] ?: $order_issue['created_at'],
+            ];
+        }
+    }
+}
+usort($timeline_events, static function (array $left, array $right): int {
+    $left_time = !empty($left['created_at']) ? strtotime((string)$left['created_at']) : PHP_INT_MAX;
+    $right_time = !empty($right['created_at']) ? strtotime((string)$right['created_at']) : PHP_INT_MAX;
+    return $left_time <=> $right_time;
+});
 $order_status = normalize_order_status((string)$order['order_status']);
 $can_request_item_addition = in_array($order_status, ['processing', 'confirmed', 'picked', 'packed'], true);
 $has_delivering = false;
@@ -69,6 +190,7 @@ if ($assignment && !$has_delivering && in_array($order_status, ['packed', 'deliv
         'status' => 'delivering',
         'created_at' => $assignment['assigned_at'] ?? null,
     ];
+    $timeline_events[] = array_merge($delivery_event, ['event_type' => 'status']);
     $delivery_insert_index = count($timeline);
     foreach ($timeline as $index => $event) {
         if (normalize_order_status((string)$event['status']) === 'packed') {
@@ -76,6 +198,11 @@ if ($assignment && !$has_delivering && in_array($order_status, ['packed', 'deliv
         }
     }
     array_splice($timeline, $delivery_insert_index, 0, [$delivery_event]);
+    usort($timeline_events, static function (array $left, array $right): int {
+        $left_time = !empty($left['created_at']) ? strtotime((string)$left['created_at']) : PHP_INT_MAX;
+        $right_time = !empty($right['created_at']) ? strtotime((string)$right['created_at']) : PHP_INT_MAX;
+        return $left_time <=> $right_time;
+    });
 }
 
 $timeline_descriptions = [
@@ -94,7 +221,7 @@ $timeline_descriptions = [
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Order #<?= htmlspecialchars($order['order_number'], ENT_QUOTES, 'UTF-8'); ?> · My Orders</title>
+    <title>Order #<?= htmlspecialchars(order_shipment_number((string)$order['order_number']), ENT_QUOTES, 'UTF-8'); ?> · My Orders</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <style>
@@ -106,48 +233,81 @@ $timeline_descriptions = [
 <main class="container">
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
         <div>
-            <a href="my_orders.php" class="btn btn-sm btn-outline-secondary mb-2"><i class="bi bi-arrow-left me-1"></i>Back to Orders</a>
-            <h1 class="h4 fw-bold mb-0">View Order: #<?= htmlspecialchars($order['order_number'], ENT_QUOTES, 'UTF-8'); ?></h1>
+            <a href="my_orders.php" class="btn btn-sm btn-outline-secondary mb-2">Back to Orders</a>
+            <h1 class="h4 fw-bold mb-0">View Order: #<?= htmlspecialchars(order_shipment_number((string)$order['order_number']), ENT_QUOTES, 'UTF-8'); ?></h1>
         </div>
         <span class="badge text-bg-success fs-6"><?= htmlspecialchars(order_status_label((string)($order['order_status'] ?? 'processing')), ENT_QUOTES, 'UTF-8'); ?></span>
     </div>
-
-    <?php if ($order_requests): ?>
-        <section class="card border-0 shadow-sm mb-3">
-            <div class="card-header bg-white fw-semibold">Your Requests</div>
-            <div class="list-group list-group-flush">
-                <?php foreach ($order_requests as $request): ?>
-                    <div class="list-group-item">
-                        <div class="d-flex justify-content-between gap-2">
-                            <strong><?= htmlspecialchars(match ($request['request_type']) { 'add_item' => 'Add item', 'update' => 'Order update', 'cancel' => 'Cancellation', default => ucfirst($request['request_type']) }, ENT_QUOTES, 'UTF-8'); ?></strong>
-                            <span class="badge <?= $request['status'] === 'approved' ? 'text-bg-success' : ($request['status'] === 'rejected' ? 'text-bg-danger' : 'text-bg-warning'); ?>"><?= htmlspecialchars(ucfirst($request['status']), ENT_QUOTES, 'UTF-8'); ?></span>
-                        </div>
-                        <div class="small text-muted mt-1"><?= htmlspecialchars($request['message'], ENT_QUOTES, 'UTF-8'); ?></div>
-                        <?php if (!empty($request['admin_note'])): ?><div class="small mt-1">Admin: <?= htmlspecialchars($request['admin_note'], ENT_QUOTES, 'UTF-8'); ?></div><?php endif; ?>
-                        <small class="text-muted"><?= !empty($request['created_at']) ? date('d M Y, h:i A', strtotime($request['created_at'])) : ''; ?></small>
-                    </div>
-                <?php endforeach; ?>
-            </div>
-        </section>
-    <?php endif; ?>
 
     <section class="card border-0 shadow-sm mb-3">
         <div class="card-header bg-white fw-semibold"><i class="bi bi-clock-history me-2 text-success"></i>Timeline</div>
         <div class="card-body">
             <ol class="list-unstyled mb-0">
-                <?php foreach ($timeline as $event): ?>
-                    <?php $event_status = normalize_order_status((string)$event['status']); ?>
+                <?php foreach ($timeline_events as $event): ?>
+                    <?php
+                    $event_type = $event['event_type'] ?? 'status';
+                    $event_time = $event['created_at'] ?? null;
+                    $event_request = $event['request'] ?? null;
+                    $event_issue = isset($event['issue_id']) ? ($order_issues_by_id[(int)$event['issue_id']] ?? null) : null;
+                    ?>
                     <li class="d-flex gap-3 pb-4">
                         <div class="small text-muted text-nowrap" style="min-width: 118px;">
-                            <?= !empty($event['created_at']) ? date('M d, Y', strtotime($event['created_at'])) . '<br>' . date('h:i A', strtotime($event['created_at'])) : 'Time not recorded'; ?>
+                            <?= !empty($event_time) ? date('M d, Y', strtotime($event_time)) . '<br>' . date('h:i A', strtotime($event_time)) : 'Time not recorded'; ?>
                         </div>
                         <div class="border-start border-2 border-success ps-3 position-relative">
                             <span class="position-absolute top-0 start-0 translate-middle-x badge rounded-pill text-bg-success">
-                                <i class="bi <?= $event_status === 'delivering' ? 'bi-truck' : 'bi-check'; ?>"></i>
+                                <i class="bi <?= $event_type === 'issue_shipment' ? 'bi-box-seam' : ($event_type === 'status' && normalize_order_status((string)$event['status']) === 'delivering' ? 'bi-truck' : ($event_type === 'request_message' ? 'bi-chat-dots' : 'bi-check')); ?>"></i>
                             </span>
-                            <div class="fw-semibold"><?= htmlspecialchars(order_status_label($event_status), ENT_QUOTES, 'UTF-8'); ?></div>
-                            <div class="small text-muted"><?= htmlspecialchars($timeline_descriptions[$event_status] ?? 'Your order status was updated.', ENT_QUOTES, 'UTF-8'); ?></div>
-                            <?php if ($event_status === 'delivering' && !empty($assignment)): ?>
+                            <?php if ($event_type === 'status'): ?>
+                                <?php $event_status = normalize_order_status((string)$event['status']); ?>
+                                <div class="fw-semibold"><?= htmlspecialchars(order_status_label($event_status), ENT_QUOTES, 'UTF-8'); ?></div>
+                                <div class="small text-muted"><?= htmlspecialchars($timeline_descriptions[$event_status] ?? 'Your order status was updated.', ENT_QUOTES, 'UTF-8'); ?></div>
+                            <?php elseif ($event_type === 'request'): ?>
+                                <?php
+                                $request_label = match ($event_request['request_type']) {
+                                    'add_item' => 'Add item request',
+                                    'update' => 'Order update request',
+                                    'cancel' => 'Cancellation request',
+                                    default => 'Order request',
+                                };
+                                ?>
+                                <div class="fw-semibold"><?= htmlspecialchars($request_label, ENT_QUOTES, 'UTF-8'); ?>
+                                    <span class="badge <?= $event_request['status'] === 'approved' ? 'text-bg-success' : ($event_request['status'] === 'rejected' ? 'text-bg-danger' : 'text-bg-warning'); ?>"><?= htmlspecialchars(ucfirst($event_request['status']), ENT_QUOTES, 'UTF-8'); ?></span>
+                                </div>
+                                <div class="small text-muted"><?= nl2br(htmlspecialchars($event_request['message'], ENT_QUOTES, 'UTF-8')); ?></div>
+                            <?php elseif ($event_type === 'request_message'): ?>
+                                <div class="fw-semibold"><?= $event['sender_type'] === 'admin' ? 'Admin replied' : 'Your reply'; ?> · <?= htmlspecialchars(match ($event_request['request_type']) { 'add_item' => 'Add item', 'update' => 'Order update', 'cancel' => 'Cancellation', default => 'Order request' }, ENT_QUOTES, 'UTF-8'); ?></div>
+                                <div class="small text-muted"><?= nl2br(htmlspecialchars($event['message'], ENT_QUOTES, 'UTF-8')); ?></div>
+                                <?php
+                                $latest_message = $latest_request_messages[(int)$event_request['id']] ?? null;
+                                $is_latest_admin_reply = $event['sender_type'] === 'admin'
+                                    && $event_request['status'] === 'pending'
+                                    && (int)($latest_message['id'] ?? 0) === (int)$event['message_id'];
+                                ?>
+                                <?php if ($is_latest_admin_reply): ?>
+                                    <form class="js-request-message-form d-flex gap-2 mt-2">
+                                        <input type="hidden" name="request_id" value="<?= (int)$event_request['id']; ?>">
+                                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['order_request_csrf'], ENT_QUOTES, 'UTF-8'); ?>">
+                                        <input type="text" name="message" class="form-control form-control-sm" maxlength="3000" required placeholder="Reply to the admin">
+                                        <button type="submit" class="btn btn-sm btn-outline-primary text-nowrap">Send reply</button>
+                                    </form>
+                                <?php endif; ?>
+                            <?php elseif ($event_type === 'request_decision'): ?>
+                                <div class="fw-semibold"><?= htmlspecialchars(ucfirst($event_request['status']), ENT_QUOTES, 'UTF-8'); ?> · <?= htmlspecialchars(match ($event_request['request_type']) { 'add_item' => 'Add item request', 'update' => 'Order update request', 'cancel' => 'Cancellation request', default => 'Order request' }, ENT_QUOTES, 'UTF-8'); ?></div>
+                                <?php if (!empty($event_request['admin_note'])): ?><div class="small text-muted"><?= nl2br(htmlspecialchars($event_request['admin_note'], ENT_QUOTES, 'UTF-8')); ?></div><?php endif; ?>
+                            <?php elseif ($event_type === 'issue_created' && $event_issue): ?>
+                                <div class="fw-semibold">Issue created</div>
+                            <?php elseif ($event_type === 'issue_assigned' && $event_issue): ?>
+                                <?php $issue_assignment = $issue_assignments[(int)$event_issue['id']]; ?>
+                                <div class="fw-semibold">Issue assigned</div>
+                                <div class="small text-muted">
+                                    <?= htmlspecialchars($issue_assignment['contact_name'] ?: $issue_assignment['provider_name'], ENT_QUOTES, 'UTF-8'); ?>
+                                    <?php if ($issue_assignment['contact_phone'] !== ''): ?> · <a href="tel:<?= htmlspecialchars($issue_assignment['contact_phone'], ENT_QUOTES, 'UTF-8'); ?>"><?= htmlspecialchars($issue_assignment['contact_phone'], ENT_QUOTES, 'UTF-8'); ?></a><?php endif; ?>
+                                </div>
+                            <?php elseif ($event_type === 'issue_shipment' && $event_issue): ?>
+                                <div class="fw-semibold">Issue <?= $event['shipment_status'] === 'delivered' ? 'delivered' : 'cancelled'; ?></div>
+                            <?php endif; ?>
+                            <?php if ($event_type === 'status' && normalize_order_status((string)$event['status']) === 'delivering' && !empty($assignment)): ?>
                                 <div class="bg-light border rounded p-2 mt-2" style="max-width: 480px;">
                                     <div class="d-flex align-items-center gap-2 mb-1">
                                         <span class="badge text-bg-success" style="font-size: 0.75rem;">
@@ -182,7 +342,7 @@ $timeline_descriptions = [
             </ol>
         </div>
         <div class="card-footer bg-white text-center small">
-            Need help? Call <a href="tel:16778">16778</a> or contact customer support.
+            Need help? Call <a href="tel:01950047790">01950047790</a> or contact customer support.
         </div>
     </section>
 
@@ -199,12 +359,11 @@ $timeline_descriptions = [
                         <?php endif; ?>
                         <div class="flex-grow-1 min-width-0">
                             <div class="fw-semibold"><?= htmlspecialchars($item['name'] ?? $item['product_code'] ?? 'Product', ENT_QUOTES, 'UTF-8'); ?></div>
-                            <small class="text-muted"><?= !empty($item['size']) ? 'Size: ' . htmlspecialchars($item['size'], ENT_QUOTES, 'UTF-8') : htmlspecialchars($item['product_code'] ?? '', ENT_QUOTES, 'UTF-8'); ?></small>
-                            <div class="small text-muted">Quantity: <?= (int)$item['quantity']; ?></div>
-                        </div>
-                        <div class="text-end text-nowrap">
-                            <div class="fw-semibold">৳<?= number_format((float)($item['total_price'] ?? ((float)$item['price'] * (int)$item['quantity'])), 0); ?></div>
-                            <small class="text-muted">৳<?= number_format((float)$item['price'], 0); ?> each</small>
+                            <small class="text-muted">
+                                Code: <?= htmlspecialchars($item['product_code'] ?? 'N/A', ENT_QUOTES, 'UTF-8'); ?>
+                                <?php if (!empty($item['size'])): ?> · Size: <?= htmlspecialchars($item['size'], ENT_QUOTES, 'UTF-8'); ?><?php endif; ?>
+                            </small>
+                            <div class="small text-muted"><?= (int)$item['quantity']; ?> × ৳<?= number_format((float)$item['price'], 0); ?> = ৳<?= number_format((float)($item['total_price'] ?? ((float)$item['price'] * (int)$item['quantity'])), 0); ?></div>
                         </div>
                     </div>
                 <?php endforeach; ?>
@@ -227,20 +386,13 @@ $timeline_descriptions = [
                                 continue;
                             }
                             $request_status = $latest_request_statuses[$type] ?? null;
-                            $status_style = match ($request_status) {
-                                'pending' => 'warning',
-                                'approved' => 'success',
-                                'rejected' => 'danger',
-                                default => '',
-                            };
                         ?>
                             <button type="button" class="btn btn-sm btn-outline-<?= $action['style']; ?> order-request-button" onclick="openOrderRequest('<?= $type; ?>')" <?= $request_status === 'pending' ? 'disabled' : ''; ?>>
                                 <span class="request-label d-block"><i class="bi <?= $action['icon']; ?> me-1"></i><?= $action['label']; ?></span>
-                                <?php if ($request_status !== null): ?><span class="badge text-bg-<?= $status_style; ?>"><?= htmlspecialchars(ucfirst($request_status), ENT_QUOTES, 'UTF-8'); ?></span><?php endif; ?>
                             </button>
                         <?php endforeach; ?>
                     </div>
-                    <div class="small text-muted mt-2">Request status appears below each action. Pending means it is waiting for admin review.</div>
+                    <div class="small text-muted mt-2">Request updates and replies appear in the timeline above.</div>
                 <?php endif; ?>
             </div>
         </div>
@@ -259,19 +411,47 @@ $timeline_descriptions = [
         </div>
         <div class="col-12 col-lg-6">
             <section class="card border-0 shadow-sm h-100">
-                <div class="card-header bg-white fw-semibold">Payment Summary</div>
-                <div class="card-body">
-                    <div class="d-flex justify-content-between mb-2"><span>Order ID</span><span>#<?= htmlspecialchars($order['order_number'], ENT_QUOTES, 'UTF-8'); ?></span></div>
-                    <div class="d-flex justify-content-between mb-2"><span>Ordered at</span><span><?= !empty($order['created_at']) ? date('d M Y, h:i A', strtotime($order['created_at'])) : 'N/A'; ?></span></div>
-                    <div class="d-flex justify-content-between mb-2"><span>Payment</span><span><?= htmlspecialchars($order['payment_method'] ?? 'N/A', ENT_QUOTES, 'UTF-8'); ?></span></div>
-                    <div class="d-flex justify-content-between mb-2"><span>Subtotal</span><span>৳<?= number_format((float)($order['subtotal'] ?? 0), 0); ?></span></div>
-                    <div class="d-flex justify-content-between mb-2"><span>Delivery</span><span>৳<?= number_format((float)($order['shipping_charge'] ?? 0), 0); ?></span></div>
-                    <hr>
-                    <div class="d-flex justify-content-between fw-bold"><span>Payable</span><span>৳<?= number_format((float)$order['grand_total'], 0); ?></span></div>
+                <div class="card-body p-3 p-md-4">
+                    <h2 class="h5 fw-bold mb-3">Payment Summary</h2>
+                    <?php if ($discount_total > 0): ?>
+                        <p class="text-success mb-3">You saved ৳<?= number_format($discount_total, 2); ?> on this order.</p>
+                    <?php endif; ?>
+                    <p class="small text-muted">MRP and savings use current product catalog prices; historical MRP was not saved when this order was placed.</p>
+                    <div class="d-flex justify-content-between gap-3 mb-2"><span>Order ID</span><span>#<?= htmlspecialchars(order_shipment_number((string)$order['order_number']), ENT_QUOTES, 'UTF-8'); ?></span></div>
+                    <div class="d-flex justify-content-between gap-3 mb-2"><span>Order at</span><span class="text-end"><?= !empty($order['created_at']) ? date('d M Y, h:i A', strtotime($order['created_at'])) : 'N/A'; ?></span></div>
+                    <div class="d-flex justify-content-between gap-3 mb-2"><span>MRP</span><span>৳<?= number_format($mrp_total, 2); ?></span></div>
+                    <div class="d-flex justify-content-between gap-3 mb-2"><span>Delivery charge</span><span><?= (float)($order['shipping_charge'] ?? 0) <= 0 ? 'Free' : '৳' . number_format((float)$order['shipping_charge'], 2); ?></span></div>
+                    <div class="d-flex justify-content-between gap-3 mb-2"><span>Discount applied</span><span>-৳<?= number_format($discount_total, 2); ?></span></div>
+                    <div class="d-flex justify-content-between gap-3 mb-2"><span>Coupon applied</span><span>৳0.00</span></div>
+                    <div class="d-flex justify-content-between gap-3 mb-3"><span>Rounding off</span><span>৳0.00</span></div>
+                    <div class="d-flex justify-content-between gap-3 border-top pt-3 mb-3 fw-bold"><span>Payable</span><span>৳<?= number_format((float)$order['grand_total'], 2); ?></span></div>
+                    <a class="btn btn-outline-success w-100 fw-semibold" href="invoice.php?id=<?= (int)$order['id']; ?>" target="_blank" rel="noopener">
+                        <i class="bi bi-download me-1"></i>Download Invoice
+                    </a>
+                    <div class="form-text text-center mt-2">In the print window, choose Save as PDF to download.</div>
                 </div>
             </section>
         </div>
     </div>
+    <footer class="card border-0 shadow-sm mt-3">
+        <div class="card-body p-3 p-md-4">
+            <div class="row g-3">
+                <section class="col-12 col-md-6">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <img src="../assets/img/logo1.png" alt="AmarShop logo" style="width:44px;height:44px;object-fit:contain;">
+                        <strong class="text-success fs-5">AmarShop</strong>
+                    </div>
+                    <p class="small text-muted mb-0">Your one-stop online shop for quality products at affordable prices, with fast delivery and friendly customer support.</p>
+                </section>
+                <section class="col-12 col-md-6 text-md-end small text-muted">
+                    <strong class="d-block text-dark mb-2">Company Address</strong>
+                    <div>123 Shopping Street<br>Dhaka, Bangladesh</div>
+                    <div class="mt-1">01950047790<br>support@amarshop.com</div>
+                </section>
+            </div>
+            <div class="border-top mt-3 pt-2 text-end small text-muted">&copy; <?= date('Y'); ?> AmarShop. All rights reserved.</div>
+        </div>
+    </footer>
 </main>
 <div class="modal fade" id="orderRequestModal" tabindex="-1" aria-labelledby="orderRequestTitle" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
@@ -398,6 +578,28 @@ document.getElementById('orderRequestForm')?.addEventListener('submit', async ev
         document.getElementById('requestAlert').className = 'alert alert-danger';
     }
 });
+
+document.querySelectorAll('.js-request-message-form').forEach(form => {
+    form.addEventListener('submit', async event => {
+        event.preventDefault();
+        try {
+            const response = await fetch('../core/add_order_request_message.php', {
+                method: 'POST',
+                body: new FormData(form),
+            });
+            const result = await response.json();
+            if (!response.ok || result.status !== 'success') {
+                throw new Error(result.message || 'Reply could not be sent.');
+            }
+            window.location.reload();
+        } catch (error) {
+            const alert = document.getElementById('requestAlert');
+            alert.textContent = error.message || 'Reply could not be sent.';
+            alert.className = 'alert alert-danger';
+        }
+    });
+});
+
 </script>
 </body>
 </html>

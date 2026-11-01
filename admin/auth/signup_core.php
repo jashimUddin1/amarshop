@@ -2,87 +2,71 @@
 require_once 'config.php';
 require_admin();
 
-
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $csrf = $_POST['csrf_token'] ?? '';
+    $expected_csrf = $_SESSION['admin_signup_csrf'] ?? '';
+    $first_name_input = $_POST['first_name'] ?? '';
+    $last_name_input = $_POST['last_name'] ?? '';
+    $email_input = $_POST['email'] ?? '';
+    $phone_input = $_POST['phone'] ?? '';
+    $password_input = $_POST['password'] ?? '';
+    $confirm_input = $_POST['confirm_password'] ?? '';
+    $role_input = $_POST['role'] ?? '';
+    $first_name = is_string($first_name_input) ? trim($first_name_input) : '';
+    $last_name = is_string($last_name_input) ? trim($last_name_input) : '';
+    $email = is_string($email_input) ? filter_var(trim($email_input), FILTER_SANITIZE_EMAIL) : '';
+    $phone = is_string($phone_input) ? trim($phone_input) : '';
+    $password = is_string($password_input) ? $password_input : '';
+    $confirm_pwd = is_string($confirm_input) ? $confirm_input : '';
+    $role = is_string($role_input) ? trim($role_input) : '';
+    $allowed_roles = ['CEO', 'MD', 'MANAGER', 'ASS. MANAGER', 'SALESMAN'];
 
-    $first_name  = trim($_POST['first_name'] ?? '');
-    $last_name   = trim($_POST['last_name'] ?? '');
-    $email       = filter_var(trim($_POST['email'] ?? ''), FILTER_SANITIZE_EMAIL);
-    $phone       = trim($_POST['phone'] ?? '');
-    $password    = $_POST['password'] ?? '';
-    $confirm_pwd = $_POST['confirm_password'] ?? '';
-    
-    $testColumn  = 'N/A'; // table ar NOT NULL field ar jonno defualt man
+    if (!is_string($csrf) || !is_string($expected_csrf) || $expected_csrf === '' || !hash_equals($expected_csrf, $csrf)) {
+        http_response_code(400);
+        exit("Invalid request token.");
+    }
 
-
-    if (empty($first_name) || empty($last_name) || empty($email) || empty($phone) || empty($password)) {
+    if ($first_name === '' || $last_name === '' || $email === '' || $phone === '' || $password === '' ||
+        !in_array($role, $allowed_roles, true)) {
         die("Please fill in all required fields.");
     }
 
-    // email validation
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         die("Invalid email format.");
     }
-
-    // password match
-    if ($password !== $confirm_pwd) {
+    if (!is_string($password) || strlen($password) < 8 || !is_string($confirm_pwd) || !hash_equals($password, $confirm_pwd)) {
         die("Password and Confirm Password do not match.");
     }
 
     try {
-        // check email if already exits in database
-        $checkStmt = $pdo->prepare("SELECT id FROM users WHERE email = :email OR phone = :phone LIMIT 1");
+        ensure_admin_account_tables($pdo);
+        $checkStmt = $pdo->prepare("SELECT id FROM admin_users WHERE email = :email OR phone = :phone LIMIT 1");
         $checkStmt->execute([':email' => $email, ':phone' => $phone]);
-
         if ($checkStmt->fetch()) {
-            die("Email or Phone Number is already registered.");
+            http_response_code(409);
+            exit("Email or phone number is already registered for an admin account.");
         }
 
-        
-        $hashed_password = password_hash($password, PASSWORD_BCRYPT);
-
-        //user information 
-        $user_ip      = $_SERVER['REMOTE_ADDR'] ?? null;
-        $client_ip    = $_SERVER['HTTP_CLIENT_IP'] ?? $user_ip;
-        $remote_host  = gethostbyaddr($_SERVER['REMOTE_ADDR'] ?? '127.0.0.1');
-        $user_agent   = $_SERVER['HTTP_USER_AGENT'] ?? null;
-        $verify_token = bin2hex(random_bytes(16)); // ভেরিফিকেশন টোকেন তৈরি
-
-        // 
-        $sql = "INSERT INTO users (
-                    first_name, last_name, phone, email, password, 
-                    verify_token, verify_status, created_at, 
-                    testColumn, user_ip, client_ip, remote_host, user_agent
-                ) VALUES (
-                    :first_name, :last_name, :phone, :email, :password, 
-                    :verify_token, 0, NOW(), 
-                    :testColumn, :user_ip, :client_ip, :remote_host, :user_agent
-                )";
-
-        $stmt = $pdo->prepare($sql);
+        $stmt = $pdo->prepare("
+            INSERT INTO admin_users (customar_name, email, phone, password, role)
+            VALUES (:name, :email, :phone, :password, :role)
+        ");
         $stmt->execute([
-            ':first_name'   => $first_name,
-            ':last_name'    => $last_name,
-            ':phone'        => $phone,
-            ':email'        => $email,
-            ':password'     => $hashed_password,
-            ':verify_token' => $verify_token,
-            ':testColumn'   => $testColumn,
-            ':user_ip'      => $user_ip,
-            ':client_ip'    => $client_ip,
-            ':remote_host'  => $remote_host,
-            ':user_agent'   => $user_agent
+            ':name' => trim($first_name . ' ' . $last_name),
+            ':email' => $email,
+            ':phone' => $phone,
+            ':password' => password_hash($password, PASSWORD_DEFAULT),
+            ':role' => $role,
         ]);
 
-        // সফল হলে লগইন পেজে রিডাইরেক্ট বা মেসেজ
-        header("Location: login.php?signup=success");
+        header("Location: ../users.php?staff=created");
         exit;
-
     } catch (PDOException $e) {
-        die("Error saving user: " . $e->getMessage());
+        error_log('Admin account creation failed: ' . $e->getMessage());
+        http_response_code(500);
+        exit("The admin account could not be created. Please try again.");
     }
 } else {
-    // সরাসরি ফাইল অ্যাক্সেস করলে রিডাইরেক্ট করা
     header("Location: signup.php");
     exit;
 }

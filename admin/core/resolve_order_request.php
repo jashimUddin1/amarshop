@@ -26,6 +26,7 @@ if ($request_id === false || $request_id === null || $request_id <= 0 ||
 
 try {
     ensure_order_requests_table($pdo);
+    ensure_order_request_messages_table($pdo);
     ensure_order_status_history_table($pdo);
     $pdo->beginTransaction();
     $request_stmt = $pdo->prepare('SELECT * FROM order_requests WHERE id = :id FOR UPDATE');
@@ -36,6 +37,19 @@ try {
         http_response_code(409);
         echo json_encode(['status' => 'error', 'message' => 'This request has already been resolved or does not exist.']);
         exit;
+    }
+    if ($request['request_type'] === 'update') {
+        $reply_stmt = $pdo->prepare("
+            SELECT COUNT(*) FROM order_request_messages
+            WHERE request_id = :request_id AND sender_type = 'admin'
+        ");
+        $reply_stmt->execute([':request_id' => $request_id]);
+        if ((int)$reply_stmt->fetchColumn() === 0) {
+            $pdo->rollBack();
+            http_response_code(409);
+            echo json_encode(['status' => 'error', 'message' => 'Reply to the customer before resolving this update request.']);
+            exit;
+        }
     }
 
     $order_stmt = $pdo->prepare('SELECT * FROM orders WHERE id = :id FOR UPDATE');

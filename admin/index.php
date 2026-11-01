@@ -22,7 +22,7 @@ try {
 
 // 3. Total Users Count
 try {
-  $stmt_users = $pdo->query("SELECT COUNT(*) FROM users");
+  $stmt_users = $pdo->query("SELECT COUNT(*) FROM users WHERE LOWER(COALESCE(role, 'user')) NOT IN ('admin', 'manager', 'ceo', 'md', 'assistant manager', 'asst. manager', 'ass. manager', 'salesman')");
   $total_users = $stmt_users->fetchColumn();
 } catch (PDOException $e) {
   $total_users = 0;
@@ -122,7 +122,7 @@ include_once 'includes/header.php';
           <?php if (!empty($recent_orders)): ?>
             <?php foreach ($recent_orders as $order): ?>
               <tr>
-                <td class="fw-bold"><a href="order_details.php?id=<?= (int)$order['id']; ?>" class="link-body-emphasis">#<?= htmlspecialchars($order['order_number']); ?></a></td>
+                <td class="fw-bold"><a href="order_details.php?id=<?= (int)$order['id']; ?>" class="link-body-emphasis">#<?= htmlspecialchars(order_shipment_number((string)$order['order_number']), ENT_QUOTES, 'UTF-8'); ?></a></td>
                 <td><?= htmlspecialchars($order['fullname'] ?? 'Guest'); ?></td>
                 <td><?= htmlspecialchars($order['phone'] ?? 'N/A'); ?></td>
                 <td class="fw-bold text-success">৳<?= number_format((float)($order['grand_total'] ?? 0), 0); ?></td>

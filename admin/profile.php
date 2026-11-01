@@ -8,21 +8,17 @@ $current_page = 'profile';
 $message = '';
 $message_type = '';
 $user_id = (int)$_SESSION['user_id'];
-ensure_user_profile_pictures_table($pdo);
+ensure_admin_profile_pictures_table($pdo);
 $csrf_token = $_SESSION['admin_profile_csrf'] ?? bin2hex(random_bytes(32));
 $_SESSION['admin_profile_csrf'] = $csrf_token;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $submitted_token = $_POST['csrf_token'] ?? '';
     $name_input = $_POST['customar_name'] ?? '';
-    $email_input = $_POST['email'] ?? '';
-    $phone_input = $_POST['phone'] ?? '';
     $current_password = $_POST['current_password'] ?? '';
     $new_password = $_POST['new_password'] ?? '';
     $confirm_password = $_POST['confirm_password'] ?? '';
     $name = is_string($name_input) ? trim($name_input) : '';
-    $email = is_string($email_input) ? trim($email_input) : '';
-    $phone = is_string($phone_input) ? trim($phone_input) : '';
     $current_password = is_string($current_password) ? $current_password : '';
     $new_password = is_string($new_password) ? $new_password : '';
     $confirm_password = is_string($confirm_password) ? $confirm_password : '';
@@ -34,7 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $message_type = 'danger';
     } elseif ($action === 'upload_profile_picture') {
         try {
-            store_user_profile_picture($pdo, $user_id, $_FILES['profile_picture'] ?? []);
+            store_user_profile_picture($pdo, $user_id, $_FILES['profile_picture'] ?? [], true);
             $message = 'Profile picture updated successfully.';
             $message_type = 'success';
         } catch (InvalidArgumentException | RuntimeException $e) {
@@ -47,7 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     } elseif ($action === 'remove_profile_picture') {
         try {
-            clear_user_profile_picture($pdo, $user_id);
+            clear_user_profile_picture($pdo, $user_id, true);
             $message = 'Profile picture removed.';
             $message_type = 'success';
         } catch (Throwable $e) {
@@ -58,58 +54,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif ($action !== 'save_profile') {
         http_response_code(400);
         exit('Invalid profile action.');
-    } elseif ($name === '' || !filter_var($email, FILTER_VALIDATE_EMAIL) || preg_match('/^[0-9+\s().-]+$/', $phone) !== 1 || strlen(preg_replace('/\D/', '', $phone)) < 8) {
-        $message = 'Enter a valid name, email address, and phone number.';
+    } elseif ($name === '') {
+        $message = 'Enter a valid name.';
         $message_type = 'warning';
     } elseif (($new_password !== '' || $confirm_password !== '' || $current_password !== '') && ($new_password === '' || strlen($new_password) < 8 || !hash_equals($new_password, $confirm_password))) {
         $message = 'To change your password, enter matching new passwords with at least 8 characters.';
         $message_type = 'warning';
     } else {
         try {
-            $email_check = $pdo->prepare('SELECT id FROM users WHERE email = :email AND id <> :id LIMIT 1');
-            $email_check->execute([':email' => $email, ':id' => $user_id]);
+            $update_password = $new_password !== '';
+            $current_user = null;
 
-            if ($email_check->fetchColumn()) {
-                $message = 'That email address is already used by another account.';
-                $message_type = 'warning';
-            } else {
-                $update_password = $new_password !== '';
-                $current_user = null;
+            if ($update_password) {
+                $password_stmt = $pdo->prepare('SELECT password FROM admin_users WHERE id = :id');
+                $password_stmt->execute([':id' => $user_id]);
+                $current_user = $password_stmt->fetch(PDO::FETCH_ASSOC);
+
+                if (!$current_user || !password_verify($current_password, $current_user['password'])) {
+                    $message = 'Your current password is incorrect.';
+                    $message_type = 'warning';
+                }
+            }
+
+            if ($message === '') {
+                $sql = 'UPDATE admin_users SET customar_name = :name';
+                $params = [':name' => $name, ':id' => $user_id];
 
                 if ($update_password) {
-                    $password_stmt = $pdo->prepare('SELECT password FROM users WHERE id = :id');
-                    $password_stmt->execute([':id' => $user_id]);
-                    $current_user = $password_stmt->fetch(PDO::FETCH_ASSOC);
-
-                    if (!$current_user || !password_verify($current_password, $current_user['password'])) {
-                        $message = 'Your current password is incorrect.';
-                        $message_type = 'warning';
-                    }
+                    $sql .= ', password = :password';
+                    $params[':password'] = password_hash($new_password, PASSWORD_DEFAULT);
                 }
 
-                if ($message === '') {
-                    $sql = 'UPDATE users SET customar_name = :name, email = :email, phone = :phone';
-                    $params = [
-                        ':name' => $name,
-                        ':email' => $email,
-                        ':phone' => $phone,
-                        ':id' => $user_id,
-                    ];
+                $sql .= ' WHERE id = :id';
+                $update = $pdo->prepare($sql);
+                $update->execute($params);
 
-                    if ($update_password) {
-                        $sql .= ', password = :password, remember_token = NULL';
-                        $params[':password'] = password_hash($new_password, PASSWORD_DEFAULT);
-                    }
-
-                    $sql .= ' WHERE id = :id';
-                    $update = $pdo->prepare($sql);
-                    $update->execute($params);
-
-                    $_SESSION['user_name'] = $name;
-                    $_SESSION['email'] = $email;
-                    $message = 'Profile updated successfully.';
-                    $message_type = 'success';
-                }
+                $_SESSION['user_name'] = $name;
+                $message = 'Profile updated successfully.';
+                $message_type = 'success';
             }
         } catch (PDOException $e) {
             error_log('Admin profile update failed: ' . $e->getMessage());
@@ -119,7 +101,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$profile_stmt = $pdo->prepare('SELECT customar_name, email, phone, role FROM users WHERE id = :id LIMIT 1');
+$profile_stmt = $pdo->prepare('SELECT customar_name, email, phone, role FROM admin_users WHERE id = :id LIMIT 1');
 $profile_stmt->execute([':id' => $user_id]);
 $profile = $profile_stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -127,7 +109,7 @@ if (!$profile) {
     http_response_code(404);
     exit('Admin account not found.');
 }
-$profile['profile_picture'] = get_user_profile_picture($pdo, $user_id);
+$profile['profile_picture'] = get_user_profile_picture($pdo, $user_id, true);
 
 include_once 'includes/header.php';
 ?>
@@ -187,11 +169,13 @@ include_once 'includes/header.php';
             </div>
             <div class="col-md-6">
                 <label for="email" class="form-label">Email address</label>
-                <input type="email" class="form-control" id="email" name="email" value="<?= htmlspecialchars($profile['email'], ENT_QUOTES, 'UTF-8'); ?>" required>
+                <input type="email" class="form-control" id="email" value="<?= htmlspecialchars($profile['email'], ENT_QUOTES, 'UTF-8'); ?>" readonly>
+                <div class="form-text">Contact the account administrator to update your email address.</div>
             </div>
             <div class="col-md-6">
                 <label for="phone" class="form-label">Phone number</label>
-                <input type="tel" class="form-control" id="phone" name="phone" value="<?= htmlspecialchars($profile['phone'], ENT_QUOTES, 'UTF-8'); ?>" required>
+                <input type="tel" class="form-control" id="phone" value="<?= htmlspecialchars($profile['phone'], ENT_QUOTES, 'UTF-8'); ?>" readonly>
+                <div class="form-text">Contact the account administrator to update your phone number.</div>
             </div>
 
             <div class="col-12"><hr class="my-2"></div>

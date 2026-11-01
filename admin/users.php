@@ -9,28 +9,34 @@ $current_page = "users";
 
 $message = '';
 $message_type = '';
+$staff_created = ($_GET['staff'] ?? '') === 'created';
+if ($staff_created) {
+    $message = 'Admin staff account created successfully.';
+    $message_type = 'success';
+}
 $csrf_token = $_SESSION['users_csrf_token'] ?? bin2hex(random_bytes(32));
 $_SESSION['users_csrf_token'] = $csrf_token;
 
 // Handling Form Submissions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // 1. ADD USER / ADMIN
+    $submitted_csrf = $_POST['csrf_token'] ?? '';
+    if (!is_string($submitted_csrf) || !hash_equals($csrf_token, $submitted_csrf)) {
+        http_response_code(400);
+        exit('Invalid request token.');
+    }
+
+    // 1. ADD CUSTOMER
     if (isset($_POST['action']) && $_POST['action'] === 'add_user') {
         $name          = trim($_POST['customar_name'] ?? '');
         $email         = trim($_POST['email'] ?? '');
         $phone         = trim($_POST['phone'] ?? '');
-        $role          = trim($_POST['role'] ?? 'user');
         $verify_status = (int)($_POST['verify_status'] ?? 1);
         $password      = trim($_POST['password'] ?? '');
 
-        if (!empty($name) && !empty($password)) {
-            // Check if email already exists (if provided)
-            $checkEmail = false;
-            if (!empty($email)) {
-                $checkStmt = $pdo->prepare("SELECT id FROM users WHERE email = :email");
-                $checkStmt->execute([':email' => $email]);
-                $checkEmail = ($checkStmt->rowCount() > 0);
-            }
+        if (!empty($name) && !empty($phone) && !empty($password) && filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $checkStmt = $pdo->prepare("SELECT id FROM users WHERE LOWER(email) = LOWER(:email) LIMIT 1");
+            $checkStmt->execute([':email' => $email]);
+            $checkEmail = (bool)$checkStmt->fetchColumn();
 
             // Check if phone already exists
             $checkPhone = false;
@@ -50,14 +56,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $hashed_password = password_hash($password, PASSWORD_BCRYPT);
                 $created_at      = date('Y-m-d H:i:s');
 
-                $insertStmt = $pdo->prepare("INSERT INTO users (customar_name, email, phone, password, role, verify_status, phone_verified, email_verified, created_at, reset_count, pwd_up_count) VALUES (:name, :email, :phone, :password, :role, :verify_status, 0, 0, :created_at, 0, 0)");
+                $insertStmt = $pdo->prepare("INSERT INTO users (customar_name, email, phone, password, role, verify_status, phone_verified, email_verified, created_at, reset_count, pwd_up_count) VALUES (:name, :email, :phone, :password, 'user', :verify_status, 0, 0, :created_at, 0, 0)");
                 
                 $result = $insertStmt->execute([
                     ':name'          => $name,
-                    ':email'         => $email !== '' ? $email : null,
+                    ':email'         => $email,
                     ':phone'         => $phone,
                     ':password'      => $hashed_password,
-                    ':role'          => $role,
                     ':verify_status' => $verify_status,
                     ':created_at'    => $created_at
                 ]);
@@ -71,7 +76,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
         } else {
-            $message = "Please fill in all required fields.";
+            $message = "Enter a name, phone, valid email address, and password.";
             $message_type = "warning";
         }
     }
@@ -79,18 +84,60 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // 2. CHANGE ROLE & VERIFY STATUS
     if (isset($_POST['action']) && $_POST['action'] === 'update_user_access') {
         $user_id       = (int)($_POST['user_id'] ?? 0);
-        $new_role      = trim($_POST['role'] ?? '');
         $verify_status = (int)($_POST['verify_status'] ?? 0);
+        $email = trim((string)($_POST['email'] ?? ''));
 
-        if ($user_id > 0 && !empty($new_role)) {
-            $updateStmt = $pdo->prepare("UPDATE users SET role = :role, verify_status = :verify_status WHERE id = :id");
-            if ($updateStmt->execute([':role' => $new_role, ':verify_status' => $verify_status, ':id' => $user_id])) {
-                $message = "User role and status updated successfully!";
-                $message_type = "success";
+        if ($user_id > 0 && in_array($verify_status, [0, 1], true) && filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $duplicateEmailStmt = $pdo->prepare('SELECT id FROM users WHERE LOWER(email) = LOWER(:email) AND id <> :id LIMIT 1');
+            $duplicateEmailStmt->execute([':email' => $email, ':id' => $user_id]);
+            if ($duplicateEmailStmt->fetchColumn()) {
+                $message = 'That email address is already assigned to another account.';
+                $message_type = 'danger';
             } else {
-                $message = "Failed to update user access.";
-                $message_type = "danger";
+                $currentUserStmt = $pdo->prepare("
+                    SELECT email, email_verified, otp_code, otp_expires_at, remember_token
+                    FROM users
+                    WHERE id = :id
+                        AND LOWER(COALESCE(role, 'user')) NOT IN ('admin', 'manager', 'ceo', 'md', 'assistant manager', 'asst. manager', 'ass. manager', 'salesman')
+                ");
+                $currentUserStmt->execute([':id' => $user_id]);
+                $currentUser = $currentUserStmt->fetch(PDO::FETCH_ASSOC);
+                if (!$currentUser) {
+                    $message = 'Customer account not found.';
+                    $message_type = 'danger';
+                } else {
+                    $emailChanged = $currentUser['email'] === null || strcasecmp((string)$currentUser['email'], $email) !== 0;
+                    $updateStmt = $pdo->prepare("
+                        UPDATE users
+                        SET role = 'user', verify_status = :verify_status, email = :email,
+                            email_verified = :email_verified, otp_code = :otp_code,
+                            otp_expires_at = :otp_expires_at, remember_token = :remember_token
+                        WHERE id = :id
+                            AND LOWER(COALESCE(role, 'user')) NOT IN ('admin', 'manager', 'ceo', 'md', 'assistant manager', 'asst. manager', 'ass. manager', 'salesman')
+                    ");
+                    $result = $updateStmt->execute([
+                        ':verify_status' => $verify_status,
+                        ':email' => $email,
+                        ':email_verified' => $emailChanged ? 0 : (int)$currentUser['email_verified'],
+                        ':otp_code' => $emailChanged ? null : $currentUser['otp_code'],
+                        ':otp_expires_at' => $emailChanged ? null : $currentUser['otp_expires_at'],
+                        ':remember_token' => $emailChanged ? null : $currentUser['remember_token'],
+                        ':id' => $user_id,
+                    ]);
+                    if ($result) {
+                        $message = $emailChanged
+                            ? 'Customer email updated. The customer must verify the new address before logging in.'
+                            : 'Customer account status updated successfully!';
+                        $message_type = 'success';
+                    } else {
+                        $message = 'Failed to update user access.';
+                        $message_type = 'danger';
+                    }
+                }
             }
+        } else {
+            $message = 'Enter a valid customer email address and account status.';
+            $message_type = 'warning';
         }
     }
 
@@ -125,9 +172,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             !is_string($submitted_csrf) || !hash_equals($csrf_token, $submitted_csrf)) {
             $message = 'Invalid delete request. Refresh the page and try again.';
             $message_type = 'danger';
-        } elseif ($user_id === (int)$_SESSION['user_id']) {
-            $message = 'You cannot delete your own account while signed in.';
-            $message_type = 'warning';
         } else {
             try {
                 ensure_user_addresses_table($pdo);
@@ -141,7 +185,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $pdo->rollBack();
                     $message = 'User not found.';
                     $message_type = 'warning';
-                } elseif (in_array(strtolower((string)$target_user['role']), ['admin', 'manager'], true)) {
+                } elseif (in_array(strtolower((string)$target_user['role']), ['admin', 'manager', 'ceo', 'md', 'assistant manager', 'asst. manager', 'ass. manager', 'salesman'], true)) {
                     $pdo->rollBack();
                     $message = 'Admin and manager accounts cannot be deleted here.';
                     $message_type = 'warning';
@@ -180,7 +224,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 // Search and Filter Setup
 $search = trim($_GET['search'] ?? '');
-$query  = "SELECT id, customar_name, email, phone, role, verify_status, phone_verified, phone_otp, email_verified, created_at FROM users WHERE 1=1";
+$query  = "SELECT id, customar_name, email, phone, role, verify_status, phone_verified, phone_otp, email_verified, created_at FROM users WHERE LOWER(COALESCE(role, 'user')) NOT IN ('admin', 'manager', 'ceo', 'md', 'assistant manager', 'asst. manager', 'ass. manager', 'salesman')";
 $params = [];
 
 if (!empty($search)) {
@@ -210,9 +254,12 @@ include_once 'includes/header.php';
         <h1 class="h4 fw-bold mb-0">Manage Users</h1>
         <small class="text-muted">Total Users: <?= count($users); ?></small>
     </div>
+    <div class="d-flex gap-2">
+    <a class="btn btn-outline-primary" href="auth/signup.php"><i class="bi bi-person-badge me-1"></i>Add Admin Staff</a>
     <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addUserModal">
         <i class="bi bi-person-plus-fill me-1"></i> Add New User
     </button>
+    </div>
 </div>
 
 <!-- Alerts -->
@@ -263,7 +310,7 @@ include_once 'includes/header.php';
                     <tr>
                         <td class="fw-bold">#<?= $user['id']; ?></td>
                         <td>
-                            <div class="fw-semibold text-white"><?= htmlspecialchars($user['customar_name'] ?? ''); ?></div>
+                            <div class="fw-semibold"><?= htmlspecialchars($user['customar_name'] ?? ''); ?></div>
                         </td>
                         <td>
                             <div><?= htmlspecialchars($user['phone'] ?? 'N/A'); ?></div>
@@ -295,17 +342,7 @@ include_once 'includes/header.php';
                             <?php endif; ?>
                         </td>
                         <td>
-                            <?php
-                            $role = strtolower($user['role'] ?? 'user');
-                            $badgeClass = match($role) {
-                                'admin'   => 'bg-danger',
-                                'manager' => 'bg-warning text-dark',
-                                default   => 'bg-primary'
-                            };
-                            ?>
-                            <span class="badge <?= $badgeClass; ?> text-capitalize">
-                                <?= htmlspecialchars($user['role'] ?? 'user'); ?>
-                            </span>
+                            <span class="badge bg-primary">Customer</span>
                         </td>
                         <td>
                             <?php if ((int)$user['verify_status'] === 1): ?>
@@ -326,16 +363,14 @@ include_once 'includes/header.php';
                                 <i class="bi bi-pencil-square"></i> Edit
                             </button>
 
-                            <?php if (!in_array($role, ['admin', 'manager'], true) && (int)$user['id'] !== (int)$_SESSION['user_id']): ?>
-                                <form method="POST" action="users.php<?= $search !== '' ? '?search=' . rawurlencode($search) : ''; ?>" class="d-inline" onsubmit="return confirm('Delete this user account? Saved addresses will be removed, but order history and request records will remain.');">
-                                    <input type="hidden" name="action" value="delete_user">
-                                    <input type="hidden" name="user_id" value="<?= (int)$user['id']; ?>">
-                                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token, ENT_QUOTES, 'UTF-8'); ?>">
-                                    <button type="submit" class="btn btn-sm btn-outline-danger">
-                                        <i class="bi bi-trash"></i> Delete
-                                    </button>
-                                </form>
-                            <?php endif; ?>
+                            <form method="POST" action="users.php<?= $search !== '' ? '?search=' . rawurlencode($search) : ''; ?>" class="d-inline" onsubmit="return confirm('Delete this customer account? Saved addresses will be removed, but order history and request records will remain.');">
+                                <input type="hidden" name="action" value="delete_user">
+                                <input type="hidden" name="user_id" value="<?= (int)$user['id']; ?>">
+                                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token, ENT_QUOTES, 'UTF-8'); ?>">
+                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                    <i class="bi bi-trash"></i> Delete
+                                </button>
+                            </form>
                         </td>
                     </tr>
 
@@ -406,18 +441,19 @@ include_once 'includes/header.php';
                                 <form method="POST" action="users.php<?= $search !== '' ? '?search=' . rawurlencode($search) : ''; ?>">
                                     <input type="hidden" name="action" value="update_user_access">
                                     <input type="hidden" name="user_id" value="<?= $user['id']; ?>">
+                                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token, ENT_QUOTES, 'UTF-8'); ?>">
                                     <div class="modal-header">
-                                        <h5 class="modal-title">Manage Access - <?= htmlspecialchars($user['customar_name'] ?? ''); ?></h5>
+                                        <h5 class="modal-title">Manage Customer - <?= htmlspecialchars($user['customar_name'] ?? ''); ?></h5>
                                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                     </div>
                                     <div class="modal-body">
                                         <div class="mb-3">
-                                            <label class="form-label fw-bold">Select Role</label>
-                                            <select name="role" class="form-select" required>
-                                                <option value="user" <?= $role === 'user' ? 'selected' : ''; ?>>User</option>
-                                                <option value="manager" <?= $role === 'manager' ? 'selected' : ''; ?>>Manager</option>
-                                                <option value="admin" <?= $role === 'admin' ? 'selected' : ''; ?>>Admin</option>
-                                            </select>
+                                            <div class="form-text">Staff roles are managed separately from customer accounts.</div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold">Customer email address</label>
+                                            <input type="email" name="email" class="form-control" value="<?= htmlspecialchars($user['email'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" required>
+                                            <div class="form-text">Changing this address resets email verification; the customer must verify it again.</div>
                                         </div>
                                         <div class="mb-3">
                                             <label class="form-label fw-bold">Account Status</label>
@@ -453,8 +489,9 @@ include_once 'includes/header.php';
         <div class="modal-content">
             <form method="POST" action="users.php">
                 <input type="hidden" name="action" value="add_user">
+                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token, ENT_QUOTES, 'UTF-8'); ?>">
                 <div class="modal-header">
-                    <h5 class="modal-title">Add New User / Admin</h5>
+                    <h5 class="modal-title">Add New Customer</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
@@ -467,20 +504,12 @@ include_once 'includes/header.php';
                         <input type="tel" name="phone" class="form-control" placeholder="017XXXXXXXX" required>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Email Address <span class="text-muted fw-normal">(Optional)</span></label>
-                        <input type="email" name="email" class="form-control" placeholder="Enter email (optional)">
+                        <label class="form-label fw-bold">Email Address <span class="text-danger">*</span></label>
+                        <input type="email" name="email" class="form-control" placeholder="Enter email" required>
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-bold">Password <span class="text-danger">*</span></label>
                         <input type="password" name="password" class="form-control" placeholder="Enter password" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Assign Role <span class="text-danger">*</span></label>
-                        <select name="role" class="form-select" required>
-                            <option value="user" selected>User</option>
-                            <option value="manager">Manager</option>
-                            <option value="admin">Admin</option>
-                        </select>
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-bold">Account Status <span class="text-danger">*</span></label>

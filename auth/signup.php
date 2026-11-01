@@ -115,12 +115,12 @@ unset($_SESSION['signup_errors'], $_SESSION['signup_old']);
                         </div>
                     </div>
 
-                    <!-- Email Address (Optional) -->
+                    <!-- Email Address (Required for account verification) -->
                     <div class="mb-2">
-                        <label class="form-label text-secondary small fw-bold">Email Address <span class="text-muted fw-normal">(Optional)</span></label>
+                        <label class="form-label text-secondary small fw-bold">Email Address <span class="text-danger">*</span></label>
                         <div class="input-group">
                             <span class="input-group-text"><i class="bi bi-envelope"></i></span>
-                            <input type="email" name="email" class="form-control <?= isset($field_errors['email']) ? 'is-invalid' : ''; ?>" placeholder="example@gmail.com (Optional)" value="<?= htmlspecialchars($old_input['email'] ?? ''); ?>">
+                            <input type="email" name="email" class="form-control <?= isset($field_errors['email']) ? 'is-invalid' : ''; ?>" placeholder="example@gmail.com" value="<?= htmlspecialchars($old_input['email'] ?? ''); ?>" required>
                         </div>
                         <div class="invalid-feedback <?= isset($field_errors['email']) ? 'd-block' : ''; ?>" data-error-for="email"><?= htmlspecialchars($field_errors['email'] ?? 'Please enter a valid email address.'); ?></div>
                     </div>
@@ -231,13 +231,12 @@ unset($_SESSION['signup_errors'], $_SESSION['signup_old']);
             form.addEventListener('submit', function(e) {
                 const phoneDigits = phoneInput.value.replace(/\D/g, '');
                 const emailVal = emailInput.value.trim();
-                // Email is optional: valid if empty OR if valid email syntax
-                const isEmailValid = (emailVal === '') || emailInput.validity.valid;
+                const isEmailValid = emailVal !== '' && emailInput.validity.valid;
 
                 const errors = [
                     [nameInput, nameInput.value.trim() ? '' : 'Please enter your full name.'],
                     [phoneInput, phoneDigits.length >= 8 && /^[0-9+\s().-]+$/.test(phoneInput.value) ? '' : 'Phone number must contain at least 8 digits.'],
-                    [emailInput, isEmailValid ? '' : 'Please enter a valid email address.'],
+                    [emailInput, isEmailValid ? '' : 'Please enter a valid email address. Email is required for verification.'],
                     [pass, pass.value.length >= 5 ? '' : 'Password must be at least 5 characters long.'],
                     [confirmPass, confirmPass.value === pass.value && confirmPass.value !== '' ? '' : (confirmPass.value === '' ? 'Please confirm your password.' : 'Passwords do not match.')]
                 ];

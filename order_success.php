@@ -1,5 +1,6 @@
 <?php
 require_once('auth/config.php');
+require_once __DIR__ . '/core/order_status.php';
 
 if (!isset($_SESSION['user_id'])) {
     header('Location: index.php');
@@ -49,7 +50,7 @@ if (!$order) {
                 <div class="bg-light rounded p-3 my-3 text-start border">
                     <div class="d-flex justify-content-between mb-2">
                         <span class="text-muted">Order ID:</span>
-                        <span class="fw-bold text-success"><?= htmlspecialchars($order['order_number']); ?></span>
+                        <span class="fw-bold text-success"><?= htmlspecialchars(order_shipment_number((string)$order['order_number']), ENT_QUOTES, 'UTF-8'); ?></span>
                     </div>
                     <div class="d-flex justify-content-between mb-2">
                         <span class="text-muted">Payment Method:</span>

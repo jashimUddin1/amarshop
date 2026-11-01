@@ -143,7 +143,7 @@ include_once 'includes/header.php';
             <label for="newCategoryPhoto" class="form-label">Category Photo (Optional)</label>
             <input type="file" id="newCategoryPhoto" name="category_photo" class="form-control" accept=".jpg,.jpeg,.png,.webp,.gif" onchange="previewCategoryPhoto(this)">
             <small class="form-text text-muted">JPG, PNG, WEBP, or GIF. No photo selected? The default avatar will be used.</small>
-            <img id="newCategoryPhotoPreview" src="../uploads/categories/default-avatar.svg" alt="Default category avatar preview" class="mt-2 rounded" style="width: 80px; height: 80px; object-fit: cover;">
+            <img id="newCategoryPhotoPreview" src="../uploads/categories/default-avatar.svg" alt="Default category icon preview" class="mt-2 rounded" style="width: 80px; height: 80px; object-fit: cover;">
           </div>
         </div>
         <div class="modal-footer">

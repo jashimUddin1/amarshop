@@ -3,6 +3,7 @@ use PHPMailer\PHPMailer\PHPMailer;
 
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/../vendor/autoload.php';
+require_once __DIR__ . '/../core/email_verification.php';
 
 $status = '';
 $statusType = 'info';
@@ -24,12 +25,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
             $status = 'Enter a valid email address.';
             $statusType = 'danger';
-        } elseif (SMTP_PASS === '') {
-            error_log('Password reset unavailable because AMARSHOP_SMTP_PASS is not configured.');
-            $status = 'Password reset email is temporarily unavailable. Please contact the site administrator.';
-            $statusType = 'danger';
         } else {
             try {
+                $smtpSettings = get_smtp_settings($pdo);
+                if ($smtpSettings['smtp_pass'] === '') {
+                    throw new RuntimeException('SMTP sender credentials are not configured in Admin Settings.');
+                }
                 $userStmt = $pdo->prepare('SELECT id, customar_name, email FROM users WHERE email = :email LIMIT 1');
                 $userStmt->execute([':email' => $email]);
                 $user = $userStmt->fetch(PDO::FETCH_ASSOC);
@@ -53,14 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                         $resetUrl = $appUrl . '/auth/forgot_password.php?token=' . rawurlencode($plainToken);
                         $mail = new PHPMailer(true);
-                        $mail->isSMTP();
-                        $mail->Host = SMTP_HOST;
-                        $mail->SMTPAuth = true;
-                        $mail->Username = SMTP_USER;
-                        $mail->Password = SMTP_PASS;
-                        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-                        $mail->Port = SMTP_PORT;
-                        $mail->setFrom(SMTP_FROM, SMTP_NAME);
+                        configure_smtp_mailer($mail, $smtpSettings);
                         $mail->addAddress($user['email'], $user['customar_name']);
                         $mail->isHTML(true);
                         $mail->Subject = 'Reset your AmarShop password';

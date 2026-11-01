@@ -12,10 +12,37 @@ function ensure_user_profile_pictures_table(PDO $pdo): void
     ");
 }
 
-function get_user_profile_picture(PDO $pdo, int $user_id): ?string
+function ensure_admin_profile_pictures_table(PDO $pdo): void
 {
-    ensure_user_profile_pictures_table($pdo);
-    $stmt = $pdo->prepare('SELECT image_path FROM user_profile_pictures WHERE user_id = :user_id');
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS admin_profile_pictures (
+            admin_user_id BIGINT UNSIGNED NOT NULL,
+            image_path VARCHAR(255) NOT NULL,
+            updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (admin_user_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+    ");
+}
+
+function get_user_profile_picture(PDO $pdo, int $user_id, bool $is_admin = false): ?string
+{
+    if ($is_admin) {
+        ensure_admin_profile_pictures_table($pdo);
+        ensure_user_profile_pictures_table($pdo);
+        $legacy_picture = $pdo->prepare("
+            INSERT IGNORE INTO admin_profile_pictures (admin_user_id, image_path)
+            SELECT profile.user_id, profile.image_path
+            FROM user_profile_pictures profile
+            JOIN users account ON account.id = profile.user_id
+            WHERE profile.user_id = :user_id
+                AND LOWER(account.role) IN ('admin', 'manager', 'ceo', 'md', 'assistant manager', 'asst. manager', 'ass. manager', 'salesman')
+        ");
+        $legacy_picture->execute([':user_id' => $user_id]);
+        $stmt = $pdo->prepare('SELECT image_path FROM admin_profile_pictures WHERE admin_user_id = :user_id');
+    } else {
+        ensure_user_profile_pictures_table($pdo);
+        $stmt = $pdo->prepare('SELECT image_path FROM user_profile_pictures WHERE user_id = :user_id');
+    }
     $stmt->execute([':user_id' => $user_id]);
     $image_path = $stmt->fetchColumn();
 
@@ -26,9 +53,17 @@ function get_user_profile_picture(PDO $pdo, int $user_id): ?string
     return $image_path;
 }
 
-function store_user_profile_picture(PDO $pdo, int $user_id, array $upload): void
+function store_user_profile_picture(PDO $pdo, int $user_id, array $upload, bool $is_admin = false): void
 {
-    ensure_user_profile_pictures_table($pdo);
+    if ($is_admin) {
+        ensure_admin_profile_pictures_table($pdo);
+        $table = 'admin_profile_pictures';
+        $id_column = 'admin_user_id';
+    } else {
+        ensure_user_profile_pictures_table($pdo);
+        $table = 'user_profile_pictures';
+        $id_column = 'user_id';
+    }
     $upload_error = $upload['error'] ?? UPLOAD_ERR_NO_FILE;
     if (!is_int($upload_error) || $upload_error !== UPLOAD_ERR_OK) {
         $message = match ($upload_error) {
@@ -74,11 +109,11 @@ function store_user_profile_picture(PDO $pdo, int $user_id, array $upload): void
     }
 
     try {
-        $stmt = $pdo->prepare('SELECT image_path FROM user_profile_pictures WHERE user_id = :user_id');
+        $stmt = $pdo->prepare("SELECT image_path FROM $table WHERE $id_column = :user_id");
         $stmt->execute([':user_id' => $user_id]);
         $previous_path = $stmt->fetchColumn();
         $save_stmt = $pdo->prepare("
-            INSERT INTO user_profile_pictures (user_id, image_path)
+            INSERT INTO $table ($id_column, image_path)
             VALUES (:user_id, :image_path)
             ON DUPLICATE KEY UPDATE image_path = VALUES(image_path)
         ");
@@ -95,13 +130,21 @@ function store_user_profile_picture(PDO $pdo, int $user_id, array $upload): void
     }
 }
 
-function clear_user_profile_picture(PDO $pdo, int $user_id): void
+function clear_user_profile_picture(PDO $pdo, int $user_id, bool $is_admin = false): void
 {
-    ensure_user_profile_pictures_table($pdo);
-    $stmt = $pdo->prepare('SELECT image_path FROM user_profile_pictures WHERE user_id = :user_id');
+    if ($is_admin) {
+        ensure_admin_profile_pictures_table($pdo);
+        $table = 'admin_profile_pictures';
+        $id_column = 'admin_user_id';
+    } else {
+        ensure_user_profile_pictures_table($pdo);
+        $table = 'user_profile_pictures';
+        $id_column = 'user_id';
+    }
+    $stmt = $pdo->prepare("SELECT image_path FROM $table WHERE $id_column = :user_id");
     $stmt->execute([':user_id' => $user_id]);
     $image_path = $stmt->fetchColumn();
-    $delete_stmt = $pdo->prepare('DELETE FROM user_profile_pictures WHERE user_id = :user_id');
+    $delete_stmt = $pdo->prepare("DELETE FROM $table WHERE $id_column = :user_id");
     $delete_stmt->execute([':user_id' => $user_id]);
 
     if (is_string($image_path)) {
