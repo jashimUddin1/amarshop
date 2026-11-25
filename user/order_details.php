@@ -78,7 +78,10 @@ foreach ($request_messages as $request_id => $messages) {
         $latest_request_messages[(int)$request_id] = end($messages);
     }
 }
-$timeline = get_order_status_timeline($pdo, $order);
+$timeline = array_values(array_filter(
+    get_order_status_timeline($pdo, $order),
+    static fn(array $event): bool => normalize_order_status((string)($event['status'] ?? '')) !== 'inbag'
+));
 $timeline_events = array_map(static function (array $event): array {
     $event['event_type'] = 'status';
     return $event;
@@ -176,8 +179,9 @@ usort($timeline_events, static function (array $left, array $right): int {
     $right_time = !empty($right['created_at']) ? strtotime((string)$right['created_at']) : PHP_INT_MAX;
     return $left_time <=> $right_time;
 });
-$order_status = normalize_order_status((string)$order['order_status']);
-$can_request_item_addition = in_array($order_status, ['processing', 'confirmed', 'picked', 'packed'], true);
+$stored_order_status = normalize_order_status((string)$order['order_status']);
+$order_status = $stored_order_status === 'inbag' ? 'packed' : $stored_order_status;
+$can_request_item_addition = $stored_order_status !== 'inbag' && in_array($order_status, ['processing', 'confirmed', 'picked', 'packed', 'packed_done'], true);
 $has_delivering = false;
 foreach ($timeline as $event) {
     if (normalize_order_status((string)($event['status'] ?? '')) === 'delivering') {
@@ -185,7 +189,7 @@ foreach ($timeline as $event) {
         break;
     }
 }
-if ($assignment && !$has_delivering && in_array($order_status, ['packed', 'delivering', 'delivered'], true)) {
+if ($assignment && !$has_delivering && in_array($order_status, ['packed_done', 'delivering', 'delivered'], true)) {
     $delivery_event = [
         'status' => 'delivering',
         'created_at' => $assignment['assigned_at'] ?? null,
@@ -193,7 +197,7 @@ if ($assignment && !$has_delivering && in_array($order_status, ['packed', 'deliv
     $timeline_events[] = array_merge($delivery_event, ['event_type' => 'status']);
     $delivery_insert_index = count($timeline);
     foreach ($timeline as $index => $event) {
-        if (normalize_order_status((string)$event['status']) === 'packed') {
+        if (in_array(normalize_order_status((string)$event['status']), ['packed', 'packed_done'], true)) {
             $delivery_insert_index = $index + 1;
         }
     }
@@ -211,6 +215,7 @@ $timeline_descriptions = [
     'confirmed' => 'We have confirmed your order.',
     'picked' => 'The items have been picked for packing.',
     'packed' => 'Your order is packed and ready for delivery.',
+    'packed_done' => 'Packing is complete and your order is ready for delivery.',
     'delivering' => 'Our delivery partner is delivering your order.',
     'delivered' => 'You have received your order.',
     'cancelled' => 'This order has been cancelled.',
@@ -236,7 +241,7 @@ $timeline_descriptions = [
             <a href="my_orders.php" class="btn btn-sm btn-outline-secondary mb-2">Back to Orders</a>
             <h1 class="h4 fw-bold mb-0">View Order: #<?= htmlspecialchars(order_shipment_number((string)$order['order_number']), ENT_QUOTES, 'UTF-8'); ?></h1>
         </div>
-        <span class="badge text-bg-success fs-6"><?= htmlspecialchars(order_status_label((string)($order['order_status'] ?? 'processing')), ENT_QUOTES, 'UTF-8'); ?></span>
+        <span class="badge text-bg-success fs-6"><?= htmlspecialchars(order_status_label($order_status), ENT_QUOTES, 'UTF-8'); ?></span>
     </div>
 
     <section class="card border-0 shadow-sm mb-3">

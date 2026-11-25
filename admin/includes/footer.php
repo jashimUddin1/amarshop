@@ -18,6 +18,29 @@
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
+    const adminLayoutRow = document.getElementById('adminLayoutRow');
+    const adminSidebarToggle = document.getElementById('adminSidebarToggle');
+    const adminSidebarToggleIcon = adminSidebarToggle?.querySelector('i');
+    const adminSidebarCollapsed = localStorage.getItem('amarshop_admin_sidebar_collapsed') === 'true';
+
+    function setAdminSidebarCollapsed(collapsed) {
+      if (!adminLayoutRow || !adminSidebarToggle || !adminSidebarToggleIcon) return;
+
+      adminLayoutRow.classList.toggle('admin-sidebar-collapsed', collapsed);
+      adminSidebarToggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+      adminSidebarToggle.setAttribute('aria-label', collapsed ? 'Expand menu' : 'Collapse menu');
+      adminSidebarToggle.title = collapsed ? 'Expand menu' : 'Collapse menu';
+      adminSidebarToggleIcon.className = `bi ${collapsed ? 'bi-layout-sidebar-inset' : 'bi-layout-sidebar-inset-reverse'} me-1`;
+      localStorage.setItem('amarshop_admin_sidebar_collapsed', String(collapsed));
+    }
+
+    if (adminLayoutRow && adminSidebarToggle) {
+      setAdminSidebarCollapsed(adminSidebarCollapsed);
+      adminSidebarToggle.addEventListener('click', () => {
+        setAdminSidebarCollapsed(!adminLayoutRow.classList.contains('admin-sidebar-collapsed'));
+      });
+    }
+
     document.addEventListener('click', function (event) {
       const target = event.target instanceof Element ? event.target.closest('.product-image-preview') : null;
       if (!target) return;

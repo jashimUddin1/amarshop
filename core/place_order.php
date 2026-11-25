@@ -1,7 +1,10 @@
 <?php
 require_once('../auth/config.php');
+require_once __DIR__ . '/reseller.php';
 require_once __DIR__ . '/order_status.php';
 require_once __DIR__ . '/order_admin.php';
+ensure_reseller_tables($pdo);
+capture_reseller_referral($pdo);
 
 function redirect_to_checkout_with_error(string $message): void
 {
@@ -50,7 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // ১. ইউজার কার্ট ডাটা ফেচ করা
         $cart_stmt = $pdo->prepare("
             SELECT c.product_id, c.product_code, c.size, c.quantity,
-                   COALESCE(p.actual_price, p.sell_price) as price, p.stock
+                   COALESCE(p.actual_price, p.sell_price) as price, p.reseller_price, p.stock
             FROM cart c 
             JOIN products p ON c.product_id = p.id 
             WHERE c.user_id = :user_id
@@ -79,6 +82,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $subtotal += ($item['price'] * (int)$item['quantity']);
         }
         $grand_total = $subtotal + $shipping_charge;
+        $reseller_id = current_reseller_referral_id($pdo);
 
         $order_number = str_pad((string)$order_sequence, 3, '0', STR_PAD_LEFT);
 
@@ -99,18 +103,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         // ৩. `orders` টেবিলে মূল অর্ডার ডাটা ইনসার্ট
-        $order_sql = "INSERT INTO orders (order_number, user_id, fullname, phone, email, address, shipping_area, subtotal, shipping_charge, grand_total, payment_method, order_status, created_at)
-                      VALUES (:order_number, :user_id, :fullname, :phone, :email, :address, :shipping_area, :subtotal, :shipping_charge, :grand_total, :payment_method, 'processing', NOW())";
+        $order_sql = "INSERT INTO orders (order_number, user_id, reseller_id, fullname, phone, email, address, shipping_area, subtotal, shipping_charge, grand_total, payment_method, order_status, created_at)
+                      VALUES (:order_number, :user_id, :reseller_id, :fullname, :phone, :email, :address, :shipping_area, :subtotal, :shipping_charge, :grand_total, :payment_method, 'processing', NOW())";
         
         $order_stmt = $pdo->prepare($order_sql);
         $order_stmt->execute([
             ':order_number'    => $order_number,
             ':user_id'         => $user_id,
+            ':reseller_id'     => $reseller_id,
             ':fullname'        => $fullname,
             ':phone'           => $phone,
             ':email'           => $email,
             ':address'         => $address,
-            ':shipping_area'   => $shipping_charge,
+            ':shipping_area'   => $shipping_area,
             ':subtotal'        => $subtotal,
             ':shipping_charge' => $shipping_charge,
             ':grand_total'     => $grand_total,
@@ -127,8 +132,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $history_stmt->execute([':order_id' => $order_id, ':status' => 'processing']);
 
         // ৪. `order_items` টেবিলে প্রোডাক্ট ডাটা ইনসার্ট
-        $item_sql = "INSERT INTO order_items (order_id, product_id, product_code, size, quantity, price, total_price) 
-                     VALUES (:order_id, :product_id, :product_code, :size, :quantity, :price, :total_price)";
+        $item_sql = "INSERT INTO order_items (order_id, product_id, product_code, size, quantity, price, reseller_price, total_price)
+                     VALUES (:order_id, :product_id, :product_code, :size, :quantity, :price, :reseller_price, :total_price)";
         $item_stmt = $pdo->prepare($item_sql);
 
         foreach ($cart_items as $item) {
@@ -141,6 +146,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ':size'         => $item['size'],
                 ':quantity'     => $item['quantity'],
                 ':price'        => $unit_price,
+                ':reseller_price' => $reseller_id !== null ? (float)$item['reseller_price'] : null,
                 ':total_price'  => $item_total
             ]);
         }

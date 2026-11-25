@@ -1,6 +1,8 @@
 <?php
 require_once 'auth/config.php';
+require_once __DIR__ . '/core/site_settings.php';
 require_admin();
+ensure_site_settings_table($pdo);
 
 $page_title = "Site Settings";
 $current_page = "setting";
@@ -8,6 +10,8 @@ $smtp_settings_message = '';
 $smtp_settings_message_type = '';
 $smtp_csrf = $_SESSION['smtp_settings_csrf'] ?? bin2hex(random_bytes(32));
 $_SESSION['smtp_settings_csrf'] = $smtp_csrf;
+$site_settings_csrf = $_SESSION['site_settings_csrf'] ?? bin2hex(random_bytes(32));
+$_SESSION['site_settings_csrf'] = $site_settings_csrf;
 $can_manage_smtp = in_array($_SESSION['user_role'] ?? '', ['CEO', 'MD'], true);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_smtp_settings') {
@@ -108,20 +112,26 @@ if ($can_manage_smtp) {
 
 // Fetch Current Settings
 $settings = [];
-try {
-  $stmt = $pdo->query("SELECT setting_key, setting_value FROM site_settings");
-  while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-    $settings[$row['setting_key']] = $row['setting_value'];
-  }
-} catch (PDOException $e) {
-  // Table missing fallback logic
+$stmt = $pdo->query("SELECT setting_key, setting_value FROM site_settings");
+while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+  $settings[$row['setting_key']] = $row['setting_value'];
 }
 
 include_once 'includes/header.php';
 ?>
+<style>
+  .settings-section-toggle .bi-chevron-down {
+    transition: transform 0.15s ease;
+  }
+  .settings-section-toggle[aria-expanded="false"] .bi-chevron-down {
+    transform: rotate(-90deg);
+  }
+</style>
 
 <div class="d-flex justify-content-between align-items-center mb-4 flex-shrink-0">
-  <h2 class="h3 mb-0">Website Settings</h2>
+  <button class="btn btn-link settings-section-toggle d-flex align-items-center gap-2 p-0 text-start text-decoration-none text-body" type="button" data-bs-toggle="collapse" data-bs-target="#websiteSettingsSection" aria-expanded="true" aria-controls="websiteSettingsSection">
+    <span class="h3 mb-0">Website Settings</span><i class="bi bi-chevron-down" aria-hidden="true"></i>
+  </button>
   <span class="text-muted small">Manage main index content & controls</span>
 </div>
 
@@ -141,11 +151,16 @@ include_once 'includes/header.php';
   <?php endif; ?>
 </div>
 
+<div class="collapse show flex-grow-1 overflow-y-auto" id="websiteSettingsSection">
 <?php if ($can_manage_smtp): ?>
   <div class="card border-0 shadow-sm flex-shrink-0 p-4 mb-3">
-    <h5 class="fw-bold mb-1 text-primary"><i class="bi bi-envelope-gear me-2"></i>Email / SMTP Settings</h5>
-    <p class="text-muted small mb-3">শুধু CEO ও MD এই সেটিংস পরিবর্তন করতে পারবেন। SMTP password encrypted অবস্থায় database-এর <code>auth.smtp_pass</code> কলামে থাকে; এখানে সংরক্ষিত password আর দেখানো হয় না। Live server-এ এই পেজ HTTPS দিয়ে ব্যবহার করুন।</p>
-    <form method="post" action="setting.php" class="row g-3">
+    <button class="btn btn-link settings-section-toggle d-flex align-items-center justify-content-between w-100 p-0 text-start text-decoration-none" type="button" data-bs-toggle="collapse" data-bs-target="#smtpSettingsSection" aria-expanded="true" aria-controls="smtpSettingsSection">
+      <span class="h5 fw-bold mb-0 text-primary"><i class="bi bi-envelope-gear me-2"></i>Email / SMTP Settings</span>
+      <i class="bi bi-chevron-down ms-2" aria-hidden="true"></i>
+    </button>
+    <div class="collapse show" id="smtpSettingsSection">
+      <p class="text-muted small mt-2 mb-3">শুধু CEO ও MD এই সেটিংস পরিবর্তন করতে পারবেন। SMTP password encrypted অবস্থায় database-এর <code>auth.smtp_pass</code> কলামে থাকে; এখানে সংরক্ষিত password আর দেখানো হয় না। Live server-এ এই পেজ HTTPS দিয়ে ব্যবহার করুন।</p>
+      <form method="post" action="setting.php" class="row g-3">
       <input type="hidden" name="action" value="save_smtp_settings">
       <input type="hidden" name="smtp_csrf" value="<?= htmlspecialchars($smtp_csrf, ENT_QUOTES, 'UTF-8'); ?>">
       <div class="col-md-6">
@@ -189,15 +204,21 @@ include_once 'includes/header.php';
       <div class="col-12 text-end">
         <button type="submit" class="btn btn-primary"><i class="bi bi-shield-lock me-1"></i>Save Email Settings</button>
       </div>
-    </form>
+      </form>
+    </div>
   </div>
 <?php endif; ?>
 
 <div class="card border-0 shadow-sm flex-grow-1 overflow-y-auto p-4 mb-3">
   <form id="siteSettingsForm" enctype="multipart/form-data" onsubmit="handleAjaxSubmit(event, 'core/setting_update_core.php', '#siteSettingsForm')">
+    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($site_settings_csrf, ENT_QUOTES, 'UTF-8'); ?>">
     
-    <!-- General Information -->
-    <h5 class="fw-bold mb-3 text-primary"><i class="bi bi-globe me-2"></i>General Information</h5>
+    <h5 class="mb-3">
+      <button class="btn btn-link settings-section-toggle d-flex align-items-center justify-content-between w-100 p-0 text-start text-decoration-none fw-bold text-primary" type="button" data-bs-toggle="collapse" data-bs-target="#generalInformationSection" aria-expanded="true" aria-controls="generalInformationSection">
+        <span><i class="bi bi-globe me-2"></i>General Information</span><i class="bi bi-chevron-down ms-2" aria-hidden="true"></i>
+      </button>
+    </h5>
+    <div class="collapse show" id="generalInformationSection">
     <div class="row g-3 mb-4">
       <div class="col-md-6">
         <label class="form-label fw-semibold">Website Name</label>
@@ -208,11 +229,16 @@ include_once 'includes/header.php';
         <input type="text" name="site_tagline" class="form-control" value="<?= htmlspecialchars($settings['site_tagline'] ?? 'Welcome to AmarShop - Best Online Store!'); ?>">
       </div>
     </div>
+    </div>
 
     <hr class="my-4">
 
-    <!-- Contact Details -->
-    <h5 class="fw-bold mb-3 text-primary"><i class="bi bi-telephone me-2"></i>Contact Information</h5>
+    <h5 class="mb-3">
+      <button class="btn btn-link settings-section-toggle d-flex align-items-center justify-content-between w-100 p-0 text-start text-decoration-none fw-bold text-primary" type="button" data-bs-toggle="collapse" data-bs-target="#contactInformationSection" aria-expanded="true" aria-controls="contactInformationSection">
+        <span><i class="bi bi-telephone me-2"></i>Contact Information</span><i class="bi bi-chevron-down ms-2" aria-hidden="true"></i>
+      </button>
+    </h5>
+    <div class="collapse show" id="contactInformationSection">
     <div class="row g-3 mb-4">
       <div class="col-md-4">
         <label class="form-label fw-semibold">Support Phone</label>
@@ -227,11 +253,16 @@ include_once 'includes/header.php';
         <input type="text" name="contact_address" class="form-control" value="<?= htmlspecialchars($settings['contact_address'] ?? 'Dhaka, Bangladesh'); ?>">
       </div>
     </div>
+    </div>
 
     <hr class="my-4">
 
-    <!-- Social Media Links -->
-    <h5 class="fw-bold mb-3 text-primary"><i class="bi bi-share me-2"></i>Social Media Links</h5>
+    <h5 class="mb-3">
+      <button class="btn btn-link settings-section-toggle d-flex align-items-center justify-content-between w-100 p-0 text-start text-decoration-none fw-bold text-primary" type="button" data-bs-toggle="collapse" data-bs-target="#socialMediaSection" aria-expanded="true" aria-controls="socialMediaSection">
+        <span><i class="bi bi-share me-2"></i>Social Media Links</span><i class="bi bi-chevron-down ms-2" aria-hidden="true"></i>
+      </button>
+    </h5>
+    <div class="collapse show" id="socialMediaSection">
     <div class="row g-3 mb-4">
       <div class="col-md-4">
         <label class="form-label fw-semibold">Facebook Page URL</label>
@@ -246,11 +277,16 @@ include_once 'includes/header.php';
         <input type="text" name="whatsapp_number" class="form-control" value="<?= htmlspecialchars($settings['whatsapp_number'] ?? ''); ?>" placeholder="8801700000000">
       </div>
     </div>
+    </div>
 
     <hr class="my-4">
 
-    <!-- Main Index Branding & Media -->
-    <h5 class="fw-bold mb-3 text-primary"><i class="bi bi-image me-2"></i>Branding & Media</h5>
+    <h5 class="mb-3">
+      <button class="btn btn-link settings-section-toggle d-flex align-items-center justify-content-between w-100 p-0 text-start text-decoration-none fw-bold text-primary" type="button" data-bs-toggle="collapse" data-bs-target="#brandingMediaSection" aria-expanded="true" aria-controls="brandingMediaSection">
+        <span><i class="bi bi-image me-2"></i>Branding &amp; Media</span><i class="bi bi-chevron-down ms-2" aria-hidden="true"></i>
+      </button>
+    </h5>
+    <div class="collapse show" id="brandingMediaSection">
     <div class="row g-3 mb-4">
       <div class="col-md-6">
         <label class="form-label fw-semibold">Website Logo</label>
@@ -271,6 +307,7 @@ include_once 'includes/header.php';
         </div>
       </div>
     </div>
+    </div>
 
     <div class="d-flex justify-content-end gap-2 mt-4">
       <button type="submit" class="btn btn-primary btn-lg px-4 submit-btn">
@@ -280,5 +317,6 @@ include_once 'includes/header.php';
 
   </form>
 </div>
+  </div>
 
 <?php include_once 'includes/footer.php'; ?>

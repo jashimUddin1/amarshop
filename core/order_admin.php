@@ -6,6 +6,7 @@ function ensure_order_delivery_assignments_table(PDO $pdo): void
         CREATE TABLE IF NOT EXISTS order_delivery_assignments (
             id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
             order_id BIGINT UNSIGNED NOT NULL,
+            deliveryman_id BIGINT UNSIGNED NULL,
             delivery_type VARCHAR(20) NOT NULL,
             provider_name VARCHAR(120) NOT NULL,
             contact_name VARCHAR(120) NOT NULL DEFAULT '',
@@ -18,6 +19,10 @@ function ensure_order_delivery_assignments_table(PDO $pdo): void
             UNIQUE KEY uq_order_delivery_assignment (order_id)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     ");
+    $deliveryman_column = $pdo->query("SHOW COLUMNS FROM order_delivery_assignments LIKE 'deliveryman_id'");
+    if (!$deliveryman_column->fetch(PDO::FETCH_ASSOC)) {
+        $pdo->exec('ALTER TABLE order_delivery_assignments ADD COLUMN deliveryman_id BIGINT UNSIGNED NULL AFTER order_id');
+    }
 }
 
 function ensure_order_requests_table(PDO $pdo): void

@@ -3,7 +3,9 @@
 header('Content-Type: application/json');
 
 require_once '../auth/config.php';
+require_once __DIR__ . '/../../core/reseller.php';
 require_admin();
+ensure_reseller_tables($pdo);
 
 $response = ['status' => 'error', 'message' => 'Something went wrong!'];
 
@@ -12,16 +14,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $product_code     = trim($_POST['product_code'] ?? '');
     $name             = trim($_POST['name'] ?? '');
     $category_name    = trim($_POST['category_name'] ?? '');
-    $purchase_price   = $_POST['purchase_price'] ?? 0;
-    $sell_price       = $_POST['sell_price'] ?? 0;
-    if (!is_numeric($purchase_price) || !is_numeric($sell_price) || (float)$purchase_price < 0 || (float)$sell_price < 0) {
+    $purchase_price = filter_var($_POST['purchase_price'] ?? null, FILTER_VALIDATE_FLOAT);
+    $reseller_markup_percent = filter_var($_POST['reseller_markup_percent'] ?? null, FILTER_VALIDATE_FLOAT);
+    $sell_markup_percent = filter_var($_POST['sell_markup_percent'] ?? null, FILTER_VALIDATE_FLOAT);
+    $discount_percent = filter_var($_POST['discount_percent'] ?? null, FILTER_VALIDATE_FLOAT);
+    if ($purchase_price === false || $reseller_markup_percent === false ||
+        $sell_markup_percent === false || $discount_percent === false) {
         http_response_code(400);
-        echo json_encode(['status' => 'error', 'message' => 'Prices must be valid non-negative amounts.']);
+        echo json_encode(['status' => 'error', 'message' => 'Enter valid purchase price, markup and discount percentages.']);
         exit;
     }
-    $purchase_price = (int)round((float)$purchase_price);
-    $sell_price = (int)round((float)$sell_price);
-    $discount_percent = $_POST['discount_percent'] ?? 0;
+    try {
+        $prices = reseller_calculate_prices((float)$purchase_price, (float)$reseller_markup_percent, (float)$sell_markup_percent, (float)$discount_percent);
+    } catch (InvalidArgumentException $e) {
+        http_response_code(400);
+        echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+        exit;
+    }
+    $purchase_price = round((float)$purchase_price, 2);
     $description      = trim($_POST['description'] ?? '');
     $size             = trim($_POST['size'] ?? '');
     $color             = trim($_POST['product_color'] ?? '');
@@ -63,14 +73,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     try {
         $sql = "UPDATE products SET 
-            product_code = ?, name = ?, category_name = ?, purchase_price = ?, sell_price = ?, 
+            product_code = ?, name = ?, category_name = ?, purchase_price = ?,
+            reseller_markup_percent = ?, sell_markup_percent = ?, reseller_price = ?, sell_price = ?,
             discount_percent = ?, description = ?, size = ?, color = ?, stock = ?, collection_name = ?, 
             main_img = ?, side_img1 = ?, side_img2 = ?, side_img3 = ?, side_img4 = ?, side_img5 = ?
             WHERE id = ?";
 
         $stmt = $pdo->prepare($sql);
         $stmt->execute([
-            $product_code, $name, $category_name, $purchase_price, $sell_price, 
+            $product_code, $name, $category_name, $purchase_price, $reseller_markup_percent,
+            $sell_markup_percent, $prices['reseller_price'], $prices['sell_price'],
             $discount_percent, $description, $size, $color, $stock, $collection_name, 
             $main_img, $side_img1, $side_img2, $side_img3, $side_img4, $side_img5, $product_id
         ]);

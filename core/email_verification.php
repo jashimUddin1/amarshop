@@ -24,7 +24,7 @@ function ensure_auth_settings_table(PDO $pdo): void
 function smtp_encryption_key(bool $create): ?string
 {
     $documentRoot = $_SERVER['DOCUMENT_ROOT'] ?? '';
-    $privateRoot = $documentRoot !== '' ? dirname($documentRoot) : dirname(__DIR__, 2);
+    $privateRoot = $documentRoot !== '' ? dirname($documentRoot) : dirname(__DIR__, 3);
     $keyDirectory = $privateRoot . DIRECTORY_SEPARATOR . '.amarshop-private';
     $keyPath = $keyDirectory . DIRECTORY_SEPARATOR . 'amarshop-smtp.key';
 

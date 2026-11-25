@@ -19,9 +19,50 @@ correct site.
 The admin area initializes the `admin_users` and `deliveryman` tables when it is
 opened. Existing admin/manager accounts in `users` are copied into `admin_users`
 with their existing IDs and credentials; customer accounts remain in `users`.
-Admin staff roles are CEO, MD, Manager, Assistant Manager, and Salesman. These
-roles currently share the same admin-panel access. Deliveryman records are
-delivery contact records and can be selected when assigning an in-house rider.
+Admin staff roles are CEO, MD, HR Admin, Manager, Assistant Manager, Data Entry
+Operator, and Salesman. Only the CEO, MD, HR Admin, Manager, and Assistant
+Manager can create staff, and each can only create roles below their own level.
+All staff roles currently share the same admin-panel access. The Assign section
+supports order lookup and delivery-bag creation/assignment. Deliveryman records
+have separate rider-portal credentials and can be assigned to in-house bags.
+
+The Assign > Bag screen now builds bags from checked, packed order and issue
+shipments. Bag contents are stored in `order_quantity`; bags track their zone,
+shipment count, rider, and open/assigned/closed state. An order waiting inside a
+bag has the internal `inbag` status in the admin timeline; customers continue to
+see it as Packed.
+
+Deliverymen sign in separately at `/amarshop/delivery/login.php`. Admins set an
+initial rider password or reset it under Admin > Deliverymen; rider passwords
+are stored as password hashes. Rider sessions use a separate cookie scoped to
+the delivery portal and only expose Delivering and Delivered views. COD delivery
+requires recording the exact amount received and issues a printable receipt;
+online-paid deliveries can be marked delivered directly. Riders submit recorded
+cash for manager review, then submit their bag. CEO, MD, or Manager accounts
+confirm/reject collections and close submitted bags. Closing a bag returns any
+undelivered order or issue shipment to Packed and makes it eligible for another
+bag.
+
+The logistics tables (`delivery_bags`, `order_quantity`, and
+`delivery_bag_cash_collections`) are initialized automatically as admin and
+delivery pages are opened. Existing deliverymen need a password set by an
+administrator before they can use the rider portal.
+
+Admin > Purchases manages suppliers and received stock purchases. Each purchase
+records products, quantities, unit costs, supplier invoice, discounts, extra
+costs and cash/bank/mobile/cheque payments. Saving a purchase adds the received
+quantities to product stock and updates the product's latest purchase cost in a
+single transaction. New products require a separate selling price. Purchase
+details track supplier balances and further payments; purchase returns are
+recorded against original lines, reduce available stock and credit the supplier
+for the returned items' proportional share of the purchase discount. Inventory
+movements are retained for purchase and return history. Customer orders store
+the selected delivery area separately from its shipping charge.
+
+The standalone `offline/` folder contains a browser-based walk-in counter POS.
+It uses its own database configuration and billing tables while decrementing
+the shared product stock. See [offline/README.md](./offline/README.md) for setup
+and deployment details.
 
 Order-request conversation and delivered-order issue tables are initialized
 when their customer/admin pages are used. Only admins can create return, missing

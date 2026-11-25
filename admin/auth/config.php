@@ -70,16 +70,51 @@ function ensure_admin_account_tables(PDO $pdo): void
             CASE LOWER(role)
                 WHEN 'admin' THEN 'CEO'
                 WHEN 'manager' THEN 'MANAGER'
+                WHEN 'hr admin' THEN 'HR ADMIN'
+                WHEN 'hr administrator' THEN 'HR ADMIN'
                 WHEN 'assistant manager' THEN 'ASS. MANAGER'
                 WHEN 'asst. manager' THEN 'ASS. MANAGER'
                 WHEN 'ass. manager' THEN 'ASS. MANAGER'
+                WHEN 'data entry operator' THEN 'DATA ENTRY OPERATOR'
                 ELSE UPPER(role)
             END,
             COALESCE(verify_status, 1), COALESCE(created_at, CURRENT_TIMESTAMP)
         FROM users
         WHERE email IS NOT NULL AND email <> ''
-            AND LOWER(role) IN ('admin', 'manager', 'ceo', 'md', 'assistant manager', 'asst. manager', 'ass. manager', 'salesman')
+            AND LOWER(role) IN ('admin', 'manager', 'ceo', 'md', 'hr admin', 'hr administrator', 'assistant manager', 'asst. manager', 'ass. manager', 'data entry operator', 'salesman')
     ");
+}
+
+function admin_staff_roles(): array
+{
+    return ['CEO', 'MD', 'HR ADMIN', 'MANAGER', 'ASS. MANAGER', 'DATA ENTRY OPERATOR', 'SALESMAN'];
+}
+
+function admin_assignable_roles(string $role): array
+{
+    $role = strtoupper(trim($role));
+    $role = match ($role) {
+        'HR ADMINISTRATOR' => 'HR ADMIN',
+        default => $role,
+    };
+    $roles = admin_staff_roles();
+    $role_index = array_search($role, $roles, true);
+    if ($role_index === false || $role === 'SALESMAN' || $role === 'DATA ENTRY OPERATOR') {
+        return [];
+    }
+
+    return match ($role) {
+        'CEO' => array_slice($roles, 1),
+        'MD' => array_slice($roles, 2),
+        'HR ADMIN', 'MANAGER' => array_slice($roles, 4),
+        'ASS. MANAGER' => array_slice($roles, 5),
+        default => [],
+    };
+}
+
+function admin_can_manage_staff(string $role): bool
+{
+    return in_array(strtoupper(trim($role)), ['CEO', 'MD', 'HR ADMIN', 'MANAGER', 'ASS. MANAGER'], true);
 }
 
 /* ================= AUTH GUARD ================= */
@@ -97,7 +132,7 @@ function require_admin(): void {
     $admin = $stmt->fetch(PDO::FETCH_ASSOC);
     $role = strtoupper(trim((string)($admin['role'] ?? '')));
 
-    if (!in_array($role, ['CEO', 'MD', 'MANAGER', 'ASS. MANAGER', 'SALESMAN'], true)) {
+    if (!in_array($role, admin_staff_roles(), true)) {
         $_SESSION = [];
         session_destroy();
         http_response_code(403);

@@ -1,7 +1,9 @@
 <?php
 require_once __DIR__ . '/../auth/config.php';
 require_once __DIR__ . '/../../core/order_status.php';
+require_once __DIR__ . '/../../core/reseller.php';
 require_admin();
+ensure_reseller_tables($pdo);
 
 header('Content-Type: application/json');
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -24,7 +26,7 @@ if ($order_id === false || $order_id === null || $order_id <= 0 ||
 
 try {
     $pdo->beginTransaction();
-    $order_stmt = $pdo->prepare('SELECT order_status, shipping_charge FROM orders WHERE id = :id FOR UPDATE');
+    $order_stmt = $pdo->prepare('SELECT order_status, shipping_charge, reseller_id FROM orders WHERE id = :id FOR UPDATE');
     $order_stmt->execute([':id' => $order_id]);
     $order = $order_stmt->fetch(PDO::FETCH_ASSOC);
     if (!$order) {
@@ -41,7 +43,7 @@ try {
         exit;
     }
     if (in_array($action, ['add_item', 'update_item', 'remove_item'], true) &&
-        !in_array($status, ['processing', 'confirmed', 'picked', 'packed'], true)) {
+        !in_array($status, ['processing', 'confirmed', 'picked', 'packed', 'packed_done'], true)) {
         $pdo->rollBack();
         http_response_code(409);
         echo json_encode(['status' => 'error', 'message' => 'Order items can only be changed before delivery starts.']);
@@ -79,7 +81,7 @@ try {
         if ($product_id === false || $product_id === null || $product_id <= 0 || $quantity === false || $quantity === null || $quantity < 1) {
             throw new InvalidArgumentException('Choose a product and a quantity greater than zero.');
         }
-        $product_stmt = $pdo->prepare('SELECT id, product_code, size, COALESCE(actual_price, sell_price) AS price, stock FROM products WHERE id = :id FOR UPDATE');
+        $product_stmt = $pdo->prepare('SELECT id, product_code, size, COALESCE(actual_price, sell_price) AS price, reseller_price, stock FROM products WHERE id = :id FOR UPDATE');
         $product_stmt->execute([':id' => $product_id]);
         $product = $product_stmt->fetch(PDO::FETCH_ASSOC);
         if (!$product || (int)$product['stock'] < $quantity) {
@@ -99,14 +101,15 @@ try {
             $item_size = $size_parts[0] ?? '';
         }
         $insert = $pdo->prepare("
-            INSERT INTO order_items (order_id, product_id, product_code, size, quantity, price, total_price)
-            VALUES (:order_id, :product_id, :product_code, :size, :quantity, :price, :total_price)
+            INSERT INTO order_items (order_id, product_id, product_code, size, quantity, price, reseller_price, total_price)
+            VALUES (:order_id, :product_id, :product_code, :size, :quantity, :price, :reseller_price, :total_price)
         ");
         $unit_price = (int)round((float)$product['price']);
         $insert->execute([
             ':order_id' => $order_id, ':product_id' => $product_id,
             ':product_code' => $product['product_code'], ':size' => $item_size,
             ':quantity' => $quantity, ':price' => $unit_price,
+            ':reseller_price' => !empty($order['reseller_id']) ? (float)$product['reseller_price'] : null,
             ':total_price' => $unit_price * $quantity,
         ]);
     } elseif ($action === 'update_item' || $action === 'remove_item') {

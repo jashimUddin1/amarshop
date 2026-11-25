@@ -1,6 +1,8 @@
 <?php
 require_once 'auth/config.php';
+require_once __DIR__ . '/../core/delivery_logistics.php';
 require_admin();
+ensure_delivery_logistics_tables($pdo);
 
 $message = '';
 $message_type = '';
@@ -20,13 +22,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $name = trim((string)($_POST['customar_name'] ?? ''));
             $phone = trim((string)($_POST['phone'] ?? ''));
             $email = trim((string)($_POST['email'] ?? ''));
+            $password = is_string($_POST['password'] ?? null) ? $_POST['password'] : '';
             if ($name === '' || $phone === '' ||
+                strlen($password) < 8 ||
                 ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL))) {
-                throw new InvalidArgumentException('Enter a name, phone number, and valid email if provided.');
+                throw new InvalidArgumentException('Enter a name, phone number, a password of at least 8 characters, and valid email if provided.');
             }
-            $stmt = $pdo->prepare('INSERT INTO deliveryman (customar_name, phone, email) VALUES (:name, :phone, :email)');
-            $stmt->execute([':name' => $name, ':phone' => $phone, ':email' => $email !== '' ? $email : null]);
+            $stmt = $pdo->prepare('INSERT INTO deliveryman (customar_name, phone, email, login_password) VALUES (:name, :phone, :email, :password)');
+            $stmt->execute([
+                ':name' => $name,
+                ':phone' => $phone,
+                ':email' => $email !== '' ? $email : null,
+                ':password' => password_hash($password, PASSWORD_DEFAULT),
+            ]);
             $message = 'Deliveryman added successfully.';
+            $message_type = 'success';
+        } elseif ($action === 'set_password') {
+            $deliveryman_id = filter_var($_POST['deliveryman_id'] ?? null, FILTER_VALIDATE_INT);
+            $password = is_string($_POST['password'] ?? null) ? $_POST['password'] : '';
+            if ($deliveryman_id === false || $deliveryman_id === null || $deliveryman_id <= 0 || strlen($password) < 8) {
+                throw new InvalidArgumentException('Choose a deliveryman and enter a password of at least 8 characters.');
+            }
+            $stmt = $pdo->prepare('UPDATE deliveryman SET login_password = :password WHERE id = :id');
+            $stmt->execute([':password' => password_hash($password, PASSWORD_DEFAULT), ':id' => $deliveryman_id]);
+            if ($stmt->rowCount() < 1) {
+                $exists = $pdo->prepare('SELECT 1 FROM deliveryman WHERE id = :id');
+                $exists->execute([':id' => $deliveryman_id]);
+                if (!$exists->fetchColumn()) {
+                    throw new InvalidArgumentException('Deliveryman not found.');
+                }
+            }
+            $message = 'Deliveryman login password updated.';
             $message_type = 'success';
         } elseif ($action === 'toggle_status') {
             $deliveryman_id = filter_var($_POST['deliveryman_id'] ?? null, FILTER_VALIDATE_INT);
@@ -79,10 +105,10 @@ include_once 'includes/header.php';
     <div class="card shadow-sm">
         <div class="table-responsive">
             <table class="table align-middle mb-0">
-                <thead class="table-light"><tr><th>Name</th><th>Phone</th><th>Email</th><th>Status</th><th></th></tr></thead>
+                <thead class="table-light"><tr><th>Name</th><th>Phone</th><th>Email</th><th>Status</th><th>Rider portal</th><th></th></tr></thead>
                 <tbody>
                     <?php if (!$deliverymen): ?>
-                        <tr><td colspan="5" class="text-center text-muted py-4">No deliverymen have been added.</td></tr>
+                        <tr><td colspan="6" class="text-center text-muted py-4">No deliverymen have been added.</td></tr>
                     <?php else: ?>
                         <?php foreach ($deliverymen as $deliveryman): ?>
                             <tr>
@@ -90,12 +116,14 @@ include_once 'includes/header.php';
                                 <td><?= htmlspecialchars($deliveryman['phone'], ENT_QUOTES, 'UTF-8'); ?></td>
                                 <td><?= htmlspecialchars($deliveryman['email'] ?? '—', ENT_QUOTES, 'UTF-8'); ?></td>
                                 <td><span class="badge <?= $deliveryman['status'] === 'active' ? 'text-bg-success' : 'text-bg-secondary'; ?>"><?= htmlspecialchars(ucfirst($deliveryman['status']), ENT_QUOTES, 'UTF-8'); ?></span></td>
-                                <td class="text-end">
-                                    <form method="post">
+                                <td><a href="deliveryman_details.php?id=<?= (int)$deliveryman['id']; ?>">Activity</a> · <a href="../delivery/login.php" target="_blank" rel="noopener">Login page</a></td>
+                                <td>
+                                    <form method="post" class="d-flex flex-wrap justify-content-end gap-2">
                                         <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token, ENT_QUOTES, 'UTF-8'); ?>">
-                                        <input type="hidden" name="action" value="toggle_status">
                                         <input type="hidden" name="deliveryman_id" value="<?= (int)$deliveryman['id']; ?>">
-                                        <button class="btn btn-sm btn-outline-secondary" type="submit"><?= $deliveryman['status'] === 'active' ? 'Deactivate' : 'Activate'; ?></button>
+                                        <input class="form-control form-control-sm" style="max-width:180px" type="password" name="password" minlength="8" placeholder="New password" autocomplete="new-password">
+                                        <button class="btn btn-sm btn-outline-primary" name="action" value="set_password" type="submit">Set password</button>
+                                        <button class="btn btn-sm btn-outline-secondary" name="action" value="toggle_status" type="submit"><?= $deliveryman['status'] === 'active' ? 'Deactivate' : 'Activate'; ?></button>
                                     </form>
                                 </td>
                             </tr>
@@ -119,7 +147,9 @@ include_once 'includes/header.php';
                     <label class="form-label" for="deliverymanPhone">Phone</label>
                     <input class="form-control mb-3" id="deliverymanPhone" name="phone" maxlength="40" required>
                     <label class="form-label" for="deliverymanEmail">Email (optional)</label>
-                    <input class="form-control" id="deliverymanEmail" name="email" type="email" maxlength="191">
+                    <input class="form-control mb-3" id="deliverymanEmail" name="email" type="email" maxlength="191">
+                    <label class="form-label" for="deliverymanPassword">Initial password</label>
+                    <input class="form-control" id="deliverymanPassword" name="password" type="password" minlength="8" autocomplete="new-password" required>
                 </div>
                 <div class="modal-footer"><button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Cancel</button><button class="btn btn-success" type="submit">Save Deliveryman</button></div>
             </form>

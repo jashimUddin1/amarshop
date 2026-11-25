@@ -648,6 +648,7 @@ if (!empty($selected_collection) && !empty($nav_collections)) {
                             <span class="fw-bold">+880 1700-000000</span>
                         </div>
                     </div>
+                    <a class="btn btn-light btn-sm fw-semibold ms-lg-3" href="reseller/signup.php">Become a Reseller</a>
                 </div>
             </div>
         </nav>
@@ -685,6 +686,7 @@ if (!empty($selected_collection) && !empty($nav_collections)) {
             <div class="offcanvas-body">
                 <ul class="navbar-nav gap-2">
                     <li class="nav-item"><a class="nav-link text-dark fw-bold" href="index.php"><i class="bi bi-house-door me-2"></i>Home</a></li>
+                    <li class="nav-item"><a class="nav-link text-success fw-bold" href="reseller/signup.php"><i class="bi bi-shop me-2"></i>Become a Reseller</a></li>
                     <?php if (!empty($is_logged_in)): ?>
                         <li class="nav-item"><a class="nav-link text-dark fw-bold" href="user/my_orders.php"><i class="bi bi-box-seam me-2 text-success"></i>My Orders</a></li>
                     <?php endif; ?>

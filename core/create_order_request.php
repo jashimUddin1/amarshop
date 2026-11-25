@@ -78,7 +78,7 @@ try {
         exit;
     }
     if ($request_type === 'add_item' &&
-        !in_array(normalize_order_status((string)$order['order_status']), ['processing', 'confirmed', 'picked', 'packed'], true)) {
+        !in_array(normalize_order_status((string)$order['order_status']), ['processing', 'confirmed', 'picked', 'packed', 'packed_done'], true)) {
         http_response_code(409);
         echo json_encode(['status' => 'error', 'message' => 'Items can only be requested before delivery starts.']);
         exit;

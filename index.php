@@ -1,5 +1,8 @@
 <?php
 require_once('auth/config.php');
+require_once __DIR__ . '/core/reseller.php';
+ensure_reseller_tables($pdo);
+capture_reseller_referral($pdo);
 
 $cart_items = [];
 if (isset($_SESSION['user_id'])) {

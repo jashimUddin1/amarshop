@@ -20,7 +20,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             if ($user) {
                 if (password_verify($password, $user['password']) &&
-                    in_array(strtoupper(trim((string)$user['role'])), ['CEO', 'MD', 'MANAGER', 'ASS. MANAGER', 'SALESMAN'], true)) {
+                    in_array(strtoupper(trim((string)$user['role'])), admin_staff_roles(), true)) {
                     
                     // Set session variables
                     session_regenerate_id(true);

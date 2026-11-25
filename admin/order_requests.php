@@ -75,7 +75,8 @@ include_once 'includes/header.php';
                         <div><strong><?= htmlspecialchars($type_label, ENT_QUOTES, 'UTF-8'); ?></strong>
                             · Order <a href="order_details.php?id=<?= (int)$request['order_id']; ?>">#<?= htmlspecialchars(order_shipment_number((string)$request['order_number']), ENT_QUOTES, 'UTF-8'); ?></a>
                         </div>
-                        <span class="badge <?= $request['status'] === 'pending' ? 'text-bg-warning' : ($request['status'] === 'approved' ? 'text-bg-success' : 'text-bg-secondary'); ?>"><?= htmlspecialchars(ucfirst($request['status']), ENT_QUOTES, 'UTF-8'); ?></span>
+                        <?php $display_request_status = $request['request_type'] === 'update' && $request['status'] === 'approved' ? 'Solved / Done' : ucfirst((string)$request['status']); ?>
+                        <span class="badge <?= $request['status'] === 'pending' ? 'text-bg-warning' : ($request['status'] === 'approved' ? 'text-bg-success' : 'text-bg-secondary'); ?>"><?= htmlspecialchars($display_request_status, ENT_QUOTES, 'UTF-8'); ?></span>
                     </div>
                     <div class="card-body">
                         <div class="small text-muted mb-2">
@@ -107,7 +108,7 @@ include_once 'includes/header.php';
                                 <input type="hidden" name="request_id" value="<?= (int)$request['id']; ?>">
                                 <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($status_csrf_token, ENT_QUOTES, 'UTF-8'); ?>">
                                 <input name="admin_note" class="form-control form-control-sm flex-grow-1" placeholder="Optional note to customer">
-                                <button class="btn btn-sm btn-success" name="decision" value="approve" type="submit" <?= $request['request_type'] === 'update' && !$has_admin_reply ? 'disabled' : ''; ?>>Approve</button>
+                                <button class="btn btn-sm btn-success" name="decision" value="approve" type="submit" <?= $request['request_type'] === 'update' && !$has_admin_reply ? 'disabled' : ''; ?>><?= $request['request_type'] === 'update' ? 'Solved / Done' : 'Approve'; ?></button>
                                 <button class="btn btn-sm btn-outline-danger" name="decision" value="reject" type="submit" <?= $request['request_type'] === 'update' && !$has_admin_reply ? 'disabled' : ''; ?>>Reject</button>
                             </form>
                         </div>

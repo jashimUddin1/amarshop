@@ -1,7 +1,9 @@
 <?php
 require_once __DIR__ . '/../auth/config.php';
 require_once __DIR__ . '/../../core/order_admin.php';
+require_once __DIR__ . '/../../core/delivery_logistics.php';
 require_admin();
+ensure_delivery_logistics_tables($pdo);
 
 header('Content-Type: application/json');
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -51,6 +53,20 @@ try {
         $pdo->rollBack();
         http_response_code(409);
         echo json_encode(['status' => 'error', 'message' => 'This issue shipment cannot be assigned.']);
+        exit;
+    }
+    $bag_stmt = $pdo->prepare("
+        SELECT 1 FROM order_quantity q JOIN delivery_bags b ON b.id = q.bag_id
+        WHERE q.shipment_type = 'issue' AND q.issue_id = :issue_id
+            AND q.status IN ('in_bag', 'delivering') AND b.status <> 'closed'
+        LIMIT 1
+        FOR UPDATE
+    ");
+    $bag_stmt->execute([':issue_id' => $issue_id]);
+    if ($bag_stmt->fetchColumn()) {
+        $pdo->rollBack();
+        http_response_code(409);
+        echo json_encode(['status' => 'error', 'message' => 'This issue shipment is already controlled by an active bag.']);
         exit;
     }
 

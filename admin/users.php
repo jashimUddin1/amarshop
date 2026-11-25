@@ -10,6 +10,8 @@ $current_page = "users";
 $message = '';
 $message_type = '';
 $staff_created = ($_GET['staff'] ?? '') === 'created';
+$can_manage_staff = function_exists('admin_can_manage_staff')
+    && admin_can_manage_staff((string)($_SESSION['user_role'] ?? ''));
 if ($staff_created) {
     $message = 'Admin staff account created successfully.';
     $message_type = 'success';
@@ -107,6 +109,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $message_type = 'danger';
                 } else {
                     $emailChanged = $currentUser['email'] === null || strcasecmp((string)$currentUser['email'], $email) !== 0;
+                    $emailVerified = isset($_POST['email_verified']);
+                    $verificationChanged = (int)$currentUser['email_verified'] !== (int)$emailVerified;
                     $updateStmt = $pdo->prepare("
                         UPDATE users
                         SET role = 'user', verify_status = :verify_status, email = :email,
@@ -118,16 +122,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $result = $updateStmt->execute([
                         ':verify_status' => $verify_status,
                         ':email' => $email,
-                        ':email_verified' => $emailChanged ? 0 : (int)$currentUser['email_verified'],
-                        ':otp_code' => $emailChanged ? null : $currentUser['otp_code'],
-                        ':otp_expires_at' => $emailChanged ? null : $currentUser['otp_expires_at'],
-                        ':remember_token' => $emailChanged ? null : $currentUser['remember_token'],
+                        ':email_verified' => (int)$emailVerified,
+                        ':otp_code' => ($emailChanged || $verificationChanged) ? null : $currentUser['otp_code'],
+                        ':otp_expires_at' => ($emailChanged || $verificationChanged) ? null : $currentUser['otp_expires_at'],
+                        ':remember_token' => ($emailChanged || !$emailVerified) ? null : $currentUser['remember_token'],
                         ':id' => $user_id,
                     ]);
                     if ($result) {
-                        $message = $emailChanged
-                            ? 'Customer email updated. The customer must verify the new address before logging in.'
-                            : 'Customer account status updated successfully!';
+                        if ($emailChanged && !$emailVerified) {
+                            $message = 'Customer email updated. The customer must verify the new address before logging in.';
+                        } elseif ($emailVerified && ($emailChanged || $verificationChanged)) {
+                            $message = 'Customer email marked as verified successfully.';
+                        } elseif (!$emailVerified && $verificationChanged) {
+                            $message = 'Customer email verification removed successfully.';
+                        } else {
+                            $message = 'Customer account status updated successfully!';
+                        }
                         $message_type = 'success';
                     } else {
                         $message = 'Failed to update user access.';
@@ -255,7 +265,7 @@ include_once 'includes/header.php';
         <small class="text-muted">Total Users: <?= count($users); ?></small>
     </div>
     <div class="d-flex gap-2">
-    <a class="btn btn-outline-primary" href="auth/signup.php"><i class="bi bi-person-badge me-1"></i>Add Admin Staff</a>
+    <?php if ($can_manage_staff): ?><a class="btn btn-outline-primary" href="auth/signup.php"><i class="bi bi-person-badge me-1"></i>Add Admin Staff</a><?php endif; ?>
     <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addUserModal">
         <i class="bi bi-person-plus-fill me-1"></i> Add New User
     </button>
@@ -453,7 +463,13 @@ include_once 'includes/header.php';
                                         <div class="mb-3">
                                             <label class="form-label fw-bold">Customer email address</label>
                                             <input type="email" name="email" class="form-control" value="<?= htmlspecialchars($user['email'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" required>
-                                            <div class="form-text">Changing this address resets email verification; the customer must verify it again.</div>
+                                            <div class="form-text">You can mark this email as verified directly. Changing the address clears any pending OTP.</div>
+                                        </div>
+                                        <div class="form-check form-switch mb-3">
+                                            <input class="form-check-input" type="checkbox" role="switch" name="email_verified" value="1" id="evSwitch<?= (int)$user['id']; ?>" <?= (int)($user['email_verified'] ?? 0) === 1 ? 'checked' : ''; ?>>
+                                            <label class="form-check-label fw-bold" for="evSwitch<?= (int)$user['id']; ?>">
+                                                Mark Email as Verified Directly
+                                            </label>
                                         </div>
                                         <div class="mb-3">
                                             <label class="form-label fw-bold">Account Status</label>

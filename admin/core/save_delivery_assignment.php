@@ -2,7 +2,9 @@
 require_once __DIR__ . '/../auth/config.php';
 require_once __DIR__ . '/../../core/order_status.php';
 require_once __DIR__ . '/../../core/order_admin.php';
+require_once __DIR__ . '/../../core/delivery_logistics.php';
 require_admin();
+ensure_delivery_logistics_tables($pdo);
 
 header('Content-Type: application/json');
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -53,10 +55,23 @@ try {
         echo json_encode(['status' => 'error', 'message' => 'Order not found.']);
         exit;
     }
-    if (normalize_order_status((string)$order['order_status']) !== 'packed') {
+    $bag_stmt = $pdo->prepare("
+        SELECT 1 FROM order_quantity q JOIN delivery_bags b ON b.id = q.bag_id
+        WHERE q.shipment_type = 'order' AND q.order_id = :order_id
+            AND q.status IN ('in_bag', 'delivering') AND b.status <> 'closed'
+        LIMIT 1
+    ");
+    $bag_stmt->execute([':order_id' => $order_id]);
+    if ($bag_stmt->fetchColumn()) {
         $pdo->rollBack();
         http_response_code(409);
-        echo json_encode(['status' => 'error', 'message' => 'A rider or courier can only be assigned when the order is packed.']);
+        echo json_encode(['status' => 'error', 'message' => 'This shipment is already controlled by an active bag.']);
+        exit;
+    }
+    if (normalize_order_status((string)$order['order_status']) !== 'packed_done') {
+        $pdo->rollBack();
+        http_response_code(409);
+        echo json_encode(['status' => 'error', 'message' => 'A rider or courier can only be assigned when packing is complete.']);
         exit;
     }
 

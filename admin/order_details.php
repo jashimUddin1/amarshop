@@ -65,12 +65,13 @@ $deliverymen_stmt = $pdo->query("SELECT id, customar_name, phone FROM deliveryma
 $deliverymen = $deliverymen_stmt->fetchAll(PDO::FETCH_ASSOC);
 $status = normalize_order_status((string)($order['order_status'] ?? 'processing'));
 $can_edit = !in_array($status, ['cancelled', 'delivered'], true);
-$can_edit_items = in_array($status, ['processing', 'confirmed', 'picked', 'packed'], true);
+$can_edit_items = in_array($status, ['processing', 'confirmed', 'picked', 'packed', 'packed_done'], true);
 $status_transitions = [
     'processing' => ['confirmed', 'cancelled'],
     'confirmed' => ['picked', 'processing', 'cancelled'],
     'picked' => ['packed', 'confirmed', 'cancelled'],
-    'packed' => ['delivering', 'picked', 'cancelled'],
+    'packed' => ['packed_done', 'picked', 'cancelled'],
+    'packed_done' => ['delivering', 'cancelled'],
     'delivering' => ['delivered'],
 ];
 $available_statuses = $status_transitions[$status] ?? [];
@@ -90,6 +91,8 @@ $timeline_descriptions = [
     'confirmed' => 'The order has been confirmed.',
     'picked' => 'The items have been picked for packing.',
     'packed' => 'The order has been packed.',
+    'packed_done' => 'Packing is complete. The order is ready for delivery.',
+    'inbag' => 'The order has been placed in a delivery bag and awaits rider delivery.',
     'delivering' => 'The order is on its way to the customer.',
     'delivered' => 'The order has been delivered.',
     'cancelled' => 'The order was cancelled.',
@@ -141,6 +144,9 @@ $timeline_descriptions = [
                             <span class="position-absolute top-0 start-0 translate-middle-x badge rounded-pill text-bg-success"><i class="bi bi-check"></i></span>
                             <div class="fw-semibold"><?= htmlspecialchars(order_status_label($event_status), ENT_QUOTES, 'UTF-8'); ?></div>
                             <div class="small text-muted"><?= htmlspecialchars($timeline_descriptions[$event_status] ?? 'Order status updated.', ENT_QUOTES, 'UTF-8'); ?></div>
+                            <?php if (!empty($event['admin_name'])): ?>
+                                <div class="small text-muted"><i class="bi bi-person-check me-1"></i>Updated by <?= htmlspecialchars($event['admin_name'], ENT_QUOTES, 'UTF-8'); ?></div>
+                            <?php endif; ?>
                         </div>
                     </li>
                 <?php endforeach; ?>
@@ -148,7 +154,7 @@ $timeline_descriptions = [
         </div>
     </section>
 
-    <?php if ($assignment || $status === 'packed'): ?>
+    <?php if ($assignment || $status === 'packed_done'): ?>
         <section class="card shadow-sm mb-3">
             <div class="card-header fw-semibold"><i class="bi bi-truck me-2"></i>Assign Delivery</div>
             <div class="card-body">
@@ -161,7 +167,7 @@ $timeline_descriptions = [
                         <?php if ($assignment['tracking_number'] !== ''): ?> · Tracking: <?= htmlspecialchars($assignment['tracking_number'], ENT_QUOTES, 'UTF-8'); ?><?php endif; ?>
                     </div>
                 <?php endif; ?>
-                <?php if ($status === 'packed'): ?>
+                <?php if ($status === 'packed_done'): ?>
                 <form id="deliveryAssignmentForm" class="row g-2">
                     <input type="hidden" name="order_id" value="<?= (int)$order['id']; ?>">
                     <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($status_csrf_token, ENT_QUOTES, 'UTF-8'); ?>">

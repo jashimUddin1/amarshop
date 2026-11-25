@@ -3,7 +3,9 @@
 header('Content-Type: application/json');
 
 require_once '../auth/config.php';
+require_once __DIR__ . '/../../core/reseller.php';
 require_admin();
+ensure_reseller_tables($pdo);
 
 $response = ['status' => 'error', 'message' => 'Something went wrong!'];
 
@@ -13,15 +15,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $product_code     = trim($_POST['product_code'] ?? '');
     $name             = trim($_POST['name'] ?? '');
     $category_name    = trim($_POST['category_name'] ?? '');
-    $purchase_price   = $_POST['purchase_price'] ?? 0;
-    $sell_price       = $_POST['sell_price'] ?? 0;
-    if (!is_numeric($purchase_price) || !is_numeric($sell_price) || (float)$purchase_price < 0 || (float)$sell_price < 0) {
-        echo json_encode(['status' => 'error', 'message' => 'Prices must be valid non-negative amounts.']);
+    $purchase_price = filter_var(trim((string)($_POST['purchase_price'] ?? '')), FILTER_VALIDATE_FLOAT);
+    $reseller_percent = filter_var(trim((string)($_POST['reseller_price'] ?? '')), FILTER_VALIDATE_FLOAT);
+    $sell_percent = filter_var(trim((string)($_POST['sell_price'] ?? '')), FILTER_VALIDATE_FLOAT);
+    $discount_percent = filter_var(trim((string)($_POST['discount_percent'] ?? '')), FILTER_VALIDATE_FLOAT);
+    if ($purchase_price === false || $reseller_percent === false ||
+        $sell_percent === false || $discount_percent === false) {
+        echo json_encode(['status' => 'error', 'message' => 'Enter a valid purchase price, reseller percentage, sell percentage and discount.']);
         exit;
     }
-    $purchase_price = (int)round((float)$purchase_price);
-    $sell_price = (int)round((float)$sell_price);
-    $discount_percent = $_POST['discount_percent'] ?? 0;
+    try {
+        $prices = reseller_calculate_prices((float)$purchase_price, (float)$reseller_percent, (float)$sell_percent, (float)$discount_percent);
+    } catch (InvalidArgumentException $e) {
+        echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+        exit;
+    }
+    $reseller_markup_percent = (float)$reseller_percent;
+    $sell_markup_percent = (float)$sell_percent;
+    $purchase_price = round((float)$purchase_price, 2);
     $description      = trim($_POST['description'] ?? '');
     $size             = trim($_POST['size'] ?? '');
     $color            = trim($_POST['product_color'] ?? '');
@@ -63,14 +74,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     try {
         $sql = "INSERT INTO products (
-            product_code, name, category_name, purchase_price, sell_price, discount_percent, 
+            product_code, name, category_name, purchase_price, reseller_markup_percent, sell_markup_percent,
+            reseller_price, sell_price, discount_percent,
             description, size, color, stock, collection_name, main_img, side_img1, side_img2, side_img3, 
             side_img4, side_img5, created_by
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         $stmt = $pdo->prepare($sql);
         $stmt->execute([
-            $product_code, $name, $category_name, $purchase_price, $sell_price, $discount_percent, 
+            $product_code, $name, $category_name, $purchase_price, $reseller_markup_percent,
+            $sell_markup_percent, $prices['reseller_price'], $prices['sell_price'], $discount_percent,
             $description, $size, $color, $stock, $collection_name, $main_img, $side_img1, $side_img2, $side_img3, 
             $side_img4, $side_img5, $current_user_id
         ]);

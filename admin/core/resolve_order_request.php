@@ -2,7 +2,9 @@
 require_once '../auth/config.php';
 require_once __DIR__ . '/../../core/order_status.php';
 require_once __DIR__ . '/../../core/order_admin.php';
+require_once __DIR__ . '/../../core/reseller.php';
 require_admin();
+ensure_reseller_tables($pdo);
 
 header('Content-Type: application/json');
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -60,10 +62,10 @@ try {
     }
 
     if ($decision === 'approve' && $request['request_type'] === 'add_item') {
-        if (!in_array(normalize_order_status((string)$order['order_status']), ['processing', 'confirmed', 'picked', 'packed'], true)) {
+        if (!in_array(normalize_order_status((string)$order['order_status']), ['processing', 'confirmed', 'picked', 'packed', 'packed_done'], true)) {
             throw new RuntimeException('Items can only be added before delivery starts.');
         }
-        $product_stmt = $pdo->prepare('SELECT id, product_code, size, stock, ROUND(COALESCE(actual_price, sell_price)) AS price FROM products WHERE id = :id FOR UPDATE');
+        $product_stmt = $pdo->prepare('SELECT id, product_code, size, stock, reseller_price, ROUND(COALESCE(actual_price, sell_price)) AS price FROM products WHERE id = :id FOR UPDATE');
         $product_stmt->execute([':id' => (int)$request['product_id']]);
         $product = $product_stmt->fetch(PDO::FETCH_ASSOC);
         $quantity = (int)$request['quantity'];
@@ -81,8 +83,8 @@ try {
         }
         $price = (int)$product['price'];
         $insert_stmt = $pdo->prepare('
-            INSERT INTO order_items (order_id, product_id, product_code, size, quantity, price, total_price)
-            VALUES (:order_id, :product_id, :product_code, :size, :quantity, :price, :total_price)
+            INSERT INTO order_items (order_id, product_id, product_code, size, quantity, price, reseller_price, total_price)
+            VALUES (:order_id, :product_id, :product_code, :size, :quantity, :price, :reseller_price, :total_price)
         ');
         $insert_stmt->execute([
             ':order_id' => (int)$order['id'],
@@ -91,6 +93,7 @@ try {
             ':size' => $request['size'],
             ':quantity' => $quantity,
             ':price' => $price,
+            ':reseller_price' => !empty($order['reseller_id']) ? (float)$product['reseller_price'] : null,
             ':total_price' => $price * $quantity,
         ]);
         $subtotal_stmt = $pdo->prepare('SELECT COALESCE(SUM(total_price), 0) FROM order_items WHERE order_id = :id');
@@ -103,7 +106,7 @@ try {
             ':id' => (int)$order['id'],
         ]);
     } elseif ($decision === 'approve' && $request['request_type'] === 'cancel') {
-        if (!in_array(normalize_order_status((string)$order['order_status']), ['processing', 'confirmed', 'picked', 'packed'], true)) {
+        if (!in_array(normalize_order_status((string)$order['order_status']), ['processing', 'confirmed', 'picked', 'packed', 'packed_done'], true)) {
             throw new RuntimeException('Cancellation cannot be approved after delivery has started.');
         }
         $items_stmt = $pdo->prepare('SELECT product_id, SUM(quantity) AS quantity FROM order_items WHERE order_id = :id GROUP BY product_id');

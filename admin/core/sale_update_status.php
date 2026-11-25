@@ -2,7 +2,11 @@
 require_once __DIR__ . '/../auth/config.php';
 require_once __DIR__ . '/../../core/order_status.php';
 require_once __DIR__ . '/../../core/order_admin.php';
+require_once __DIR__ . '/../../core/delivery_logistics.php';
+require_once __DIR__ . '/../../core/reseller.php';
 require_admin();
+ensure_delivery_logistics_tables($pdo);
+ensure_reseller_tables($pdo);
 
 header('Content-Type: application/json');
 
@@ -21,7 +25,7 @@ $sale_id = $_POST['sale_id'] ?? '';
 $requested_status = $_POST['status'] ?? '';
 $submitted_csrf_token = $_POST['csrf_token'] ?? '';
 $expected_csrf_token = $_SESSION['order_status_csrf'] ?? '';
-$valid_statuses = ['processing', 'confirmed', 'picked', 'packed', 'delivering', 'delivered', 'cancelled'];
+$valid_statuses = ['processing', 'confirmed', 'picked', 'packed', 'packed_done', 'delivering', 'delivered', 'cancelled'];
 
 if (!is_string($sale_id) || filter_var($sale_id, FILTER_VALIDATE_INT) === false || (int)$sale_id <= 0 ||
     !is_string($requested_status) || !in_array($requested_status, $valid_statuses, true) ||
@@ -36,7 +40,8 @@ $transitions = [
     'processing' => ['confirmed', 'cancelled'],
     'confirmed' => ['processing', 'picked', 'cancelled'],
     'picked' => ['confirmed', 'packed', 'cancelled'],
-    'packed' => ['picked', 'delivering', 'cancelled'],
+    'packed' => ['picked', 'packed_done', 'cancelled'],
+    'packed_done' => ['delivering', 'cancelled'],
     'delivering' => ['delivered'],
     'delivered' => [],
     'cancelled' => [],
@@ -52,6 +57,21 @@ try {
         $pdo->rollBack();
         http_response_code(404);
         echo json_encode(['status' => 'error', 'message' => 'Order not found.']);
+        exit;
+    }
+
+    $bag_item_stmt = $pdo->prepare("
+        SELECT 1 FROM order_quantity q
+        JOIN delivery_bags b ON b.id = q.bag_id
+        WHERE q.shipment_type = 'order' AND q.order_id = :order_id
+            AND q.status IN ('in_bag', 'delivering') AND b.status <> 'closed'
+        LIMIT 1
+    ");
+    $bag_item_stmt->execute([':order_id' => (int)$sale_id]);
+    if ($bag_item_stmt->fetchColumn()) {
+        $pdo->rollBack();
+        http_response_code(409);
+        echo json_encode(['status' => 'error', 'message' => 'This shipment is controlled by its active delivery bag and cannot be changed here.']);
         exit;
     }
 
@@ -101,12 +121,22 @@ try {
         ':id' => (int)$sale_id,
     ]);
     $history_stmt = $pdo->prepare(
-        'INSERT INTO order_status_history (order_id, status) VALUES (:order_id, :status)'
+        'INSERT INTO order_status_history (order_id, status, admin_id, admin_name) VALUES (:order_id, :status, :admin_id, :admin_name)'
     );
+    $admin_id = (int)($_SESSION['admin_user_id'] ?? $_SESSION['user_id']);
+    $admin_name = trim((string)($_SESSION['user_name'] ?? ''));
+    if ($admin_name === '') {
+        $admin_name = 'Admin #' . $admin_id;
+    }
     $history_stmt->execute([
         ':order_id' => (int)$sale_id,
         ':status' => $requested_status,
+        ':admin_id' => $admin_id,
+        ':admin_name' => $admin_name,
     ]);
+    if ($requested_status === 'delivered') {
+        record_reseller_order_commission($pdo, (int)$sale_id);
+    }
     $pdo->commit();
 
     echo json_encode(['status' => 'success', 'message' => 'Order status updated to ' . order_status_label($requested_status) . '.']);

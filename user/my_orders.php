@@ -141,10 +141,13 @@ $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 <div class="d-flex flex-column gap-3">
                     <?php foreach ($orders as $order): 
                         $order_status = normalize_order_status((string)($order['order_status'] ?? 'processing'));
+                        if ($order_status === 'inbag') {
+                            $order_status = 'packed';
+                        }
                         $status_badge_class = match ($order_status) {
                             'delivered'  => 'bg-success-subtle text-success border border-success-subtle',
                             'delivering' => 'bg-primary-subtle text-primary border border-primary-subtle',
-                            'packed', 'picked' => 'bg-info-subtle text-info-emphasis border border-info-subtle',
+                            'packed', 'packed_done', 'picked' => 'bg-info-subtle text-info-emphasis border border-info-subtle',
                             'confirmed'  => 'bg-primary-subtle text-primary border border-primary-subtle',
                             'cancelled'  => 'bg-danger-subtle text-danger border border-danger-subtle',
                             default      => 'bg-warning-subtle text-warning-emphasis border border-warning-subtle',
@@ -155,8 +158,9 @@ $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
                         $payment_status = $is_delivered ? 'Paid' : ($is_cod ? 'COD' : 'Paid');
                         $payment_class = $is_delivered ? 'text-success' : ($is_cod ? 'text-muted' : 'text-success');
 
-                        $delivery_label = !empty($order['shipping_area']) && !is_numeric($order['shipping_area'])
-                            ? htmlspecialchars((string)$order['shipping_area'], ENT_QUOTES, 'UTF-8')
+                        $shipping_area_label = order_shipping_area_label((string)($order['shipping_area'] ?? ''));
+                        $delivery_label = $shipping_area_label !== ''
+                            ? htmlspecialchars($shipping_area_label, ENT_QUOTES, 'UTF-8')
                             : 'Regular Delivery';
                     ?>
                         <div class="card border rounded-3 shadow-sm bg-white order-card">

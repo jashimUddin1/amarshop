@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../../core/user_profile_picture.php';
 require_once __DIR__ . '/../../core/order_admin.php';
+require_once __DIR__ . '/../../core/order_status.php';
 
 if (session_status() === PHP_SESSION_NONE) {
   session_start();
@@ -11,14 +12,28 @@ $admin_profile_picture = !empty($_SESSION['user_id'])
 
 ensure_order_requests_table($pdo);
 ensure_order_issues_table($pdo);
+$orders_to_pack_count = (int)$pdo->query("
+  SELECT COUNT(*) FROM orders
+  WHERE LOWER(order_status) IN ('processing', 'pending', 'confirmed', 'picked', 'packed')
+")->fetchColumn();
+$ready_for_delivery_count = (int)$pdo->query("
+  SELECT COUNT(*) FROM orders
+  WHERE LOWER(order_status) = 'packed_done'
+")->fetchColumn();
 $pending_order_request_count = (int)$pdo->query("SELECT COUNT(*) FROM order_requests WHERE status = 'pending'")->fetchColumn();
 $pending_order_issue_count = (int)$pdo->query("SELECT COUNT(*) FROM order_issues WHERE status = 'pending'")->fetchColumn();
 
 $admin_nav_links = [
   ['key' => 'dashboard', 'label' => 'Dashboard', 'icon' => 'speedometer2', 'href' => 'index.php'],
+  ['key' => 'process', 'label' => 'Process', 'icon' => 'boxes', 'href' => 'process.php'],
   ['key' => 'orders', 'label' => 'Orders', 'icon' => 'cart-check', 'href' => 'sales.php'],
+  ['key' => 'assign', 'label' => 'Assign', 'icon' => 'clipboard2-check', 'href' => 'assign.php'],
   ['key' => 'order-requests', 'label' => 'Requests', 'icon' => 'inbox', 'href' => 'order_requests.php'],
   ['key' => 'order-issues', 'label' => 'Order Issues', 'icon' => 'exclamation-triangle', 'href' => 'order_issues.php'],
+  ['key' => 'cash-collections', 'label' => 'Cash Collection', 'icon' => 'cash-coin', 'href' => 'cash_collections.php'],
+  ['key' => 'collector-manage', 'label' => 'Collector Manage', 'icon' => 'person-lines-fill', 'href' => 'collector_manage.php'],
+  ['key' => 'resellers', 'label' => 'Resellers', 'icon' => 'shop', 'href' => 'resellers.php'],
+  ['key' => 'purchases', 'label' => 'Purchases', 'icon' => 'bag-check', 'href' => 'purchases.php'],
   ['key' => 'products', 'label' => 'Products', 'icon' => 'box-seam', 'href' => 'products.php'],
   ['key' => 'category', 'label' => 'Categories', 'icon' => 'folder-plus', 'href' => 'categories.php'],
   ['key' => 'collection', 'label' => 'Collections', 'icon' => 'tags', 'href' => 'collection.php'],
@@ -79,6 +94,62 @@ $admin_nav_links = [
     .admin-account-button:hover,
     .admin-account-button:focus {
       color: var(--bs-primary);
+    }
+
+    @media (min-width: 992px) {
+      #adminLayoutRow {
+        display: flex;
+      }
+
+      #adminSidebar {
+        flex: 0 0 16.666667%;
+        max-width: 16.666667%;
+        transition: flex-basis 0.2s ease, max-width 0.2s ease;
+      }
+
+      #adminMainContent {
+        flex: 0 0 83.333333%;
+        max-width: 83.333333%;
+        transition: flex-basis 0.2s ease, max-width 0.2s ease;
+      }
+
+      #adminLayoutRow.admin-sidebar-collapsed #adminSidebar {
+        flex-basis: 76px;
+        max-width: 76px;
+      }
+
+      #adminLayoutRow.admin-sidebar-collapsed #adminMainContent {
+        flex-basis: calc(100% - 76px);
+        max-width: calc(100% - 76px);
+      }
+
+      #adminSidebar .sidebar-toggle {
+        width: 100%;
+      }
+
+      #adminSidebar .sidebar-link-label {
+        white-space: nowrap;
+      }
+
+      #adminLayoutRow.admin-sidebar-collapsed #adminSidebar .nav-link {
+        justify-content: center;
+        padding-right: 0.5rem;
+        padding-left: 0.5rem;
+      }
+
+      #adminLayoutRow.admin-sidebar-collapsed #adminSidebar .sidebar-link-label,
+      #adminLayoutRow.admin-sidebar-collapsed #adminSidebar .sidebar-badge,
+      #adminLayoutRow.admin-sidebar-collapsed #adminSidebar .sidebar-toggle-label {
+        display: none;
+      }
+
+      #adminLayoutRow.admin-sidebar-collapsed #adminSidebar .nav-link i {
+        margin-right: 0 !important;
+      }
+
+      #adminLayoutRow.admin-sidebar-collapsed #adminSidebar .sidebar-toggle i {
+        margin-right: 0 !important;
+      }
     }
 
     @media (max-width: 991.98px) {
@@ -157,6 +228,8 @@ $admin_nav_links = [
           <li class="nav-item">
             <a class="nav-link <?= ($current_page ?? '') === $link['key'] ? 'active' : 'text-body'; ?>" href="<?= htmlspecialchars($link['href'], ENT_QUOTES, 'UTF-8'); ?>">
               <i class="bi bi-<?= htmlspecialchars($link['icon'], ENT_QUOTES, 'UTF-8'); ?> me-2"></i><?= htmlspecialchars($link['label'], ENT_QUOTES, 'UTF-8'); ?>
+              <?php if ($link['key'] === 'process' && $orders_to_pack_count > 0): ?><span class="badge text-bg-danger ms-1"><?= $orders_to_pack_count; ?></span><?php endif; ?>
+              <?php if ($link['key'] === 'assign' && $ready_for_delivery_count > 0): ?><span class="badge text-bg-warning ms-1"><?= $ready_for_delivery_count; ?></span><?php endif; ?>
               <?php if ($link['key'] === 'order-requests' && $pending_order_request_count > 0): ?><span class="badge text-bg-warning ms-1"><?= $pending_order_request_count; ?></span><?php endif; ?>
               <?php if ($link['key'] === 'order-issues' && $pending_order_issue_count > 0): ?><span class="badge text-bg-danger ms-1"><?= $pending_order_issue_count; ?></span><?php endif; ?>
             </a>
@@ -170,20 +243,27 @@ $admin_nav_links = [
   </div>
 
   <div class="container-fluid flex-grow-1 overflow-hidden">
-    <div class="row h-100">
+    <div class="row h-100" id="adminLayoutRow">
 
-      <aside class="col-lg-2 d-none d-lg-block bg-body-tertiary border-end h-100 overflow-y-auto pt-3">
+      <aside class="col-lg-2 d-none d-lg-block bg-body-tertiary border-end h-100 overflow-y-auto pt-3" id="adminSidebar" aria-label="Admin navigation">
+        <div class="px-1 mb-2">
+          <button class="btn btn-sm btn-outline-secondary sidebar-toggle" id="adminSidebarToggle" type="button" aria-label="Collapse menu" aria-expanded="true" aria-controls="adminSidebar">
+            <i class="bi bi-layout-sidebar-inset-reverse me-1" aria-hidden="true"></i><span class="sidebar-toggle-label">Collapse menu</span>
+          </button>
+        </div>
         <ul class="nav nav-pills flex-column gap-1 px-1 pb-5">
           <?php foreach ($admin_nav_links as $link): ?>
             <li class="nav-item">
-              <a class="nav-link <?= ($current_page ?? '') === $link['key'] ? 'active' : 'text-body'; ?>" href="<?= htmlspecialchars($link['href'], ENT_QUOTES, 'UTF-8'); ?>">
-                <i class="bi bi-<?= htmlspecialchars($link['icon'], ENT_QUOTES, 'UTF-8'); ?> me-2"></i><?= htmlspecialchars($link['label'], ENT_QUOTES, 'UTF-8'); ?>
-                <?php if ($link['key'] === 'order-requests' && $pending_order_request_count > 0): ?><span class="badge text-bg-warning ms-1"><?= $pending_order_request_count; ?></span><?php endif; ?>
-                <?php if ($link['key'] === 'order-issues' && $pending_order_issue_count > 0): ?><span class="badge text-bg-danger ms-1"><?= $pending_order_issue_count; ?></span><?php endif; ?>
+              <a class="nav-link <?= ($current_page ?? '') === $link['key'] ? 'active' : 'text-body'; ?>" href="<?= htmlspecialchars($link['href'], ENT_QUOTES, 'UTF-8'); ?>" aria-label="<?= htmlspecialchars($link['label'], ENT_QUOTES, 'UTF-8'); ?>" title="<?= htmlspecialchars($link['label'], ENT_QUOTES, 'UTF-8'); ?>">
+                <i class="bi bi-<?= htmlspecialchars($link['icon'], ENT_QUOTES, 'UTF-8'); ?> me-2" aria-hidden="true"></i><span class="sidebar-link-label"><?= htmlspecialchars($link['label'], ENT_QUOTES, 'UTF-8'); ?></span>
+                <?php if ($link['key'] === 'process' && $orders_to_pack_count > 0): ?><span class="badge text-bg-danger ms-1 sidebar-badge"><?= $orders_to_pack_count; ?></span><?php endif; ?>
+                <?php if ($link['key'] === 'assign' && $ready_for_delivery_count > 0): ?><span class="badge text-bg-warning ms-1 sidebar-badge"><?= $ready_for_delivery_count; ?></span><?php endif; ?>
+                <?php if ($link['key'] === 'order-requests' && $pending_order_request_count > 0): ?><span class="badge text-bg-warning ms-1 sidebar-badge"><?= $pending_order_request_count; ?></span><?php endif; ?>
+                <?php if ($link['key'] === 'order-issues' && $pending_order_issue_count > 0): ?><span class="badge text-bg-danger ms-1 sidebar-badge"><?= $pending_order_issue_count; ?></span><?php endif; ?>
               </a>
             </li>
           <?php endforeach; ?>
         </ul>
       </aside>
 
-      <main class="col-lg-10 h-100 d-flex flex-column overflow-hidden">
+      <main class="col-lg-10 h-100 d-flex flex-column overflow-hidden" id="adminMainContent">
