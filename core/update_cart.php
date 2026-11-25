@@ -14,6 +14,8 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
+verify_csrf();
+
 $cart_id = filter_var($_POST['cart_id'] ?? null, FILTER_VALIDATE_INT);
 $action = $_POST['action'] ?? '';
 if ($cart_id === false || $cart_id <= 0 || !is_string($action)) {

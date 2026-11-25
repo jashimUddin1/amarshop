@@ -19,6 +19,7 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    verify_csrf();
     ensure_order_status_history_table($pdo);
     ensure_order_number_sequence_table($pdo);
 
@@ -29,7 +30,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $address         = trim($_POST['address'] ?? '');
     $shipping_area   = $_POST['shipping_area'] ?? '';
     $shipping_rates  = ['inside_dhaka' => 60.00, 'outside_dhaka' => 120.00];
-    $payment_method  = $_POST['payment_method'] ?? 'COD';
+    $payment_method  = trim((string)($_POST['payment_method'] ?? 'COD'));
+    if ($payment_method !== 'COD') {
+        redirect_to_checkout_with_error('Invalid payment method.');
+    }
 
     if (
         empty($fullname) ||

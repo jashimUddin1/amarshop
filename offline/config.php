@@ -21,7 +21,7 @@ define('POS_DB_NAME', getenv('AMARSHOP_POS_DB_NAME') ?: 'amarshop');
 define('POS_DB_USER', getenv('AMARSHOP_POS_DB_USER') ?: 'root');
 define('POS_DB_PASS', getenv('AMARSHOP_POS_DB_PASS') ?: '');
 define('POS_STORE_NAME', getenv('AMARSHOP_POS_STORE_NAME') ?: 'AmarShop');
-define('POS_SETUP_KEY', getenv('AMARSHOP_POS_SETUP_KEY') ?: '12534');
+define('POS_SETUP_KEY', getenv('AMARSHOP_POS_SETUP_KEY') ?: '');
 define('POS_LOW_STOCK_LEVEL', 5);
 
 try {

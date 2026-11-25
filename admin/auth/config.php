@@ -1,10 +1,14 @@
 <?php
 // config.php
 if (session_status() === PHP_SESSION_NONE) {
+    $script_path = str_replace('\\', '/', (string)($_SERVER['SCRIPT_NAME'] ?? '/admin'));
+    $admin_marker = '/admin';
+    $admin_position = strpos($script_path, $admin_marker);
+    $session_path = $admin_position === false ? '/admin' : substr($script_path, 0, $admin_position + strlen($admin_marker));
     session_name('AMARSHOP_ADMIN_SESSION');
     session_set_cookie_params([
         'lifetime' => 0,
-        'path' => '/amarshop/admin',
+        'path' => rtrim($session_path, '/') . '/',
         'secure' => !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off',
         'httponly' => true,
         'samesite' => 'Lax',
@@ -15,10 +19,10 @@ if (session_status() === PHP_SESSION_NONE) {
 /* ================= TIMEZONE ================= */
 date_default_timezone_set('Asia/Dhaka');
 
-$host = "localhost";
-$db   = "amarshop";
-$user = "root";
-$pass = ""; 
+$host = getenv('AMARSHOP_DB_HOST') ?: 'localhost';
+$db   = getenv('AMARSHOP_DB_NAME') ?: 'amarshop';
+$user = getenv('AMARSHOP_DB_USER') ?: 'root';
+$pass = getenv('AMARSHOP_DB_PASS') ?: '';
 
 try {
     $pdo = new PDO("mysql:host=$host;dbname=$db;charset=utf8mb4", $user, $pass);
@@ -29,7 +33,11 @@ try {
 
 
 /* ================= BASE URL ================= */
-define('BASE_URL', '/amarshop/admin');
+$script_path = str_replace('\\', '/', (string)($_SERVER['SCRIPT_NAME'] ?? '/'));
+$admin_marker = '/admin';
+$admin_position = strpos($script_path, $admin_marker);
+$admin_base = $admin_position === false ? '/admin' : substr($script_path, 0, $admin_position + strlen($admin_marker));
+define('BASE_URL', rtrim($admin_base, '/') ?: '/admin');
 
 function base_url(string $path = ''): string {
     return rtrim(BASE_URL, '/') . '/' . ltrim($path, '/');

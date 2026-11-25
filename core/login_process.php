@@ -7,6 +7,19 @@ if (!empty($_SESSION['user_id'])) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    verify_csrf();
+
+    $now = time();
+    $attempts = $_SESSION['login_attempts'] ?? ['count' => 0, 'reset_at' => $now + 900];
+    if (!is_array($attempts) || ($attempts['reset_at'] ?? 0) < $now) {
+        $attempts = ['count' => 0, 'reset_at' => $now + 900];
+    }
+    if ((int)$attempts['count'] >= 5) {
+        $_SESSION['status'] = 'danger';
+        $_SESSION['message'] = 'Too many login attempts. Please try again after 15 minutes.';
+        header('Location: ../auth/login.php');
+        exit;
+    }
     
     $login_identity = trim($_POST['login_identity'] ?? '');
     $password       = $_POST['password'] ?? '';
@@ -56,27 +69,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 exit;
             }
 
+            session_regenerate_id(true);
             // সেশন ডাটা সেট
             $_SESSION['user_id']    = $user['id'];
             $_SESSION['user_name']  = $user['customar_name'];
             $_SESSION['user_email'] = $user['email'];
             $_SESSION['user_role']  = $user['role'];
+            $_SESSION['login_attempts'] = ['count' => 0, 'reset_at' => time() + 900];
 
             // --- Remember Me (১৫ দিন কুকি সেট আপ) ---
             if ($remember) {
                 // একটি র্যান্ডম ও সিকিউর টোকেন তৈরি
                 $remember_token = bin2hex(random_bytes(32));
+                $remember_hash = remember_token_hash($remember_token);
 
                 // ডাটাবেজে টোকেন সেভ
                 $update = $pdo->prepare("UPDATE users SET remember_token = :token WHERE id = :id");
                 $update->execute([
-                    ':token' => $remember_token,
+                    ':token' => $remember_hash,
                     ':id'    => $user['id']
                 ]);
 
                 // 30 দিনের মেয়াদ দিয়ে কুকি সেট (15 days * 24 hours * 60 mins * 60 secs)
                 $expiry_time = time() + (86400 * 30);
-                setcookie('remember_me', $remember_token, $expiry_time, "/", "", false, true); // httponly: true
+                setcookie('remember_me', $remember_token, [
+                    'expires' => $expiry_time,
+                    'path' => '/',
+                    'secure' => (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off'),
+                    'httponly' => true,
+                    'samesite' => 'Lax',
+                ]);
             }
 
             $_SESSION['status']  = 'success';
@@ -88,6 +110,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
 
         } else {
+            $attempts['count'] = (int)$attempts['count'] + 1;
+            $_SESSION['login_attempts'] = $attempts;
             $_SESSION['status']  = 'danger';
             $_SESSION['message'] = 'Invalid email/phone or password!';
             session_write_close();

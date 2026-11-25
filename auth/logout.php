@@ -13,7 +13,13 @@ session_destroy();
 
 // ৩. কুকি রিমুভ (মেয়াদ অতীতে সেট করে দিয়ে)
 if (isset($_COOKIE['remember_me'])) {
-    setcookie('remember_me', '', time() - 3600, "/");
+    setcookie('remember_me', '', [
+        'expires' => time() - 3600,
+        'path' => '/',
+        'secure' => (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off'),
+        'httponly' => true,
+        'samesite' => 'Lax',
+    ]);
 }
 
 session_start();

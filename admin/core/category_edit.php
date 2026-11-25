@@ -43,6 +43,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $file_ext = strtolower(pathinfo($_FILES['category_photo']['name'], PATHINFO_EXTENSION));
             $allowed_ext = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+            $image_info = @getimagesize($_FILES['category_photo']['tmp_name']);
+            if ((int)$_FILES['category_photo']['size'] > 5 * 1024 * 1024 ||
+                !is_array($image_info) ||
+                !in_array($image_info['mime'] ?? '', ['image/jpeg', 'image/png', 'image/webp', 'image/gif'], true)) {
+                echo json_encode(['status' => 'error', 'message' => 'Invalid or oversized image.']);
+                exit();
+            }
 
             if (!in_array($file_ext, $allowed_ext)) {
                 echo json_encode(['status' => 'error', 'message' => 'Invalid image format! Only JPG, JPEG, PNG, WEBP & GIF are allowed.']);

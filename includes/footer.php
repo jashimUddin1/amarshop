@@ -276,7 +276,11 @@
             formData.append('cart_id', cartId);
             formData.append('action', action);
 
-            fetch('core/update_cart.php', { method: 'POST', body: formData })
+            fetch('core/update_cart.php', {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || '' }
+            })
                 .then(res => res.json())
                 .then(res => {
                     if (res.status === 'success') {
@@ -297,7 +301,11 @@
             formData.append('action', 'update_size');
             formData.append('size', newSize);
 
-            fetch('core/update_cart.php', { method: 'POST', body: formData })
+            fetch('core/update_cart.php', {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || '' }
+            })
                 .then(res => res.json())
                 .then(res => {
                     if (res.status === 'success') {
@@ -336,7 +344,11 @@
                 const formData = new FormData();
                 formData.append('cart_id', cartId);
 
-                fetch('core/remove_cart_item.php', { method: 'POST', body: formData })
+                fetch('core/remove_cart_item.php', {
+                    method: 'POST',
+                    body: formData,
+                    headers: { 'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || '' }
+                })
                     .then(res => res.json())
                     .then(data => {
                         if (data.status === 'success') {
@@ -450,7 +462,11 @@
                     formData.append('quantity', quantity);
 
                     addButton.disabled = true;
-                    fetch('core/add_to_cart.php', { method: 'POST', body: formData })
+                    fetch('core/add_to_cart.php', {
+                        method: 'POST',
+                        body: formData,
+                        headers: { 'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || '' }
+                    })
                         .then(response => response.json())
                         .then(data => {
                             alert(data.message);

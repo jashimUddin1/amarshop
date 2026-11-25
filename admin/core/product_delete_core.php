@@ -8,6 +8,21 @@ require_admin();
 $response = ['status' => 'error', 'message' => 'Something went wrong!'];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $submitted = $_POST['csrf_token'] ?? '';
+    $expected = $_SESSION['csrf_token'] ?? '';
+    if (!is_string($submitted) || $expected === '' || !hash_equals($expected, $submitted)) {
+        http_response_code(403);
+        echo json_encode(['status' => 'error', 'message' => 'Invalid or missing CSRF token.']);
+        exit;
+    }
+
+    $role = strtoupper(trim((string)($_SESSION['user_role'] ?? '')));
+    if (!in_array($role, ['CEO', 'MD', 'MANAGER'], true)) {
+        http_response_code(403);
+        echo json_encode(['status' => 'error', 'message' => 'You do not have permission to delete products.']);
+        exit;
+    }
+
     $p_id = $_POST['product_id'] ?? null;
 
     if ($p_id) {

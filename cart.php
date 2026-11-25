@@ -170,7 +170,11 @@ function showCartUpdateError(message) {
 }
 
 function sendCartUpdate(formData) {
-    return fetch('core/update_cart.php', { method: 'POST', body: formData })
+    return fetch('core/update_cart.php', {
+        method: 'POST',
+        body: formData,
+        headers: { 'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || '' }
+    })
         .then(async response => {
             const result = await response.json();
             if (!response.ok || result.status !== 'success') {
@@ -202,7 +206,11 @@ function removeCartItem(cartId) {
     if (confirm("Are you sure you want to remove this item?")) {
         const formData = new FormData();
         formData.append('cart_id', cartId);
-        fetch('core/remove_cart_item.php', { method: 'POST', body: formData })
+        fetch('core/remove_cart_item.php', {
+            method: 'POST',
+            body: formData,
+            headers: { 'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || '' }
+        })
             .then(res => res.json())
             .then(res => { if (res.status === 'success') location.reload(); });
     }

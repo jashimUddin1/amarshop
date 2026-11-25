@@ -45,8 +45,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     // Image Upload Helper Function
-    function uploadImg($file_key) {
+    function uploadImg(string $file_key): ?string {
         if (isset($_FILES[$file_key]) && $_FILES[$file_key]['error'] === UPLOAD_ERR_OK) {
+            if ((int)$_FILES[$file_key]['size'] > 5 * 1024 * 1024) {
+                return NULL;
+            }
+            $image_info = @getimagesize($_FILES[$file_key]['tmp_name']);
+            if (!is_array($image_info) || !in_array($image_info['mime'] ?? '', ['image/jpeg', 'image/png', 'image/webp'], true)) {
+                return NULL;
+            }
             $ext = strtolower(pathinfo($_FILES[$file_key]['name'], PATHINFO_EXTENSION));
             $allowed_ext = ['jpg', 'jpeg', 'png', 'webp'];
             

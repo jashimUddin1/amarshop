@@ -6,7 +6,9 @@ $selected_category = $_GET['category'] ?? '';
 $selected_collection = $_GET['collection'] ?? '';
 
 // স্টক ০ সহ সব প্রোডাক্ট ফেচ করার জন্য WHERE 1=1 দেওয়া হয়েছে
-$sql = "SELECT * FROM products WHERE 1=1";
+$sql = "SELECT id, name, product_code, main_img, sell_price, actual_price,
+               stock, size, category_name, collection_name, description
+        FROM products WHERE 1=1";
 $params = [];
 
 if ($search_query !== '') {

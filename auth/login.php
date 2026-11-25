@@ -1,7 +1,5 @@
 <?php
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+require_once __DIR__ . '/config.php';
 
 if (isset($_GET['message'])) {
     $_SESSION['message'] = $_GET['message'];
@@ -99,6 +97,7 @@ if (isset($_GET['message'])) {
 
                 <!-- লগইন ফর্ম -->
                 <form action="../core/login_process.php" method="POST">
+                    <?= csrf_field(); ?>
                     
                     <!-- Phone or Email -->
                     <div class="mb-3">

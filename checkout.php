@@ -76,6 +76,7 @@ include 'includes/header.php';
     </div>
 
     <form action="core/place_order.php" method="POST">
+        <?= csrf_field(); ?>
         <div class="row g-4">
             <!-- Left Side: Delivery Information Form -->
             <div class="col-lg-7">

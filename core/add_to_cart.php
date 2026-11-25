@@ -8,6 +8,7 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    verify_csrf();
     $user_id      = $_SESSION['user_id'];
     $product_id   = isset($_POST['product_id']) ? (int)$_POST['product_id'] : 0;
     $size         = isset($_POST['size']) ? trim($_POST['size']) : null;

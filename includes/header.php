@@ -56,6 +56,7 @@ if (!empty($selected_collection) && !empty($nav_collections)) {
 
 <head>
     <meta charset="utf-8">
+    <meta name="csrf-token" content="<?= htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8'); ?>">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title><?= isset($page_title) ? htmlspecialchars($page_title) . ' - Amarshop' : 'Amarshop - Online Shop'; ?></title>
 

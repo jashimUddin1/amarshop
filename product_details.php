@@ -336,7 +336,11 @@ include 'includes/header.php';
             cartActionMessage.className = 'd-none';
 
             try {
-                const response = await fetch('core/add_to_cart.php', { method: 'POST', body: formData });
+                const response = await fetch('core/add_to_cart.php', {
+                    method: 'POST',
+                    body: formData,
+                    headers: { 'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || '' }
+                });
                 if (!response.ok) {
                     throw new Error(`Add-to-cart request failed with status ${response.status}`);
                 }
