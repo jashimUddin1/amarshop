@@ -331,7 +331,7 @@ function pos_header(string $title, string $active_page, array $user): void
     </head>
     <body>
       <header class="pos-topbar">
-        <a class="pos-brand" href="dashboard.php"><?= pos_escape(POS_STORE_NAME); ?><span class="pos-muted"> POS</span></a>
+        <!-- <a class="pos-brand" href="dashboard.php"><?= pos_escape(POS_STORE_NAME); ?><span class="pos-muted"> POS</span></a> -->
         <nav class="pos-nav" aria-label="Point of sale navigation">
           <a class="<?= $active_page === 'dashboard' ? 'active' : ''; ?>" href="dashboard.php">Overview</a>
           <a class="<?= $active_page === 'sale' ? 'active' : ''; ?>" href="sale.php">New bill</a>
