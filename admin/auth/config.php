@@ -1,11 +1,6 @@
 <?php
 // config.php
 if (session_status() === PHP_SESSION_NONE) {
-    $script_path = str_replace('\\', '/', (string)($_SERVER['SCRIPT_NAME'] ?? '/admin'));
-    $admin_marker = '/admin';
-    $admin_position = strpos($script_path, $admin_marker);
-    $session_path = $admin_position === false ? '/admin' : substr($script_path, 0, $admin_position + strlen($admin_marker));
-    $legacy_session_cookie_path = rtrim($session_path, '/') . '/';
     $session_secure = !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off';
     session_name('AMARSHOP_ADMIN_SESSION');
     session_set_cookie_params([
@@ -16,24 +11,6 @@ if (session_status() === PHP_SESSION_NONE) {
         'samesite' => 'Lax',
     ]);
     session_start();
-    if (ini_get('session.use_cookies') && !headers_sent()) {
-        setcookie(session_name(), session_id(), [
-            'expires' => 0,
-            'path' => '/',
-            'secure' => $session_secure,
-            'httponly' => true,
-            'samesite' => 'Lax',
-        ]);
-        if ($legacy_session_cookie_path !== '/') {
-            setcookie(session_name(), '', [
-                'expires' => time() - 42000,
-                'path' => $legacy_session_cookie_path,
-                'secure' => $session_secure,
-                'httponly' => true,
-                'samesite' => 'Lax',
-            ]);
-        }
-    }
 }
 
 /* ================= TIMEZONE ================= */
