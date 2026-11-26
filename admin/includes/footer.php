@@ -21,7 +21,15 @@
     const adminLayoutRow = document.getElementById('adminLayoutRow');
     const adminSidebarToggle = document.getElementById('adminSidebarToggle');
     const adminSidebarToggleIcon = adminSidebarToggle?.querySelector('i');
+    const adminSidebar = document.getElementById('adminSidebar');
     const adminSidebarCollapsed = localStorage.getItem('amarshop_admin_sidebar_collapsed') === 'true';
+
+    if (adminSidebar) {
+      adminSidebar.scrollTop = Number(sessionStorage.getItem('amarshop_admin_sidebar_scroll') || 0);
+      window.addEventListener('pagehide', () => {
+        sessionStorage.setItem('amarshop_admin_sidebar_scroll', String(adminSidebar.scrollTop));
+      });
+    }
 
     function setAdminSidebarCollapsed(collapsed) {
       if (!adminLayoutRow || !adminSidebarToggle || !adminSidebarToggleIcon) return;

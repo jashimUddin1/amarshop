@@ -26,6 +26,10 @@ leave the setup key configured after creating the owner. Sign in as owner to
 add cashier accounts, review sales, or reset and deactivate cashiers. Cashiers
 can create bills and view sales history.
 
+An active AmarShop Admin account can also sign in to POS with its Admin email
+and password. The Admin and POS panels share the browser session, and the POS
+header provides a link back to Admin. Local POS cashier accounts remain POS-only.
+
 ## Features
 
 - Search products by name or code; barcode scanners that type a code and press

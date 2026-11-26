@@ -5,7 +5,7 @@ require_admin();
 $actor_role = (string)$_SESSION['user_role'];
 $assignable_roles = admin_assignable_roles($actor_role);
 $page_title = 'Add Admin Staff';
-$current_page = 'users';
+$current_page = 'admin-users';
 $signup_csrf_token = $_SESSION['admin_signup_csrf'] ?? bin2hex(random_bytes(32));
 $_SESSION['admin_signup_csrf'] = $signup_csrf_token;
 $signup_message = is_string($_SESSION['admin_signup_message'] ?? null) ? $_SESSION['admin_signup_message'] : '';
@@ -21,7 +21,7 @@ include_once __DIR__ . '/../includes/header.php';
         <h1 class="h4 fw-bold mb-1">Add Admin Staff</h1>
         <p class="small text-muted mb-0">Signed in as <?= htmlspecialchars($actor_role, ENT_QUOTES, 'UTF-8'); ?>. You can create staff roles below your role.</p>
     </div>
-    <a class="btn btn-outline-secondary" href="../users.php"><i class="bi bi-arrow-left me-1"></i>Back to Users</a>
+    <a class="btn btn-outline-secondary" href="../admin_users.php"><i class="bi bi-arrow-left me-1"></i>Back to Admin Staff</a>
 </div>
 <div class="overflow-y-auto px-2 pb-3">
     <?php if ($signup_message !== ''): ?>
@@ -39,8 +39,8 @@ include_once __DIR__ . '/../includes/header.php';
                         <input type="text" class="form-control" id="first_name" name="first_name" maxlength="90" value="<?= htmlspecialchars((string)($signup_old['first_name'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>" required>
                     </div>
                     <div class="col-md-6">
-                        <label for="last_name" class="form-label fw-semibold">Last Name <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" id="last_name" name="last_name" maxlength="90" value="<?= htmlspecialchars((string)($signup_old['last_name'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>" required>
+                        <label for="last_name" class="form-label fw-semibold">Last Name </label>
+                        <input type="text" class="form-control" id="last_name" name="last_name" maxlength="90" value="<?= htmlspecialchars((string)($signup_old['last_name'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>">
                     </div>
                     <div class="col-md-6">
                         <label for="email" class="form-label fw-semibold">Email <span class="text-danger">*</span></label>

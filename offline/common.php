@@ -25,15 +25,135 @@ function pos_verify_csrf(): void
     }
 }
 
+function pos_admin_database(): PDO
+{
+    global $pdo;
+    static $admin_database = null;
+    if ($admin_database instanceof PDO) {
+        return $admin_database;
+    }
+
+    $pos_database = $pdo;
+    require_once __DIR__ . '/../admin/auth/config.php';
+    $admin_database = $pdo;
+    ensure_admin_account_tables($admin_database);
+    $pdo = $pos_database;
+
+    return $admin_database;
+}
+
+function pos_admin_account(): ?array
+{
+    if (empty($_SESSION['user_id'])) {
+        return null;
+    }
+
+    $admin_database = pos_admin_database();
+    $stmt = $admin_database->prepare('
+        SELECT id, customar_name, email, role
+        FROM admin_users
+        WHERE id = :id
+        LIMIT 1
+    ');
+    $stmt->execute([':id' => (int)$_SESSION['user_id']]);
+    $admin = $stmt->fetch();
+    if (!$admin) {
+        unset(
+            $_SESSION['user_id'],
+            $_SESSION['admin_user_id'],
+            $_SESSION['user_role'],
+            $_SESSION['user_name'],
+            $_SESSION['email'],
+            $_SESSION['admin_allowed_tabs']
+        );
+        return null;
+    }
+
+    $role = strtoupper(trim((string)$admin['role']));
+    $custom_roles = $admin_database->query('SELECT role FROM admin_custom_roles')->fetchAll(PDO::FETCH_COLUMN);
+    if (!in_array($role, array_merge(admin_default_staff_roles(), $custom_roles), true)) {
+        unset(
+            $_SESSION['user_id'],
+            $_SESSION['admin_user_id'],
+            $_SESSION['user_role'],
+            $_SESSION['user_name'],
+            $_SESSION['email'],
+            $_SESSION['admin_allowed_tabs']
+        );
+        return null;
+    }
+
+    $_SESSION['admin_user_id'] = (int)$admin['id'];
+    $_SESSION['user_role'] = $role;
+    $_SESSION['user_name'] = (string)$admin['customar_name'];
+    $_SESSION['email'] = (string)$admin['email'];
+
+    return $admin;
+}
+
+function pos_admin_cashier(array $admin): array
+{
+    global $pdo;
+
+    $stmt = $pdo->prepare('
+        SELECT id, full_name, username, role
+        FROM offline_pos_users
+        WHERE admin_user_id = :admin_user_id
+        LIMIT 1
+    ');
+    $stmt->execute([':admin_user_id' => (int)$admin['id']]);
+    $pos_user = $stmt->fetch();
+    if (!$pos_user) {
+        $username = 'admin-' . (int)$admin['id'] . '-' . bin2hex(random_bytes(6));
+        $insert_stmt = $pdo->prepare("
+            INSERT INTO offline_pos_users
+                (full_name, username, password_hash, role, is_active, admin_user_id)
+            VALUES (:name, :username, :password, 'cashier', 1, :admin_user_id)
+        ");
+        try {
+            $insert_stmt->execute([
+                ':name' => (string)$admin['customar_name'],
+                ':username' => $username,
+                ':password' => password_hash(bin2hex(random_bytes(32)), PASSWORD_DEFAULT),
+                ':admin_user_id' => (int)$admin['id'],
+            ]);
+        } catch (PDOException $e) {
+            $stmt->execute([':admin_user_id' => (int)$admin['id']]);
+            $pos_user = $stmt->fetch();
+            if (!$pos_user) {
+                throw $e;
+            }
+        }
+
+        if (!$pos_user) {
+            $stmt->execute([':admin_user_id' => (int)$admin['id']]);
+            $pos_user = $stmt->fetch();
+        }
+    }
+
+    $pdo->prepare('UPDATE offline_pos_users SET is_active = 1 WHERE id = :id')
+        ->execute([':id' => (int)$pos_user['id']]);
+    $pos_user['role'] = 'cashier';
+
+    return $pos_user;
+}
+
 function pos_current_user(): ?array
 {
     global $pdo;
+
+    $admin = pos_admin_account();
+    if ($admin) {
+        $pos_user = pos_admin_cashier($admin);
+        $_SESSION['offline_pos_user_id'] = (int)$pos_user['id'];
+        return $pos_user;
+    }
 
     if (empty($_SESSION['offline_pos_user_id'])) {
         return null;
     }
     $stmt = $pdo->prepare('
-        SELECT id, full_name, username, role
+        SELECT id, full_name, username, role, admin_user_id
         FROM offline_pos_users
         WHERE id = :id AND is_active = 1
         LIMIT 1
@@ -44,8 +164,51 @@ function pos_current_user(): ?array
         unset($_SESSION['offline_pos_user_id']);
         return null;
     }
+    if ($user['admin_user_id'] !== null) {
+        unset($_SESSION['offline_pos_user_id']);
+        return null;
+    }
 
     return $user;
+}
+
+function pos_login_with_admin(string $email, string $password): bool
+{
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL) || $password === '') {
+        return false;
+    }
+
+    $admin_database = pos_admin_database();
+    $stmt = $admin_database->prepare('
+        SELECT id, customar_name, email, password, role
+        FROM admin_users
+        WHERE email = :email
+        LIMIT 1
+    ');
+    $stmt->execute([':email' => $email]);
+    $admin = $stmt->fetch();
+    if (!$admin || !password_verify($password, (string)$admin['password'])) {
+        return false;
+    }
+
+    $role = strtoupper(trim((string)$admin['role']));
+    $custom_roles = $admin_database->query('SELECT role FROM admin_custom_roles')->fetchAll(PDO::FETCH_COLUMN);
+    if (!in_array($role, array_merge(admin_default_staff_roles(), $custom_roles), true)) {
+        return false;
+    }
+
+    session_regenerate_id(true);
+    $_SESSION['user_id'] = (int)$admin['id'];
+    $_SESSION['admin_user_id'] = (int)$admin['id'];
+    $_SESSION['email'] = (string)$admin['email'];
+    $_SESSION['user_name'] = (string)$admin['customar_name'];
+    $_SESSION['user_role'] = $role;
+    $_SESSION['admin_allowed_tabs'] = admin_effective_tab_keys($admin_database, (int)$admin['id'], $role);
+    $pos_user = pos_admin_cashier($admin);
+    $_SESSION['offline_pos_user_id'] = (int)$pos_user['id'];
+    $_SESSION['offline_pos_csrf'] = bin2hex(random_bytes(32));
+
+    return true;
 }
 
 function pos_require_login(): array
@@ -174,6 +337,7 @@ function pos_header(string $title, string $active_page, array $user): void
           <a class="<?= $active_page === 'sale' ? 'active' : ''; ?>" href="sale.php">New bill</a>
           <a class="<?= $active_page === 'sales' ? 'active' : ''; ?>" href="sales.php">Sales history</a>
           <?php if ($user['role'] === 'owner'): ?><a class="<?= $active_page === 'users' ? 'active' : ''; ?>" href="users.php">Cashiers</a><?php endif; ?>
+          <a href="../admin/index.php">Admin</a>
         </nav>
         <div class="pos-user">
           <span><?= pos_escape($user['full_name']); ?></span>

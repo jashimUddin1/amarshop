@@ -1,23 +1,22 @@
 <?php
 // config.php
-if (session_status() === PHP_SESSION_NONE) {
-    $script_path = str_replace('\\', '/', (string)($_SERVER['SCRIPT_NAME'] ?? '/'));
-    $session_path = '/';
-    foreach (['/auth/', '/core/', '/user/', '/checkout.php', '/cart.php', '/index.php'] as $marker) {
-        $position = strpos($script_path, $marker);
-        if ($position !== false) {
-            $session_path = substr($script_path, 0, $position + 1);
-            if ($session_path === '') {
-                $session_path = '/';
-            }
-            break;
-        }
+$document_root = isset($_SERVER['DOCUMENT_ROOT']) ? str_replace('\\', '/', realpath($_SERVER['DOCUMENT_ROOT']) ?: '') : '';
+$project_root = str_replace('\\', '/', realpath(__DIR__ . '/..') ?: '');
+$base_url = '';
+if ($document_root !== '' && str_starts_with($project_root, rtrim($document_root, '/') . '/')) {
+    $base_url = substr($project_root, strlen(rtrim($document_root, '/')));
+    $base_url = '/' . trim($base_url, '/');
+    if ($base_url === '/') {
+        $base_url = '';
     }
+}
+define('BASE_URL', $base_url);
 
+if (session_status() === PHP_SESSION_NONE) {
     session_name('AMARSHOP_CUSTOMER_SESSION');
     session_set_cookie_params([
         'lifetime' => 0,
-        'path' => $session_path,
+        'path' => rtrim(BASE_URL, '/') . '/',
         'secure' => (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off'),
         'httponly' => true,
         'samesite' => 'Lax',
@@ -40,19 +39,6 @@ try {
     die("Database connection failed: " . $e->getMessage());
 }
 
-
-/* ================= BASE URL ================= */
-$document_root = isset($_SERVER['DOCUMENT_ROOT']) ? str_replace('\\', '/', realpath($_SERVER['DOCUMENT_ROOT']) ?: '') : '';
-$project_root = str_replace('\\', '/', realpath(__DIR__ . '/..') ?: '');
-$base_url = '/';
-if ($document_root !== '' && str_starts_with($project_root, rtrim($document_root, '/') . '/')) {
-    $base_url = substr($project_root, strlen(rtrim($document_root, '/')));
-    $base_url = '/' . trim($base_url, '/');
-    if ($base_url === '/') {
-        $base_url = '';
-    }
-}
-define('BASE_URL', $base_url);
 
 function base_url(string $path = ''): string {
     return rtrim(BASE_URL, '/') . '/' . ltrim($path, '/');

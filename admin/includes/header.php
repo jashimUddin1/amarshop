@@ -38,6 +38,8 @@ $admin_nav_links = [
   ['key' => 'category', 'label' => 'Categories', 'icon' => 'folder-plus', 'href' => 'categories.php'],
   ['key' => 'collection', 'label' => 'Collections', 'icon' => 'tags', 'href' => 'collection.php'],
   ['key' => 'users', 'label' => 'Users', 'icon' => 'people', 'href' => 'users.php'],
+  ['key' => 'admin-users', 'label' => 'Admin Staff', 'icon' => 'person-badge', 'href' => 'admin_users.php'],
+  ['key' => 'role-management', 'label' => 'Role Management', 'icon' => 'shield-lock', 'href' => 'role_management.php'],
   ['key' => 'deliverymen', 'label' => 'Deliverymen', 'icon' => 'bicycle', 'href' => 'deliverymen.php'],
   ['key' => 'setting', 'label' => 'Settings', 'icon' => 'gear', 'href' => 'setting.php'],
   ['key' => 'profile', 'label' => 'My Profile', 'icon' => 'person-circle', 'href' => 'profile.php'],
@@ -189,6 +191,7 @@ $admin_nav_links = [
     <div class="admin-toolbar">
       <span class="admin-page-title"><?= htmlspecialchars(($current_page ?? '') === 'dashboard' ? 'Home' : ($page_title ?? 'Admin Panel')); ?></span>
       <div class="ms-auto d-flex align-items-center gap-3">
+        <a class="btn btn-success" href="<?= htmlspecialchars(base_url('../pos/dashboard.php'), ENT_QUOTES, 'UTF-8'); ?>"><i class="bi bi-shop me-1"></i>Open POS</a>
         <div class="dropdown d-none d-sm-block">
           <button class="btn btn-secondary position-relative" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Notifications">
             <i class="bi bi-bell-fill text-warning"></i>
@@ -225,8 +228,9 @@ $admin_nav_links = [
     <div class="offcanvas-body p-2 bg-body-tertiary">
       <ul class="nav nav-pills flex-column gap-1">
         <?php foreach ($admin_nav_links as $link): ?>
+          <?php if (admin_can_access_tab($link['key']) && ($link['key'] !== 'admin-users' || admin_can_manage_staff((string)($_SESSION['user_role'] ?? '')))): ?>
           <li class="nav-item">
-            <a class="nav-link <?= ($current_page ?? '') === $link['key'] ? 'active' : 'text-body'; ?>" href="<?= htmlspecialchars($link['href'], ENT_QUOTES, 'UTF-8'); ?>">
+            <a class="nav-link <?= ($current_page ?? '') === $link['key'] ? 'active' : 'text-body'; ?>" href="<?= htmlspecialchars(base_url($link['href']), ENT_QUOTES, 'UTF-8'); ?>">
               <i class="bi bi-<?= htmlspecialchars($link['icon'], ENT_QUOTES, 'UTF-8'); ?> me-2"></i><?= htmlspecialchars($link['label'], ENT_QUOTES, 'UTF-8'); ?>
               <?php if ($link['key'] === 'process' && $orders_to_pack_count > 0): ?><span class="badge text-bg-danger ms-1"><?= $orders_to_pack_count; ?></span><?php endif; ?>
               <?php if ($link['key'] === 'assign' && $ready_for_delivery_count > 0): ?><span class="badge text-bg-warning ms-1"><?= $ready_for_delivery_count; ?></span><?php endif; ?>
@@ -234,6 +238,7 @@ $admin_nav_links = [
               <?php if ($link['key'] === 'order-issues' && $pending_order_issue_count > 0): ?><span class="badge text-bg-danger ms-1"><?= $pending_order_issue_count; ?></span><?php endif; ?>
             </a>
           </li>
+          <?php endif; ?>
         <?php endforeach; ?>
         <li class="nav-item mt-2 border-top pt-2">
           <a class="nav-link text-danger" href="auth/logout.php"><i class="bi bi-box-arrow-right me-2"></i>Log out</a>
@@ -253,8 +258,9 @@ $admin_nav_links = [
         </div>
         <ul class="nav nav-pills flex-column gap-1 px-1 pb-5">
           <?php foreach ($admin_nav_links as $link): ?>
+            <?php if (admin_can_access_tab($link['key']) && ($link['key'] !== 'admin-users' || admin_can_manage_staff((string)($_SESSION['user_role'] ?? '')))): ?>
             <li class="nav-item">
-              <a class="nav-link <?= ($current_page ?? '') === $link['key'] ? 'active' : 'text-body'; ?>" href="<?= htmlspecialchars($link['href'], ENT_QUOTES, 'UTF-8'); ?>" aria-label="<?= htmlspecialchars($link['label'], ENT_QUOTES, 'UTF-8'); ?>" title="<?= htmlspecialchars($link['label'], ENT_QUOTES, 'UTF-8'); ?>">
+              <a class="nav-link <?= ($current_page ?? '') === $link['key'] ? 'active' : 'text-body'; ?>" href="<?= htmlspecialchars(base_url($link['href']), ENT_QUOTES, 'UTF-8'); ?>" aria-label="<?= htmlspecialchars($link['label'], ENT_QUOTES, 'UTF-8'); ?>" title="<?= htmlspecialchars($link['label'], ENT_QUOTES, 'UTF-8'); ?>">
                 <i class="bi bi-<?= htmlspecialchars($link['icon'], ENT_QUOTES, 'UTF-8'); ?> me-2" aria-hidden="true"></i><span class="sidebar-link-label"><?= htmlspecialchars($link['label'], ENT_QUOTES, 'UTF-8'); ?></span>
                 <?php if ($link['key'] === 'process' && $orders_to_pack_count > 0): ?><span class="badge text-bg-danger ms-1 sidebar-badge"><?= $orders_to_pack_count; ?></span><?php endif; ?>
                 <?php if ($link['key'] === 'assign' && $ready_for_delivery_count > 0): ?><span class="badge text-bg-warning ms-1 sidebar-badge"><?= $ready_for_delivery_count; ?></span><?php endif; ?>
@@ -262,6 +268,7 @@ $admin_nav_links = [
                 <?php if ($link['key'] === 'order-issues' && $pending_order_issue_count > 0): ?><span class="badge text-bg-danger ms-1 sidebar-badge"><?= $pending_order_issue_count; ?></span><?php endif; ?>
               </a>
             </li>
+            <?php endif; ?>
           <?php endforeach; ?>
         </ul>
       </aside>

@@ -1,6 +1,7 @@
 <?php
 require_once 'auth/config.php';
 require_admin();
+$csrf_token = csrf_token();
 
 $page_title = "Manage Products";
 $current_page = "products";
@@ -308,6 +309,7 @@ include_once 'includes/header.php';
                             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                           </div>
                           <div class="modal-body">
+                            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token, ENT_QUOTES, 'UTF-8'); ?>">
                             <input type="hidden" name="product_id" value="<?= $row['id']; ?>">
                             <p class="mb-0">Are you sure you want to delete <strong><?= htmlspecialchars($row['name']); ?></strong>?</p>
                           </div>

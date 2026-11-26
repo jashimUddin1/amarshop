@@ -28,10 +28,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $_SESSION['admin_user_id'] = $user['id'];
                     $_SESSION['email']   = $user['email'];
                     $_SESSION['user_name'] = $user['customar_name'] ?? $user['email'];
-                    $_SESSION['user_role'] = strtoupper(trim((string)$user['role']));
+                    $role = strtoupper(trim((string)$user['role']));
+                    $_SESSION['user_role'] = $role;
+                    $allowed_tabs = admin_effective_tab_keys($pdo, (int)$user['id'], $role);
 
                     // Redirect after login
-                    header("Location: " . base_url('index.php'));
+                    header("Location: " . base_url(admin_landing_page($allowed_tabs)));
                     exit;
                 } else {
                     $error = "Invalid email or password.";

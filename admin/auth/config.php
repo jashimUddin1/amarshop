@@ -5,15 +5,35 @@ if (session_status() === PHP_SESSION_NONE) {
     $admin_marker = '/admin';
     $admin_position = strpos($script_path, $admin_marker);
     $session_path = $admin_position === false ? '/admin' : substr($script_path, 0, $admin_position + strlen($admin_marker));
+    $legacy_session_cookie_path = rtrim($session_path, '/') . '/';
+    $session_secure = !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off';
     session_name('AMARSHOP_ADMIN_SESSION');
     session_set_cookie_params([
         'lifetime' => 0,
-        'path' => rtrim($session_path, '/') . '/',
-        'secure' => !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off',
+        'path' => '/',
+        'secure' => $session_secure,
         'httponly' => true,
         'samesite' => 'Lax',
     ]);
     session_start();
+    if (ini_get('session.use_cookies') && !headers_sent()) {
+        setcookie(session_name(), session_id(), [
+            'expires' => 0,
+            'path' => '/',
+            'secure' => $session_secure,
+            'httponly' => true,
+            'samesite' => 'Lax',
+        ]);
+        if ($legacy_session_cookie_path !== '/') {
+            setcookie(session_name(), '', [
+                'expires' => time() - 42000,
+                'path' => $legacy_session_cookie_path,
+                'secure' => $session_secure,
+                'httponly' => true,
+                'samesite' => 'Lax',
+            ]);
+        }
+    }
 }
 
 /* ================= TIMEZONE ================= */
@@ -41,6 +61,16 @@ define('BASE_URL', rtrim($admin_base, '/') ?: '/admin');
 
 function base_url(string $path = ''): string {
     return rtrim(BASE_URL, '/') . '/' . ltrim($path, '/');
+}
+
+if (!function_exists('csrf_token')) {
+    function csrf_token(): string
+    {
+        if (empty($_SESSION['csrf_token'])) {
+            $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+        }
+        return (string)$_SESSION['csrf_token'];
+    }
 }
 
 function ensure_admin_account_tables(PDO $pdo): void
@@ -91,11 +121,119 @@ function ensure_admin_account_tables(PDO $pdo): void
         WHERE email IS NOT NULL AND email <> ''
             AND LOWER(role) IN ('admin', 'manager', 'ceo', 'md', 'hr admin', 'hr administrator', 'assistant manager', 'asst. manager', 'ass. manager', 'data entry operator', 'salesman')
     ");
+
+    ensure_admin_permission_tables($pdo);
+}
+
+function admin_default_staff_roles(): array
+{
+    return ['CEO', 'MD', 'HR ADMIN', 'MANAGER', 'ASS. MANAGER', 'DATA ENTRY OPERATOR', 'SALESMAN'];
+}
+
+function admin_custom_staff_roles(): array
+{
+    global $pdo;
+
+    $stmt = $pdo->query('SELECT role FROM admin_custom_roles ORDER BY role');
+    return $stmt->fetchAll(PDO::FETCH_COLUMN);
 }
 
 function admin_staff_roles(): array
 {
-    return ['CEO', 'MD', 'HR ADMIN', 'MANAGER', 'ASS. MANAGER', 'DATA ENTRY OPERATOR', 'SALESMAN'];
+    return array_values(array_unique(array_merge(admin_default_staff_roles(), admin_custom_staff_roles())));
+}
+
+function admin_permission_tabs(): array
+{
+    return [
+        'dashboard' => 'Dashboard',
+        'process' => 'Process',
+        'orders' => 'Orders',
+        'assign' => 'Assign',
+        'order-requests' => 'Requests',
+        'order-issues' => 'Order Issues',
+        'cash-collections' => 'Cash Collection',
+        'collector-manage' => 'Collector Manage',
+        'resellers' => 'Resellers',
+        'purchases' => 'Purchases',
+        'products' => 'Products',
+        'category' => 'Categories',
+        'collection' => 'Collections',
+        'users' => 'Users',
+        'admin-users' => 'Admin Staff',
+        'deliverymen' => 'Deliverymen',
+        'setting' => 'Settings',
+    ];
+}
+
+function ensure_admin_permission_tables(PDO $pdo): void
+{
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS admin_custom_roles (
+            role VARCHAR(40) NOT NULL,
+            created_by_admin_id BIGINT UNSIGNED NOT NULL,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (role)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+    ");
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS admin_role_permission_settings (
+            role VARCHAR(40) NOT NULL,
+            configured_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (role)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+    ");
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS admin_role_tab_permissions (
+            role VARCHAR(40) NOT NULL,
+            tab_key VARCHAR(40) NOT NULL,
+            PRIMARY KEY (role, tab_key)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+    ");
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS admin_user_permission_settings (
+            admin_user_id BIGINT UNSIGNED NOT NULL,
+            custom_access TINYINT(1) NOT NULL DEFAULT 1,
+            PRIMARY KEY (admin_user_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+    ");
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS admin_user_tab_permissions (
+            admin_user_id BIGINT UNSIGNED NOT NULL,
+            tab_key VARCHAR(40) NOT NULL,
+            PRIMARY KEY (admin_user_id, tab_key)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+    ");
+
+    $owns_transaction = !$pdo->inTransaction();
+    if ($owns_transaction) {
+        $pdo->beginTransaction();
+    }
+    try {
+        $seed = $pdo->prepare('INSERT IGNORE INTO admin_role_permission_settings (role) VALUES (:role)');
+        $grant = $pdo->prepare('INSERT IGNORE INTO admin_role_tab_permissions (role, tab_key) VALUES (:role, :tab_key)');
+        foreach (admin_staff_roles() as $role) {
+            $seed->execute([':role' => $role]);
+            if ($seed->rowCount() === 1) {
+                foreach (array_keys(admin_permission_tabs()) as $tab_key) {
+                    $grant->execute([':role' => $role, ':tab_key' => $tab_key]);
+                }
+            }
+        }
+        if ($owns_transaction) {
+            $pdo->commit();
+        }
+    } catch (Throwable $e) {
+        if ($owns_transaction && $pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        throw $e;
+    }
+}
+
+function admin_all_tab_keys(): array
+{
+    return array_merge(array_keys(admin_permission_tabs()), ['role-management', 'profile']);
 }
 
 function admin_assignable_roles(string $role): array
@@ -105,17 +243,17 @@ function admin_assignable_roles(string $role): array
         'HR ADMINISTRATOR' => 'HR ADMIN',
         default => $role,
     };
-    $roles = admin_staff_roles();
-    $role_index = array_search($role, $roles, true);
-    if ($role_index === false || $role === 'SALESMAN' || $role === 'DATA ENTRY OPERATOR') {
+    $default_roles = admin_default_staff_roles();
+    $role_index = array_search($role, $default_roles, true);
+    if ($role_index === false && !in_array($role, admin_custom_staff_roles(), true)) {
         return [];
     }
 
     return match ($role) {
-        'CEO' => array_slice($roles, 1),
-        'MD' => array_slice($roles, 2),
-        'HR ADMIN', 'MANAGER' => array_slice($roles, 4),
-        'ASS. MANAGER' => array_slice($roles, 5),
+        'CEO' => array_merge(array_slice($default_roles, 1), admin_custom_staff_roles()),
+        'MD' => array_merge(array_slice($default_roles, 2), admin_custom_staff_roles()),
+        'HR ADMIN', 'MANAGER' => array_slice($default_roles, 4),
+        'ASS. MANAGER' => array_slice($default_roles, 5),
         default => [],
     };
 }
@@ -123,6 +261,143 @@ function admin_assignable_roles(string $role): array
 function admin_can_manage_staff(string $role): bool
 {
     return in_array(strtoupper(trim($role)), ['CEO', 'MD', 'HR ADMIN', 'MANAGER', 'ASS. MANAGER'], true);
+}
+
+function admin_can_manage_role_permissions(string $role): bool
+{
+    return in_array(strtoupper(trim($role)), ['CEO', 'MD'], true);
+}
+
+function admin_request_tab_key(): ?string
+{
+    $script_path = str_replace('\\', '/', (string)parse_url((string)($_SERVER['SCRIPT_NAME'] ?? ''), PHP_URL_PATH));
+    $script = basename($script_path);
+    $parent = basename(dirname($script_path));
+
+    $tabs_by_script = [
+        'index.php' => 'dashboard',
+        'process.php' => 'process',
+        'sales.php' => 'orders',
+        'order_details.php' => 'orders',
+        'sale_update_status.php' => 'orders',
+        'sale_update_status_bulk.php' => 'orders',
+        'save_order_edits.php' => 'orders',
+        'search_order_products.php' => 'orders',
+        'create_order_issue.php' => 'orders',
+        'assign.php' => 'assign',
+        'bag_details.php' => 'assign',
+        'save_delivery_assignment.php' => 'assign',
+        'order_requests.php' => 'order-requests',
+        'resolve_order_request.php' => 'order-requests',
+        'add_order_request_message.php' => 'order-requests',
+        'order_issues.php' => 'order-issues',
+        'resolve_order_issue.php' => 'order-issues',
+        'save_order_issue_assignment.php' => 'order-issues',
+        'update_order_issue_shipment.php' => 'order-issues',
+        'cash_collections.php' => 'cash-collections',
+        'collector_manage.php' => 'collector-manage',
+        'resellers.php' => 'resellers',
+        'purchases.php' => 'purchases',
+        'purchase_details.php' => 'purchases',
+        'products.php' => 'products',
+        'product_add_core.php' => 'products',
+        'product_edit_core.php' => 'products',
+        'product_delete_core.php' => 'products',
+        'categories.php' => 'category',
+        'category_add.php' => 'category',
+        'category_edit.php' => 'category',
+        'category_delete.php' => 'category',
+        'collection.php' => 'collection',
+        'collection_add.php' => 'collection',
+        'collection_edit.php' => 'collection',
+        'collection_delete.php' => 'collection',
+        'users.php' => 'users',
+        'admin_users.php' => 'admin-users',
+        'signup.php' => $parent === 'auth' ? 'admin-users' : null,
+        'signup_core.php' => $parent === 'auth' ? 'admin-users' : null,
+        'role_management.php' => 'role-management',
+        'admin_staff_permissions.php' => 'role-management',
+        'deliverymen.php' => 'deliverymen',
+        'deliveryman_details.php' => 'deliverymen',
+        'setting.php' => 'setting',
+        'setting_update_core.php' => 'setting',
+        'site_settings.php' => 'setting',
+        'profile.php' => 'profile',
+    ];
+
+    return $tabs_by_script[$script] ?? null;
+}
+
+function admin_can_access_tab(string $tab_key): bool
+{
+    $role = strtoupper(trim((string)($_SESSION['user_role'] ?? '')));
+    if ($tab_key === 'role-management') {
+        return admin_can_manage_role_permissions($role);
+    }
+    if ($tab_key === 'admin-users' && !admin_can_manage_staff($role)) {
+        return false;
+    }
+    if (admin_can_manage_role_permissions($role)) {
+        return in_array($tab_key, admin_all_tab_keys(), true);
+    }
+    $allowed_tabs = $_SESSION['admin_allowed_tabs'] ?? [];
+    return is_array($allowed_tabs) && in_array($tab_key, $allowed_tabs, true);
+}
+
+function admin_effective_tab_keys(PDO $pdo, int $user_id, string $role): array
+{
+    $role = strtoupper(trim($role));
+    if (admin_can_manage_role_permissions($role)) {
+        return admin_all_tab_keys();
+    }
+
+    $custom_stmt = $pdo->prepare('SELECT custom_access FROM admin_user_permission_settings WHERE admin_user_id = :id LIMIT 1');
+    $custom_stmt->execute([':id' => $user_id]);
+    $custom_access = $custom_stmt->fetchColumn();
+    if ($custom_access !== false && (int)$custom_access === 1) {
+        $permission_stmt = $pdo->prepare('SELECT tab_key FROM admin_user_tab_permissions WHERE admin_user_id = :id');
+        $permission_stmt->execute([':id' => $user_id]);
+    } else {
+        $permission_stmt = $pdo->prepare('SELECT tab_key FROM admin_role_tab_permissions WHERE role = :role');
+        $permission_stmt->execute([':role' => $role]);
+    }
+
+    $allowed_tabs = array_values(array_unique(array_merge(['profile'], $permission_stmt->fetchAll(PDO::FETCH_COLUMN))));
+    if (!admin_can_manage_staff($role)) {
+        $allowed_tabs = array_values(array_diff($allowed_tabs, ['admin-users']));
+    }
+    return $allowed_tabs;
+}
+
+function admin_landing_page(array $allowed_tabs): string
+{
+    $pages = [
+        'dashboard' => 'index.php',
+        'process' => 'process.php',
+        'orders' => 'sales.php',
+        'assign' => 'assign.php',
+        'order-requests' => 'order_requests.php',
+        'order-issues' => 'order_issues.php',
+        'cash-collections' => 'cash_collections.php',
+        'collector-manage' => 'collector_manage.php',
+        'resellers' => 'resellers.php',
+        'purchases' => 'purchases.php',
+        'products' => 'products.php',
+        'category' => 'categories.php',
+        'collection' => 'collection.php',
+        'users' => 'users.php',
+        'admin-users' => 'admin_users.php',
+        'role-management' => 'role_management.php',
+        'deliverymen' => 'deliverymen.php',
+        'setting' => 'setting.php',
+        'profile' => 'profile.php',
+    ];
+    foreach ($pages as $tab_key => $page) {
+        if (in_array($tab_key, $allowed_tabs, true)) {
+            return $page;
+        }
+    }
+    return 'profile.php';
 }
 
 /* ================= AUTH GUARD ================= */
@@ -151,4 +426,19 @@ function require_admin(): void {
     $_SESSION['user_role'] = $role;
     $_SESSION['user_name'] = $admin['customar_name'];
     $_SESSION['email'] = $admin['email'];
+
+    $_SESSION['admin_allowed_tabs'] = admin_effective_tab_keys($pdo, (int)$admin['id'], $role);
+
+    $requested_tab = admin_request_tab_key();
+    if ($requested_tab !== null && !admin_can_access_tab($requested_tab)) {
+        if ($requested_tab === 'dashboard') {
+            $landing_page = admin_landing_page($_SESSION['admin_allowed_tabs']);
+            if ($landing_page !== 'index.php') {
+                header('Location: ' . base_url($landing_page));
+                exit;
+            }
+        }
+        http_response_code(403);
+        exit('You do not have permission to access this admin tab.');
+    }
 }

@@ -3,15 +3,59 @@
 if (session_status() === PHP_SESSION_NONE) {
     $script_path = str_replace('\\', '/', (string)($_SERVER['SCRIPT_NAME'] ?? '/offline/index.php'));
     $session_path = rtrim(str_replace('\\', '/', dirname($script_path)), '/') . '/';
-    session_name('AMARSHOP_OFFLINE_POS');
+    $session_secure = !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off';
+    $legacy_pos_session = [];
+
+    if (isset($_COOKIE['AMARSHOP_OFFLINE_POS'])) {
+        session_name('AMARSHOP_OFFLINE_POS');
+        session_set_cookie_params([
+            'lifetime' => 0,
+            'path' => $session_path,
+            'secure' => $session_secure,
+            'httponly' => true,
+            'samesite' => 'Lax',
+        ]);
+        session_start();
+        foreach ($_SESSION as $key => $value) {
+            if (is_string($key) && strpos($key, 'offline_pos_') === 0) {
+                $legacy_pos_session[$key] = $value;
+            }
+        }
+        session_write_close();
+    }
+
+    session_name('AMARSHOP_ADMIN_SESSION');
     session_set_cookie_params([
         'lifetime' => 0,
-        'path' => $session_path,
-        'secure' => !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off',
+        'path' => '/',
+        'secure' => $session_secure,
         'httponly' => true,
         'samesite' => 'Lax',
     ]);
     session_start();
+    foreach ($legacy_pos_session as $key => $value) {
+        if (!array_key_exists($key, $_SESSION)) {
+            $_SESSION[$key] = $value;
+        }
+    }
+    if (ini_get('session.use_cookies') && !headers_sent()) {
+        setcookie(session_name(), session_id(), [
+            'expires' => 0,
+            'path' => '/',
+            'secure' => $session_secure,
+            'httponly' => true,
+            'samesite' => 'Lax',
+        ]);
+        if (isset($_COOKIE['AMARSHOP_OFFLINE_POS'])) {
+            setcookie('AMARSHOP_OFFLINE_POS', '', [
+                'expires' => time() - 42000,
+                'path' => $session_path,
+                'secure' => $session_secure,
+                'httponly' => true,
+                'samesite' => 'Lax',
+            ]);
+        }
+    }
 }
 
 date_default_timezone_set('Asia/Dhaka');
@@ -44,12 +88,22 @@ try {
             password_hash VARCHAR(255) NOT NULL,
             role VARCHAR(20) NOT NULL DEFAULT 'cashier',
             is_active TINYINT(1) NOT NULL DEFAULT 1,
+            admin_user_id BIGINT UNSIGNED NULL DEFAULT NULL,
             created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (id),
             UNIQUE KEY uq_offline_pos_username (username),
+            UNIQUE KEY uq_offline_pos_admin_user (admin_user_id),
             KEY idx_offline_pos_users_active (is_active, role)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     ");
+    $admin_user_column = $pdo->query("SHOW COLUMNS FROM offline_pos_users LIKE 'admin_user_id'")->fetch();
+    if (!$admin_user_column) {
+        $pdo->exec('ALTER TABLE offline_pos_users ADD COLUMN admin_user_id BIGINT UNSIGNED NULL DEFAULT NULL');
+    }
+    $admin_user_index = $pdo->query("SHOW INDEX FROM offline_pos_users WHERE Key_name = 'uq_offline_pos_admin_user'")->fetch();
+    if (!$admin_user_index) {
+        $pdo->exec('ALTER TABLE offline_pos_users ADD UNIQUE KEY uq_offline_pos_admin_user (admin_user_id)');
+    }
     $pdo->exec("
         CREATE TABLE IF NOT EXISTS offline_pos_installation (
             id TINYINT UNSIGNED NOT NULL,

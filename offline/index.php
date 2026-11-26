@@ -56,25 +56,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $error = 'The owner account could not be created. Check that the username is unique and try again.';
             }
         }
-    } elseif ($action === 'login' && !$is_first_run) {
+    } elseif ($action === 'login') {
         $locked_until = (int)($_SESSION['offline_pos_login_locked_until'] ?? 0);
         if ($locked_until > time()) {
             $error = 'Too many sign-in attempts. Try again in a few minutes.';
-        } elseif (!preg_match('/^[A-Za-z0-9._-]{3,80}$/', $username) || $password === '') {
+        } elseif ($username === '' || strlen($username) > 191 || $password === '') {
             $error = 'Username or password is incorrect.';
         } else {
-            $stmt = $pdo->prepare('
-                SELECT id, password_hash
-                FROM offline_pos_users
-                WHERE username = :username AND is_active = 1
-                LIMIT 1
-            ');
-            $stmt->execute([':username' => $username]);
-            $user = $stmt->fetch();
+            $user = false;
+            if (preg_match('/^[A-Za-z0-9._-]{3,80}$/', $username)) {
+                $stmt = $pdo->prepare('
+                    SELECT id, password_hash
+                    FROM offline_pos_users
+                    WHERE username = :username AND is_active = 1 AND admin_user_id IS NULL
+                    LIMIT 1
+                ');
+                $stmt->execute([':username' => $username]);
+                $user = $stmt->fetch();
+            }
             if ($user && password_verify($password, (string)$user['password_hash'])) {
                 session_regenerate_id(true);
                 $_SESSION['offline_pos_user_id'] = (int)$user['id'];
                 $_SESSION['offline_pos_csrf'] = bin2hex(random_bytes(32));
+                unset($_SESSION['offline_pos_login_failures'], $_SESSION['offline_pos_login_locked_until']);
+                header('Location: dashboard.php');
+                exit;
+            } elseif (pos_login_with_admin($username, $password)) {
                 unset($_SESSION['offline_pos_login_failures'], $_SESSION['offline_pos_login_locked_until']);
                 header('Location: dashboard.php');
                 exit;
@@ -129,7 +136,7 @@ $page_heading = $is_first_run && $setup_available ? 'Set up your counter' : 'Sig
     <?php elseif ($is_first_run): ?>
       <p>Owner setup is protected. Set <code>POS_SETUP_KEY</code> in this folder's <code>config.php</code>, then reload this page.</p>
     <?php else: ?>
-      <p>Sign in to create bills and manage counter sales.</p>
+      <p>Use your POS username or Admin email and password. Admin sign-in works in both panels.</p>
     <?php endif; ?>
     <?php if ($error !== ''): ?><div class="error" role="alert"><?= pos_escape($error); ?></div><?php endif; ?>
     <?php if (!$is_first_run || $setup_available): ?>
@@ -142,11 +149,24 @@ $page_heading = $is_first_run && $setup_available ? 'Set up your counter' : 'Sig
           <label for="fullName">Owner name</label>
           <input id="fullName" name="full_name" maxlength="180" required autocomplete="name">
         <?php endif; ?>
-        <label for="username">Username</label>
-        <input id="username" name="username" maxlength="80" required autocomplete="username" autofocus>
+        <label for="username"><?= $setup_available ? 'POS username' : 'POS username or Admin email'; ?></label>
+        <input id="username" name="username" maxlength="<?= $setup_available ? '80' : '191'; ?>" required autocomplete="username" autofocus>
         <label for="password">Password<?= $setup_available ? ' (at least 10 characters)' : ''; ?></label>
         <input id="password" name="password" type="password" minlength="<?= $setup_available ? '10' : '1'; ?>" required autocomplete="<?= $setup_available ? 'new-password' : 'current-password'; ?>">
         <button type="submit"><?= $setup_available ? 'Create owner account' : 'Sign in'; ?></button>
+      </form>
+    <?php endif; ?>
+    <?php if ($is_first_run): ?>
+      <hr>
+      <p class="note">Already have an Admin account? Sign in here to open POS and Admin with the same login.</p>
+      <form method="post" autocomplete="on">
+        <input type="hidden" name="csrf_token" value="<?= pos_escape(pos_csrf_token()); ?>">
+        <input type="hidden" name="action" value="login">
+        <label for="adminEmail">Admin email</label>
+        <input id="adminEmail" name="username" type="email" maxlength="191" required autocomplete="username">
+        <label for="adminPassword">Admin password</label>
+        <input id="adminPassword" name="password" type="password" required autocomplete="current-password">
+        <button type="submit">Sign in with Admin account</button>
       </form>
     <?php endif; ?>
     <p class="note">Your store inventory stays in the configured shared products database. Counter bills are recorded separately.</p>

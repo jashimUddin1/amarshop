@@ -32,8 +32,8 @@ pos_header($page_title, 'sale', $user);
     <div class="pos-card-header"><h2>Current bill</h2><span id="cartCount" class="pos-badge">0 items</span></div>
     <div class="pos-table-wrap">
       <table class="pos-table">
-        <thead><tr><th>Item</th><th class="right">Qty</th><th class="right">Total</th><th></th></tr></thead>
-        <tbody id="cartRows"><tr><td class="pos-empty" colspan="4">Search and add products to start a bill.</td></tr></tbody>
+        <thead><tr><th>Item</th><th class="right">Qty</th><th class="right">Price</th><th class="right">Total</th><th></th></tr></thead>
+        <tbody id="cartRows"><tr><td class="pos-empty" colspan="5">Search and add products to start a bill.</td></tr></tbody>
       </table>
     </div>
     <form method="post" action="save_sale.php" id="saleForm">
@@ -69,6 +69,7 @@ pos_header($page_title, 'sale', $user);
   .pos-product-result-code { color:var(--muted); font-size:.82rem; margin-top:.15rem; }
   .pos-product-result-meta { color:var(--muted); font-size:.82rem; margin-top:.3rem; }
   .pos-quantity { width:5rem; min-height:36px; text-align:center; }
+  .pos-price { width:7.5rem; min-height:36px; text-align:right; }
   @media(max-width:850px) { .pos-grid[style*="grid-template-columns"] { grid-template-columns:1fr !important; } }
 </style>
 
@@ -168,6 +169,28 @@ pos_header($page_title, 'sale', $user);
       });
       quantityCell.append(quantity);
 
+      const priceCell = document.createElement('td');
+      priceCell.className = 'right';
+      const price = document.createElement('input');
+      price.type = 'number';
+      price.className = 'pos-input pos-price';
+      price.min = '0';
+      price.max = '9999999999.99';
+      price.step = '0.01';
+      price.value = Number(item.price).toFixed(2);
+      price.setAttribute('aria-label', `Unit price for ${item.name}`);
+      price.addEventListener('change', () => {
+        const nextPrice = Number.parseFloat(price.value);
+        if (!Number.isFinite(nextPrice) || nextPrice < 0 || nextPrice > 9999999999.99) {
+          price.value = Number(item.price).toFixed(2);
+          searchMessage.textContent = 'Price must be between ৳0.00 and ৳9,999,999,999.99.';
+          return;
+        }
+        item.price = Math.round((nextPrice + Number.EPSILON) * 100) / 100;
+        renderCart();
+      });
+      priceCell.append(price);
+
       const totalCell = document.createElement('td');
       totalCell.className = 'right';
       totalCell.textContent = money(item.price * item.quantity);
@@ -182,14 +205,14 @@ pos_header($page_title, 'sale', $user);
         renderCart();
       });
       removeCell.append(remove);
-      row.append(nameCell, quantityCell, totalCell, removeCell);
+      row.append(nameCell, quantityCell, priceCell, totalCell, removeCell);
       cartRows.append(row);
     });
     if (!cart.size) {
       const row = document.createElement('tr');
       const empty = document.createElement('td');
       empty.className = 'pos-empty';
-      empty.colSpan = 4;
+      empty.colSpan = 5;
       empty.textContent = 'Search and add products to start a bill.';
       row.append(empty);
       cartRows.append(row);
@@ -259,7 +282,8 @@ pos_header($page_title, 'sale', $user);
     }
     itemsInput.value = JSON.stringify(Array.from(cart.values(), item => ({
       product_id: item.id,
-      quantity: item.quantity
+      quantity: item.quantity,
+      unit_price: item.price
     })));
     if (!document.getElementById('saleForm').reportValidity()) event.preventDefault();
   });

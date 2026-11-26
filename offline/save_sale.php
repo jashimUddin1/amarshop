@@ -51,7 +51,21 @@ foreach ($submitted_items as $item) {
         header('Location: sale.php');
         exit;
     }
-    $quantities_by_product[$product_id] = $quantity;
+    $unit_price = null;
+    if (array_key_exists('unit_price', $item)) {
+        $unit_price = filter_var($item['unit_price'], FILTER_VALIDATE_FLOAT);
+        if ($unit_price === false || !is_finite((float)$unit_price) ||
+            $unit_price < 0 || $unit_price > 9999999999.99) {
+            pos_flash('error', 'Each product needs a valid unit price.');
+            header('Location: sale.php');
+            exit;
+        }
+        $unit_price = round((float)$unit_price, 2);
+    }
+    $quantities_by_product[$product_id] = [
+        'quantity' => $quantity,
+        'unit_price' => $unit_price,
+    ];
 }
 
 ksort($quantities_by_product, SORT_NUMERIC);
@@ -69,7 +83,8 @@ try {
 
     $items = [];
     $subtotal = 0.0;
-    foreach ($quantities_by_product as $product_id => $quantity) {
+    foreach ($quantities_by_product as $product_id => $submitted_item) {
+        $quantity = $submitted_item['quantity'];
         $select_product->execute([':id' => $product_id]);
         $product = $select_product->fetch();
         if (!$product) {
@@ -80,8 +95,8 @@ try {
                 'Not enough stock for ' . (string)$product['name'] . '. Available: ' . (int)$product['stock'] . '.'
             );
         }
-        $unit_price = round((float)$product['price'], 2);
-        if ($unit_price < 0) {
+        $unit_price = $submitted_item['unit_price'] ?? round((float)$product['price'], 2);
+        if (!is_finite((float)$unit_price) || $unit_price < 0 || $unit_price > 9999999999.99) {
             throw new InvalidArgumentException('A selected product has an invalid selling price.');
         }
         $line_total = round($unit_price * $quantity, 2);
