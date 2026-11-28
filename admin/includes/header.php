@@ -191,16 +191,9 @@ $admin_nav_links = [
     <div class="admin-toolbar">
       <span class="admin-page-title"><?= htmlspecialchars(($current_page ?? '') === 'dashboard' ? 'Home' : ($page_title ?? 'Admin Panel')); ?></span>
       <div class="ms-auto d-flex align-items-center gap-3">
-        <a class="btn btn-success" href="<?= htmlspecialchars(base_url('../pos/dashboard.php'), ENT_QUOTES, 'UTF-8'); ?>"><i class="bi bi-shop me-1"></i>Open POS</a>
-        <div class="dropdown d-none d-sm-block">
-          <button class="btn btn-secondary position-relative" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Notifications">
-            <i class="bi bi-bell-fill text-warning"></i>
-          </button>
-          <div class="dropdown-menu dropdown-menu-end p-3" style="min-width: 220px;">
-            <div class="fw-semibold mb-2">Notifications</div>
-            <a class="dropdown-item px-0" href="sales.php"><i class="bi bi-cart-check me-2"></i>Review recent orders</a>
-          </div>
-        </div>
+        <a class="btn btn-success" href="<?= htmlspecialchars(base_url('../pos/dashboard.php'), ENT_QUOTES, 'UTF-8'); ?>">
+          <i class="bi bi-shop"></i><span class="d-none d-md-inline ms-1">POS</span>
+        </a>
         <a class="btn btn-link text-decoration-none fw-semibold admin-account-button" href="profile.php">
           <?php if ($admin_profile_picture): ?>
             <img src="../uploads/<?= htmlspecialchars($admin_profile_picture, ENT_QUOTES, 'UTF-8'); ?>" alt="" class="rounded-circle object-fit-cover me-1" style="width:28px;height:28px;">

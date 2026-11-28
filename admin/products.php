@@ -146,6 +146,20 @@ include_once 'includes/header.php';
                     <i class="bi bi-trash"></i>
                   </button>
 
+                  <div class="dropdown d-inline-block ms-1">
+                    <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="More options">
+                      <i class="bi bi-three-dots-vertical"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                      <li>
+                        <button class="dropdown-item" type="button"
+                          onclick="openProductHistoryModal(<?= $row['id']; ?>, <?= htmlspecialchars(json_encode($row['name']), ENT_QUOTES, 'UTF-8'); ?>)">
+                          <i class="bi bi-clock-history me-2 text-secondary"></i>History
+                        </button>
+                      </li>
+                    </ul>
+                  </div>
+
                   <!-- Edit Modal -->
                   <div class="modal fade text-start" id="editProductModal<?= $row['id']; ?>" tabindex="-1">
                     <div class="modal-dialog modal-lg">
@@ -469,3 +483,54 @@ include_once 'includes/header.php';
 </div>
 
 <?php include_once 'includes/footer.php'; ?>
+
+<!-- Product History Modal -->
+<div class="modal fade" id="productHistoryModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-clock-history me-2"></i>Product History — <span id="productHistoryModalName"></span></h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="productHistoryModalBody">
+        <div class="text-center py-4"><div class="spinner-border text-success" role="status"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function openProductHistoryModal(id, name) {
+  const modal = new bootstrap.Modal(document.getElementById('productHistoryModal'));
+  document.getElementById('productHistoryModalName').textContent = name;
+  document.getElementById('productHistoryModalBody').innerHTML = '<div class="text-center py-4"><div class="spinner-border text-success" role="status"></div></div>';
+  modal.show();
+  fetch('core/get_history.php?type=product&id=' + encodeURIComponent(id))
+    .then(r => r.json())
+    .then(data => {
+      if (data.error) { document.getElementById('productHistoryModalBody').innerHTML = '<div class="alert alert-danger">' + data.error + '</div>'; return; }
+      const rows = data.rows || [];
+      if (!rows.length) { document.getElementById('productHistoryModalBody').innerHTML = '<p class="text-muted text-center py-3">No history found for this product.</p>'; return; }
+      const colorMap = {success:'text-success',warning:'text-warning',danger:'text-danger',primary:'text-primary',info:'text-info',secondary:'text-secondary'};
+      let html = '<div class="timeline">';
+      rows.forEach(row => {
+        const c = colorMap[row.color] || 'text-secondary';
+        const t = row.time ? new Date(row.time).toLocaleString('en-BD', {dateStyle:'medium',timeStyle:'short'}) : '—';
+        html += `<div class="d-flex gap-3 mb-3 pb-3 border-bottom">
+          <div class="flex-shrink-0 mt-1"><i class="bi bi-${row.icon} fs-5 ${c}"></i></div>
+          <div class="flex-grow-1">
+            <div class="d-flex justify-content-between align-items-start">
+              <strong class="${c}">${row.action}</strong>
+              <small class="text-muted ms-2 text-nowrap">${t}</small>
+            </div>
+            <div class="small text-muted">${row.detail}</div>
+            ${row.by && row.by !== '—' ? `<div class="small text-body-secondary"><i class="bi bi-person me-1"></i>${row.by}</div>` : ''}
+          </div>
+        </div>`;
+      });
+      html += '</div>';
+      document.getElementById('productHistoryModalBody').innerHTML = html;
+    })
+    .catch(() => { document.getElementById('productHistoryModalBody').innerHTML = '<div class="alert alert-danger">Failed to load history.</div>'; });
+}
+</script>

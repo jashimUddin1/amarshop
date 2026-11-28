@@ -216,6 +216,19 @@ include __DIR__ . '/includes/header.php';
                                     <?php else: ?>
                                         <span class="text-muted small">Current account</span>
                                     <?php endif; ?>
+                                    <div class="dropdown d-inline-block">
+                                        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="More options">
+                                            <i class="bi bi-three-dots-vertical"></i>
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end">
+                                            <li>
+                                                <button class="dropdown-item" type="button"
+                                                    onclick="openHistoryModal('staff', <?= $staff_id; ?>, <?= htmlspecialchars(json_encode($staff['customar_name']), ENT_QUOTES, 'UTF-8'); ?>)">
+                                                    <i class="bi bi-clock-history me-2 text-secondary"></i>History
+                                                </button>
+                                            </li>
+                                        </ul>
+                                    </div>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
@@ -277,6 +290,57 @@ document.getElementById('editStaffModal')?.addEventListener('show.bs.modal', eve
     document.getElementById('edit-staff-role').value = button.dataset.role || '';
     document.getElementById('edit-staff-status').value = button.dataset.status || '0';
 });
+</script>
+
+<!-- History Modal -->
+<div class="modal fade" id="historyModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-clock-history me-2"></i>Activity History — <span id="historyModalName"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="historyModalBody">
+                <div class="text-center py-4"><div class="spinner-border text-success" role="status"></div></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function openHistoryModal(type, id, name) {
+    const modal = new bootstrap.Modal(document.getElementById('historyModal'));
+    document.getElementById('historyModalName').textContent = name;
+    document.getElementById('historyModalBody').innerHTML = '<div class="text-center py-4"><div class="spinner-border text-success" role="status"></div></div>';
+    modal.show();
+    fetch('core/get_history.php?type=' + encodeURIComponent(type) + '&id=' + encodeURIComponent(id))
+        .then(r => r.json())
+        .then(data => {
+            if (data.error) { document.getElementById('historyModalBody').innerHTML = '<div class="alert alert-danger">' + data.error + '</div>'; return; }
+            const rows = data.rows || [];
+            if (!rows.length) { document.getElementById('historyModalBody').innerHTML = '<p class="text-muted text-center py-3">No activity history found.</p>'; return; }
+            const colorMap = {success:'text-success',warning:'text-warning',danger:'text-danger',primary:'text-primary',info:'text-info',secondary:'text-secondary'};
+            let html = '<div class="timeline">';
+            rows.forEach(row => {
+                const c = colorMap[row.color] || 'text-secondary';
+                const t = row.time ? new Date(row.time).toLocaleString('en-BD', {dateStyle:'medium',timeStyle:'short'}) : '—';
+                html += `<div class="d-flex gap-3 mb-3 pb-3 border-bottom">
+                    <div class="flex-shrink-0 mt-1"><i class="bi bi-${row.icon} fs-5 ${c}"></i></div>
+                    <div class="flex-grow-1">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <strong class="${c}">${row.action}</strong>
+                            <small class="text-muted ms-2 text-nowrap">${t}</small>
+                        </div>
+                        <div class="small text-muted">${row.detail}</div>
+                        ${row.by && row.by !== '—' ? `<div class="small"><i class="bi bi-person me-1"></i>${row.by}</div>` : ''}
+                    </div>
+                </div>`;
+            });
+            html += '</div>';
+            document.getElementById('historyModalBody').innerHTML = html;
+        })
+        .catch(() => { document.getElementById('historyModalBody').innerHTML = '<div class="alert alert-danger">Failed to load history.</div>'; });
+}
 </script>
 
 <?php include __DIR__ . '/includes/footer.php'; ?>

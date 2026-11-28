@@ -9,7 +9,7 @@ $collections = $pdo->query('SELECT title, slug, badge, badge_bg FROM collections
 $all_collections = [];
 
 $product_sql = "
-    SELECT id, product_code, name, category_name, size, main_img, reseller_price, stock, rating, total_reviews
+    SELECT id, product_code, name, category_name, size, main_img, reseller_price, stock
     FROM products
     WHERE stock > 0 AND reseller_price IS NOT NULL AND deleted_at IS NULL
 ";
@@ -175,9 +175,7 @@ require __DIR__ . '/includes/header.php';
                                     <small class="text-muted text-nowrap"><?= reseller_h($product['product_code']); ?></small>
                                 </div>
                                 <h3 class="h6 fw-bold mt-1 mb-2 text-truncate" title="<?= reseller_h($product['name']); ?>"><?= reseller_h($product['name']); ?></h3>
-                                <?php if ((int)($product['total_reviews'] ?? 0) > 0): ?>
-                                    <div class="small mb-2"><i class="bi bi-star-fill text-warning"></i> <?= number_format((float)$product['rating'], 1); ?> <span class="text-muted">(<?= (int)$product['total_reviews']; ?>)</span></div>
-                                <?php endif; ?>
+
                                 <div class="d-flex justify-content-between align-items-center mt-auto mb-3">
                                     <span class="fw-bold fs-5 text-success"><?= reseller_money($product['reseller_price']); ?></span>
                                     <span class="badge text-bg-success">In Stock</span>
@@ -269,7 +267,7 @@ require __DIR__ . '/includes/header.php';
                 quantityInput.reportValidity();
                 return;
             }
-            const formData = new FormData();
+            const formData = new window.FormData();
             formData.append('csrf_token', csrfToken);
             formData.append('product_id', button.dataset.productId);
             formData.append('size', card.querySelector('.reseller-size-button.active')?.dataset.size || '');
